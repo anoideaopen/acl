@@ -1,0 +1,29 @@
+version: '3.4'
+
+volumes:
+  test--integration:
+
+services:
+  test--integration:
+    image: prod-registry.cicd.prod.core.n-t.io/repository/docker/core/library/toolbox/toolbox-test-go:master
+    restart: "no"
+    user: root
+    depends_on:
+      - tool
+      - prometheus
+      - hlf-proxy-public
+      - test-robot-001.org0
+    environment:
+      - CI_JOB_TOKEN
+      - CI_SERVER_HOST
+      - CGO_ENABLED=0
+      - HLF_PROXY_AUTH_TOKEN=test
+      - HLF_PROXY_URL=http://hlf-proxy-public:8080
+      - ALLURE_OUTPUT_PATH=/report
+    volumes:
+      - tool:/state
+      - test--integration:/state/test--integration
+      - ./tool/data:/data
+      - ../../integration:/test
+      - ../../../report:/report
+      - ../../chaincode:/chaincode

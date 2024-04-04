@@ -1,0 +1,11 @@
+CHAINCODE_VERSION="$(date +%s)"
+CHAINCODE_POLICY="AND('org0.member', OutOf(1, 'org1.member', 'org2.member'))"
+
+key_user1="$(_crypto_msp_by_org "org0" "User1")/keystore/priv_sk"
+ski="$(_tool_ski "$key_user1")"
+
+key_validator="$DATA/out/key.pem"
+[ -r "$key_validator" ] || openssl genpkey -algorithm ed25519 -outform PEM -out "$key_validator"
+validator="$(_tool_validator "$key_validator")"
+
+CHAINCODE_INIT="{\"Args\":[\"${ski}\",\"1\", \"${validator}\"]}"
