@@ -1,6 +1,6 @@
 # ACL chaincode
 
-Access Control List chaincode of Atomyze platform.
+Access Control List chaincode of Testnet Platform
 
 ## TOC
 
