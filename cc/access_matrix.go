@@ -401,7 +401,7 @@ func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []strin
 // args[1] -GetOperationAllRights> chaincodeName
 // args[2] -> roleName
 // args[3] -> operationName
-func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen
+func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []string) peer.Response { 
 	argsNum := len(args)
 	const requiredArgsCount = 4
 	if argsNum != requiredArgsCount {
