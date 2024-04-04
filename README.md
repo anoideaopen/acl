@@ -4,18 +4,17 @@ Access Control List chaincode of Atomyze platform.
 
 ## TOC
 
-- [ACL chaincode](#-acl-chaincode)
-  - [TOC](#-toc)
-  - [Description](#-description)
-  - [Topics](#-topics)
-  - [Version information](#-version-information)
-  - [Links](#-links)
-  - [License](#-license)
+- [ACL chaincode](#acl-chaincode)
+  - [TOC](#toc)
+  - [Description](#description)
+  - [Topics](#topics)
+  - [Version information](#version-information)
+  - [Links](#links)
+  - [License](#license)
 
 ## Description
 
-This chaincode stores and operates platform users.
-
+This chaincode stores and operates platform users. 
 ## Topics
 
 * [Initialization](doc/chaincode-init.md)
@@ -28,8 +27,7 @@ Current ACL is fully compatible for foundation v3 and v1.
 
 ## Links
 
-* No
 
 ## License
 
-[Default license](LICENSE)
+Apache-2.0

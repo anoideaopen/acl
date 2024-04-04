@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/atomyze-foundation/foundation/core/acl"
-	"github.com/atomyze-foundation/foundation/core/types"
-	"github.com/atomyze-foundation/foundation/core/types/big"
-	"github.com/atomyze-foundation/foundation/token"
+	"gitlab.n-t.io/core/library/go/foundation/v3/core/acl"
+	"gitlab.n-t.io/core/library/go/foundation/v3/core/types"
+	"gitlab.n-t.io/core/library/go/foundation/v3/core/types/big"
+	"gitlab.n-t.io/core/library/go/foundation/v3/token"
 )
 
 // FiatToken - base struct

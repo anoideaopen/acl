@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
+	"gitlab.n-t.io/core/library/chaincode/acl/cc/compositekey"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -30,7 +31,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 			"N (signatures required), nonce, public keys, signatures", argsNum))
 	}
 
-	if err := c.checkCert(stub); err != nil {
+	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
 	}
 
@@ -103,7 +104,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 	}
 
 	// check multisig address doesn't already exist
-	pkToAddrCompositeKey, err := stub.CreateCompositeKey(addressPrefix, []string{hashedHexKeys})
+	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, hashedHexKeys)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -121,7 +122,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.Address.AddrString(), hashedHexKeys))
 	}
 
-	addrToPkCompositeKey, err := stub.CreateCompositeKey(pkPrefix, []string{addr})
+	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -165,8 +166,8 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 }
 
 func checkNOutMSigned(n int, message []byte, pks [][]byte, signatures []string) error {
-	if signDuplicates := checkDuplicates(signatures); len(signDuplicates) > 0 {
-		return fmt.Errorf(ErrDuplicateSignatures, signDuplicates)
+	if err := checkDuplicates(signatures); err != nil {
+		return fmt.Errorf(ErrDuplicateSignatures, err)
 	}
 
 	strPubKeys := make([]string, 0, len(pks))
@@ -174,8 +175,8 @@ func checkNOutMSigned(n int, message []byte, pks [][]byte, signatures []string) 
 		strPubKeys = append(strPubKeys, hex.EncodeToString(pk))
 	}
 
-	if pkDublicates := checkDuplicates(strPubKeys); len(pkDublicates) > 0 {
-		return fmt.Errorf(ErrDuplicatePubKeys, pkDublicates)
+	if err := checkDuplicates(strPubKeys); err != nil {
+		return fmt.Errorf(ErrDuplicatePubKeys, err)
 	}
 
 	countSigned := 0
@@ -213,7 +214,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: address, old key, new key, reason, reason ID, nonce, public keys, signatures", argsNum))
 	}
 
-	if err := c.checkCert(stub); err != nil {
+	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
 	}
 
@@ -257,7 +258,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(err.Error())
 	}
 
-	addrToPkCompositeKey, err := stub.CreateCompositeKey(pkPrefix, []string{multisigAddr})
+	addrToPkCompositeKey, err := compositekey.PublicKey(stub, multisigAddr)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -268,10 +269,10 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(err.Error())
 	}
 	if len(keys) == 0 {
-		return shim.Error(fmt.Sprintf("no pub keys for address %s", multisigAddr))
+		return shim.Error(fmt.Sprintf("no public keys for address %s", multisigAddr))
 	}
 
-	pkToAddrCompositeKey, err := stub.CreateCompositeKey(addressPrefix, []string{string(keys)})
+	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(keys))
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -307,7 +308,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	newKeysString := strings.Join(newKeys, "/")
 	message := append([]string{"changeMultisigPublicKey", multisigAddr, oldKey, newKeysString, reason, args[4], nonce}, pks...)
 	hashedMessage := sha3.Sum256([]byte(strings.Join(message, "")))
-	if err = c.checkValidatorsSigned(hashedMessage[:], pks, signatures); err != nil {
+	if err = c.verifyValidatorSignatures(hashedMessage[:], pks, signatures); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -346,7 +347,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	}
 
 	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := stub.CreateCompositeKey(addressPrefix, []string{hashedHexKeys})
+	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, hashedHexKeys)
 	if err != nil {
 		return shim.Error(err.Error())
 	}

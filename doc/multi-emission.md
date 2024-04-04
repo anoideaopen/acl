@@ -1,150 +1,170 @@
-# Multi-emission
+# ACL API
 
-Functionality for multi-issuance of platform tokens Atomyze.
+ACL API
 
 ## TOC
 
-- [Multi-emission](#-multi-emission)
-  - [TOC](#-toc)
-  - [Description](#-description)
-    - [API Spec](#-api-spec)
-    - [Storage](#-storage)
-      - [Accounts](#-accounts)
-      - [AccountRights](#-accountrights)
-      - [HaveRight](#-haveright)
-  - [Links](#-links)
+- [ACL API](#acl-api)
+  - [TOC](#toc)
+  - [Description](#description)
+  - [API](#api)
+    - [Init chaincode](#init-chaincode)
+      - [User Management](#user-management)
+      - [Access Matrix](#access-matrix)
+      - [Black/Gray lists management](#blackgray-lists-management)
+      - [Multi Signature](#multi-signature)
+  - [Links](#links)
 
 ## Description
 
-The current implementation of the foundation library and ACL chaincode allows for the installation of only one issuer for each token. The introduction of multi-issuance functionality will enable the creation of multiple issuances for a single token, owned by different issuers. This functionality is implemented in the ACL chaincode through an access matrix, which is a list of user roles and access for specific operations in a specific chaincode and channel.
+## API
 
-### API Spec
+### Init chaincode
 
-The API within the multi-issuance functionality is extended with the following functions:
+**Args:**
 
-1. Adding permission for a user:  
-  `addRights(args []string)`
-  - args:  
-    - channelName    - channel name
-    - chaincodeName  - chaincode name
-    - roleName       - role
-    - operationName  - operation name, can be empty
-    - addressEncoded - user address  
-  - return value:  
-    - nil - if the operation is successful
-    - error - if there is an error
-2. Removing permission for a user  
-  `removeRights(args []string)`
-  - args:  
-    - channelName    - channel name
-    - chaincodeName  - chaincode name
-    - roleName       - role
-    - operationName  - operation name, can be empty
-    - addressEncoded - user address  
-  - return value:  
-    - nil - if the operation is successful
-    - error - if there is an error
-3. Checking the availability of permission to execute an operation for a role in a channel and chaincode at a user address 
-  `getAccountOperationRight(args []string)`
-  - args:  
-    - channelName    - channel name
-    - chaincodeName  - chaincode name
-    - roleName       - role
-    - operationName  - operation name, can be empty
-    - addressEncoded - user address
-  - return value:  
-    - proto-message [HaveRight](#haveright) - if the operation is successful
-    - error - if there is an error
-4. Getting a list of existing user rights  
-  `getAccountAllRights(args []string)`
-  - args:  
-    - addressEncoded - user address
-  - return value:
-    - proto-message [AccountRights](#accountrights) - if the operation is successful
-    - error - if there is an error
-5. Getting a list of addresses for which there is permission for an operation with a role in a channel and chaincode  
-  `getOperationAllRights(args []string)`
-  - args:  
-    - channelName    - channel name
-    - chaincodeName  - chaincode name
-    - roleName       - role
-    - operationName  - operation name, can be empty
-  - return value:
-    - proto-message [Accounts](#accounts) - if the operation is successful
-    - error - if there is an error
-
-### Storage
-
-The functionality is implemented based on the ACL chaincode, and the data in the ledger is stored as follows:
-- Under the key *acl_access_matrix_operation**, a list of addresses is stored in the format of the proto-message [Accounts](#accounts), which have permission to perform an operation with a specific role in a specific channel in a specific chaincode.
-  `*` is the continuation of the key, which consists of: `"channel name" + "chaincode name" + "role" + "operation name"`, and the operation name can be empty.  
-  Examples:
-    - `acl_access_matrix_operationBAIVT.BARissuer` - list of allowed addresses for channel `BA`, chaincode `IVT.BAR`, role `issuer`, operation not specified;
-    - `acl_access_matrix_operationnmmmultiNMMMULTIissuercreateEmissionApp` - list of allowed addresses for channel `nmmmulti`, chaincode `NMMMULTI`, role `issuer`, operation `createEmissionApp`;
-- Under the key *acl_access_matrix_address**, a list of permissions is stored in the format of the proto-message [AccountRights](#accountrights).
-  `*` is the continuation of the key, which consists of `"user address"`.  
-  Examples:
-    - `acl_access_matrix_address2datxk5TmB1spSNn9enVo11dcpgmUoSBSqCx5cCGoWq8qTbZog` - list of permissions for the user with the address `2datxk5TmB1spSNn9enVo11dcpgmUoSBSqCx5cCGoWq8qTbZog`
-
-#### Accounts
-
-```protobuf
-syntax = "proto3";
-
-message Accounts {
-  repeated Address addresses = 1;
-}
-
-message Address {
-  string userID     = 1;
-  bytes address     = 2;
-  bool isIndustrial = 3;
-  bool isMultisig   = 4;
-}
+```
+-c '{"Args":[adminSKI,validatorBase58Ed25519PublicKey1, ..., validatorBase58Ed25519PublicKeyN]}'
 ```
 
-#### AccountRights
+**Args:**
 
-```protobuf
-syntax = "proto3";
+    [0]   adminSKI                           - SKI of administrator
+    [1]   validatorsCount                    - number of validators (n)
+    [2]   validatorBase58Ed25519PublicKey1   - validator 1   
+    [n]   validatorBase58Ed25519PublicKeyN   - validator n   
 
-message AccountRights {
-  Address address       = 1;
-  repeated Right rights = 2;
-}
+#### User Management
 
-message Right {
-  string channelName   = 1;
-  string chaincodeName = 2;
-  string roleName      = 3;
-  string operationName = 4;
-  Address address      = 5;
-  HaveRight haveRight  = 6;
-}
+- **AddUser** - adds user by public key to the platform
+  - Not batch tx
+  - **Args**:
+    - args[0] - encoded base58 user publicKey
+    - args[1] - Know Your Client (KYC) hash
+    - args[2] - user identifier
+    - args[3] - user can do industrial operation or not (boolean)
+- **ChangePublicKey** - changes public key for user
+  - Not batch tx
+  - **Args**:
+    - arg[0] - user's address (base58check)
+    - arg[1] - reason (string)
+    - arg[2] - reason ID (string)
+    - arg[3] - new key (base58)
+    - arg[4] - nonce
+    - arg[5:] - public keys and signatures of validators
+- **ChangePublicKeyWithBase58Signature** - 
+  - Not batch tx
+  - **Args**:
+    - arg[0] - user's address (base58check)
+    - arg[1] - reason (string)
+    - arg[2] - reason ID (string)
+    - arg[3] - new key (base58)
+    - arg[4] - nonce
+    - arg[5:] - public keys and signatures of validators
+- **Setkyc** - updates KYC for address
+  - Not batch tx
+  - **Args**:
+    - arg[0] - address
+    - arg[1] - KYC hash
+    - arg[2] - nonce
+    - arg[3:] - public keys and signatures of validators
+- **SetAccountInfo** - sets account info (KYC hash, graylist and blacklist attributes) for address
+  - Not batch tx
+  - **Args**:
+    - arg[0] - address
+    - arg[1] - KYC hash
+    - arg[2] - is address gray listed? ("true" or "false")
+    - arg[3] - is address black listed? ("true" or "false")
+- **GetAccountInfo** - returns json-serialized account info (KYC hash, graylist and blacklist attributes) for address
+  - Not batch tx
+  - **Args**:
+    - arg[0] - address
+- **CheckKeys** - returns AclResponse with account indo fetched by public keys
+  - Not batch tx
+  - **Args**:
+    - args[0] - base58 encoded public key. if multisign is used, then public keys separated by `/`
+- **CheckAddress** - checks if the address is graylisted
+  - Not batch tx
+  - **Args**:
+    - args[0] - base58-encoded address
+- **GetAddresses** - fetch all user addresses in json-serialized format with pagination
+  - Not batch tx
+  - **Args**:
+    - args[0] - page size of pagination
+    - args[1] - bookmark
 
-message Address {
-  string userID     = 1;
-  bytes address     = 2;
-  bool isIndustrial = 3;
-  bool isMultisig   = 4;
-}
+#### Access Matrix
 
-message HaveRight {
-  bool haveRight = 1;
-}
-```
+- **AddRights** - adds rights to the access matrix
+  - Not batch tx
+  - **Args**:
+    - args[0] -> channelName
+    - args[1] -GetOperationAllRights> chaincodeName
+    - args[2] -> roleName
+    - args[3] -> operationName
+    - args[4] -> addressEncoded
+- **RemoveRights** - removes rights from the access matrix
+  - Not batch tx
+  - **Args**:
+    - args[0] -> channelName
+    - args[1] -GetOperationAllRights> chaincodeName
+    - args[2] -> roleName
+    - args[3] -> operationName
+    - args[4] -> addressEncoded
+- **GetAccountOperationRight** - checks address have rights for the operation 
+  - Not batch tx
+  - **Args**:
+    - args[0] -> channelName
+    - args[1] -GetOperationAllRights> chaincodeName
+    - args[2] -> roleName
+    - args[3] -> operationName
+    - args[4] -> addressEncoded
+- **GetAccountAllRights** - returns all operations specified account have right to execute
+  - Not batch tx
+  - **Args**:
+    - args[0] -> addressEncoded
+- **GetOperationAllRights** - returns all accounts having right to execute specified operation
+  - Not batch tx
+  - **Args**:
+    - args[0] -> channelName
+    - args[1] -GetOperationAllRights> chaincodeName
+    - args[2] -> roleName
+    - args[3] -> operationName
 
-#### HaveRight
+#### Black/Gray lists management
 
-```protobuf
-syntax = "proto3";
+- **AddToList** - sets address to gray list or black list
+  - Not batch tx
+  - **Args**:
+    // arg[0] - address
+    // arg[1] - "gray" of "black"
+- **DelFromList** - removes address from gray list or 'black list
+  - Not batch tx
+  - **Args**:
+    // arg[0] - address
+    // arg[1] - "gray" of "black"
 
-message HaveRight {
-  bool haveRight = 1;
-}
-```
-
-All existing messages are stored in `foundation, proto/batch.proto`
+#### Multi Signature
+- AddMultisig - creates multi-signature address which operates when N of M signatures is present
+  - Not batch tx
+  - **Args**:
+    - args[0] request id
+    - args[1] chaincodeName acl
+    - args[2] channelID acl
+    - args[3] N number of signature policy (number of sufficient signatures), M part is derived from number of public keys
+    - args[4] nonce
+    - args[5:] are the public keys and signatures base58 of all participants in the multi-wallet
+    - and signatures confirming the agreement of all participants with the signature policy
+- ChangeMultisigPublicKey - changes public key of multisig member
+  - Not batch tx
+  - **Args**:
+    - arg[0] - multisig address (base58check)
+    - arg[1] - old key (base58)
+    - arg[2] - new key (base58)
+    - arg[3] - reason (string)
+    - arg[4] - reason ID (string)
+    - arg[5] - nonce
+    - arg[6:] - public keys and signatures of validators
 
 ## Links
 

@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"gitlab.n-t.io/core/library/chaincode/acl/cc/compositekey"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -29,7 +30,7 @@ func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 	if err != nil {
 		return shim.Error(fmt.Sprintf("invalid address, %s", err))
 	}
-	ckeyInfo, err := stub.CreateCompositeKey(accInfoPrefix, []string{addrEncoded})
+	ckeyInfo, err := compositekey.AccountInfo(stub, addrEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -60,7 +61,7 @@ func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 		return shim.Error(fmt.Sprintf("failed to parse blacklist attribute, %s", err))
 	}
 
-	if err = c.checkCert(stub); err != nil {
+	if err = c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
 	}
 
@@ -69,7 +70,7 @@ func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 		return shim.Error(err.Error())
 	}
 
-	ckey, err := stub.CreateCompositeKey(accInfoPrefix, []string{addrEncoded})
+	ckey, err := compositekey.AccountInfo(stub, addrEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -99,7 +100,7 @@ func (c *ACL) GetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 }
 
 func getAccountInfo(stub shim.ChaincodeStubInterface, address string) (*pb.AccountInfo, error) {
-	ckeyInfo, err := stub.CreateCompositeKey(accInfoPrefix, []string{address})
+	ckeyInfo, err := compositekey.AccountInfo(stub, address)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +125,7 @@ func checkBlocked(stub shim.ChaincodeStubInterface, encodedBase58PublicKey strin
 	hashed := sha3.Sum256(decodedPublicKey)
 	pkeys := hex.EncodeToString(hashed[:])
 
-	pkToAddrCompositeKey, err := stub.CreateCompositeKey(addressPrefix, []string{pkeys})
+	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, pkeys)
 	if err != nil {
 		return err
 	}

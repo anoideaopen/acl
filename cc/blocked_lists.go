@@ -3,20 +3,18 @@ package cc
 import (
 	"fmt"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"gitlab.n-t.io/core/library/chaincode/acl/cc/compositekey"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 )
 
-// ListType is a type of list
 type ListType string
 
 const (
-	// BlackList is a list of blacklisted addresses
 	BlackList ListType = "black"
-	// GrayList is a list of graylisted addresses
-	GrayList ListType = "gray"
+	GrayList  ListType = "gray"
 )
 
 func (lt ListType) String() string {
@@ -33,7 +31,7 @@ func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) peer.Re
 		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: address, attribute ('gray' or 'black')", argsNum))
 	}
 
-	if err := c.checkCert(stub); err != nil {
+	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf("unauthorized: %s", err.Error()))
 	}
 
@@ -48,7 +46,7 @@ func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	addrArg := args[0]
 	color := ListType(args[1])
 
-	if err := changeListStatus(stub, addrArg, color, true); err != nil {
+	if err := updateListStatus(stub, addrArg, color, true); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -66,7 +64,7 @@ func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) peer.
 			"attribute ('gray' or 'black')", argsNum))
 	}
 
-	if err := c.checkCert(stub); err != nil {
+	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf("unauthorized: %s", err.Error()))
 	}
 
@@ -81,57 +79,63 @@ func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) peer.
 	addrArg := args[0]
 	color := ListType(args[1])
 
-	if err := changeListStatus(stub, addrArg, color, false); err != nil {
+	if err := updateListStatus(stub, addrArg, color, false); err != nil {
 		return shim.Error(err.Error())
 	}
 
 	return shim.Success(nil)
 }
 
-func changeListStatus(stub shim.ChaincodeStubInterface, addr string, color ListType, status bool) error {
-	cKey, err := stub.CreateCompositeKey(accInfoPrefix, []string{addr})
+// changeListStatus updates the graylist or blacklist status of an address in the account information.
+func updateListStatus(
+	stub shim.ChaincodeStubInterface,
+	base58Address string,
+	listType ListType,
+	newStatus bool,
+) error {
+	accountInfoCompositeKey, err := compositekey.AccountInfo(stub, base58Address)
 	if err != nil {
 		return err
 	}
-	info, err := getAccountInfo(stub, addr)
+	accountInfo, err := getAccountInfo(stub, base58Address)
 	if err != nil {
 		return err
 	}
 
-	switch color {
+	switch listType {
 	case GrayList:
-		info.GrayListed = status
+		accountInfo.GrayListed = newStatus
 	case BlackList:
-		info.BlackListed = status
+		accountInfo.BlackListed = newStatus
 	}
 
-	infoMarshaled, err := proto.Marshal(info)
+	marshaledAccountInfo, err := proto.Marshal(accountInfo)
 	if err != nil {
 		return err
 	}
 
-	return stub.PutState(cKey, infoMarshaled)
+	return stub.PutState(accountInfoCompositeKey, marshaledAccountInfo)
 }
 
-// checkGrayList get address from ledger and check it is in gray list
-func checkGrayList(stub shim.ChaincodeStubInterface, addrEncoded string) error {
-	accInfoKey, err := stub.CreateCompositeKey(accInfoPrefix, []string{addrEncoded})
+// verifyAddressNotGrayListed checks if the given base58-encoded address is not on the gray list.
+func verifyAddressNotGrayListed(stub shim.ChaincodeStubInterface, base58EncodedAddress string) error {
+	accountInfoCompositeKey, err := compositekey.AccountInfo(stub, base58EncodedAddress)
 	if err != nil {
 		return err
 	}
 
-	accInfo, err := stub.GetState(accInfoKey)
+	accountInfoBytes, err := stub.GetState(accountInfoCompositeKey)
 	if err != nil {
 		return err
 	}
 
-	var info pb.AccountInfo
-	if err = proto.Unmarshal(accInfo, &info); err != nil {
+	var accountInfo pb.AccountInfo
+	if err = proto.Unmarshal(accountInfoBytes, &accountInfo); err != nil {
 		return err
 	}
 
-	if info.GrayListed {
-		return fmt.Errorf("address %s is graylisted", addrEncoded)
+	if accountInfo.GrayListed {
+		return fmt.Errorf("address %s is graylisted", base58EncodedAddress)
 	}
 	return nil
 }

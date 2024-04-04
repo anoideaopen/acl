@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -48,7 +48,7 @@ func TestSetKycTrue(t *testing.T) {
 func TestSetKycEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("https://github.com/atomyze-foundation/-/issues/3")
+	t.Skip("https://gitlab.n-t.io/core/library/chaincode/acl/-/issues/3")
 	s := &serieSetKyc{
 		testAddress: "",
 		newKYC:      "newKychash",
@@ -89,8 +89,8 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *serieSetKyc) peer.Respon
 
 	// change KYC
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
-	pKeys := make([]string, 0, len(MockValidatorsKeys))
-	for pubkey := range MockValidatorsKeys {
+	pKeys := make([]string, 0, len(MockValidatorKeys))
+	for pubkey := range MockValidatorKeys {
 		pKeys = append(pKeys, pubkey)
 	}
 
@@ -102,7 +102,7 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *serieSetKyc) peer.Respon
 	vPkeys := make([][]byte, 0, len(pKeys))
 	vSignatures := make([][]byte, 0, len(pKeys))
 	for _, pubkey := range pKeys {
-		skey := MockValidatorsKeys[pubkey]
+		skey := MockValidatorKeys[pubkey]
 		vPkeys = append(vPkeys, []byte(pubkey))
 		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(skey), message[:]))))
 	}

@@ -58,22 +58,27 @@ func checkKeysArr(keysArr []string) error {
 	return nil
 }
 
-// checkDuplicates checks string array for duplicates and returns duplicates if exists.
-func checkDuplicates(arr []string) (duplicateBuffer []string) {
+// checkDuplicates checks a string array for duplicates.
+// It returns an error if duplicates are found, indicating the first duplicated item encountered.
+func checkDuplicates(arr []string) error {
+	// itemsMap stores unique items encountered so far.
 	itemsMap := make(map[string]struct{})
+
 	for _, item := range arr {
+		// If the item is already present in the map, return an error indicating duplication.
 		if _, ok := itemsMap[item]; ok {
-			if !stringSliceContains(duplicateBuffer, item) {
-				duplicateBuffer = append(duplicateBuffer, item)
-			}
-		} else {
-			itemsMap[item] = struct{}{}
+			return fmt.Errorf("found duplicated iteam '%s'", item)
 		}
+
+		// Store the item in the map to mark its presence.
+		itemsMap[item] = struct{}{}
 	}
-	return
+
+	// No duplicates found, return nil.
+	return nil
 }
 
-func stringSliceContains(arr []string, item string) bool {
+func stringSliceContains(arr []string, item string) bool { //nolint:unused
 	for _, found := range arr {
 		if item == found {
 			return true
@@ -102,7 +107,6 @@ func keyStringToSortedHashedHex(keys []string) (string, error) {
 	return hex.EncodeToString(hashed[:]), nil
 }
 
-// DecodeAndSort decodes base58 public keys and sorts them
 func DecodeAndSort(item string) ([][]byte, error) {
 	const delimiter = "/"
 	publicKeys := strings.Split(item, delimiter)

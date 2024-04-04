@@ -6,6 +6,7 @@ import (
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -38,4 +39,36 @@ func TestDecodeBase58PublicKey(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expected, key)
 	})
+}
+
+func TestCheckDuplicates(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         []string
+		isErrExpected bool
+	}{
+		{"NoDuplicates", []string{"a", "b", "c"}, false},
+		{"SingleDuplicate", []string{"a", "b", "c", "a"}, true},
+		{"MultipleDuplicates", []string{"a", "b", "c", "a", "b", "c"}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := checkDuplicates(tt.input)
+			if tt.isErrExpected {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
+func BenchmarkCheckDuplicates(b *testing.B) {
+	input := []string{"a", "b", "c", "a", "b", "c", "b", "c", "a", "b", "c", "b", "c", "a", "b", "c"}
+	var r []string
+	for i := 0; i < 1000; i++ {
+		r = append(r, input...)
+	}
+	for i := 0; i < b.N; i++ {
+		_ = checkDuplicates(r)
+	}
 }

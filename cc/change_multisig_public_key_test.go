@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -150,9 +150,9 @@ func changeMultisigPublicKey(t *testing.T, ser *serieChangeMultisigPublicKey) {
 	assert.NoError(t, err)
 	stub.MockInit("0", testInitArgs)
 
-	pubKeys := make([]string, 0, len(MockValidatorsKeys))
-	privKeys := make([]string, 0, len(MockValidatorsKeys))
-	for pubKey, privKey := range MockValidatorsKeys {
+	pubKeys := make([]string, 0, len(MockValidatorKeys))
+	privKeys := make([]string, 0, len(MockValidatorKeys))
+	for pubKey, privKey := range MockValidatorKeys {
 		pubKeys = append(pubKeys, pubKey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -264,8 +264,8 @@ func changeMultisigPublicKey(t *testing.T, ser *serieChangeMultisigPublicKey) {
 		decodedMessage := sha3.Sum256([]byte(strings.Join(append(srcArgs, pksOfValidators...), "")))
 		signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
 
-		mockValidatorsPublicKeys := make([]string, 0, len(MockValidatorsKeys))
-		for pubkey := range MockValidatorsKeys {
+		mockValidatorsPublicKeys := make([]string, 0, len(MockValidatorKeys))
+		for pubkey := range MockValidatorKeys {
 			mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubkey)
 		}
 		for i, vpk := range pksOfValidators {

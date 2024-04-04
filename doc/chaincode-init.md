@@ -4,12 +4,13 @@ ACL chaincode initialization
 
 ## TOC
 
-- [Chaincode init](#-chaincode-init)
-  - [TOC](#-toc)
-  - [Description](#-description)
-    - [Init parameters](#-init-parameters)
-    - [Examples](#-examples)
-  - [Links](#-links)
+- [Chaincode init](#chaincode-init)
+  - [TOC](#toc)
+  - [Description](#description)
+    - [Init parameters](#init-parameters)
+    - [Examples](#examples)
+  - [Links](#links)
+  - [License](#license)
 
 ## Description
 
@@ -52,4 +53,6 @@ Example, 2 validators:
 
 ## Links
 
-* No
+## License
+
+Apache-2.0

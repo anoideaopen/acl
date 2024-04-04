@@ -9,12 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/atomyze-foundation/foundation/mock"
-	mstub "github.com/atomyze-foundation/foundation/mock/stub"
-	"github.com/atomyze-foundation/foundation/token"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gitlab.n-t.io/core/library/go/foundation/v3/mock"
+	mstub "gitlab.n-t.io/core/library/go/foundation/v3/mock/stub"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
+	"gitlab.n-t.io/core/library/go/foundation/v3/test/unit/fixtures_test"
+	"gitlab.n-t.io/core/library/go/foundation/v3/token"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -134,11 +137,22 @@ func TestEmitTransfer(t *testing.T) {
 	aclCC.MockInit("0", testInitArgs)
 	ledgerMock.SetACL(aclCC)
 
-	ledgerMock.NewChainCode("fiat", NewFiatToken(token.BaseToken{
-		Name:     "fiat",
-		Symbol:   "FIAT",
-		Decimals: 0,
-	}), nil, nil, owner.Address())
+	cfg := &pb.Config{
+		Contract: &pb.ContractConfig{
+			Symbol:   "FIAT",
+			RobotSKI: fixtures_test.RobotHashedCert,
+		},
+		Token: &pb.TokenConfig{
+			Name:     "FIAT",
+			Decimals: uint32(0),
+			Issuer:   &pb.Wallet{Address: owner.Address()},
+		},
+	}
+
+	cfgBytes, _ := json.Marshal(cfg)
+
+	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	require.Empty(t, init)
 
 	user := ledgerMock.NewWallet()
 
@@ -182,12 +196,22 @@ func TestMultisigEmitTransfer(t *testing.T) {
 
 	owner.Invoke("acl", fnAddMultisig, append(sourceMsg[1:], signaturesString...)...)
 
-	fiat := NewFiatToken(token.BaseToken{
-		Name:   "fiat token",
-		Symbol: "FIAT",
-	})
+	cfg := &pb.Config{
+		Contract: &pb.ContractConfig{
+			Symbol:   "FAIT",
+			RobotSKI: fixtures_test.RobotHashedCert,
+		},
+		Token: &pb.TokenConfig{
+			Name:     "FIAT",
+			Decimals: uint32(0),
+			Issuer:   &pb.Wallet{Address: owner.Address()},
+		},
+	}
+	cfgBytes, _ := json.Marshal(cfg)
 
-	ledgerMock.NewChainCode("fiat", fiat, nil, nil, owner.Address())
+	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	require.Empty(t, init)
+
 	err = ledgerMock.GetStub("fiat").SetCreatorCert(testCreatorMSP, cert.Raw)
 	assert.NoError(t, err)
 
@@ -243,11 +267,22 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 
 	owner.Invoke("acl", "addMultisig", append(sourceMsg[1:], signaturesString...)...)
 
-	fiat := NewFiatToken(token.BaseToken{
-		Name:   "fiat token",
-		Symbol: "FIAT",
-	})
-	ledgerMock.NewChainCode("fiat", fiat, nil, nil, owner.Address())
+	cfg := &pb.Config{
+		Contract: &pb.ContractConfig{
+			Symbol:   "FIAT",
+			RobotSKI: fixtures_test.RobotHashedCert,
+		},
+		Token: &pb.TokenConfig{
+			Name:     "FIAT",
+			Decimals: uint32(0),
+			Issuer:   &pb.Wallet{Address: owner.Address()},
+		},
+	}
+	cfgBytes, _ := json.Marshal(cfg)
+
+	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	require.Empty(t, init)
+
 	err = ledgerMock.GetStub("fiat").SetCreatorCert(testCreatorMSP, cert.Raw)
 	assert.NoError(t, err)
 
@@ -261,9 +296,9 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	// 										now owner.PubKeys()[0] is another key (after owner.ChangeKeysFor() invoke)
 	owner.Invoke("acl", "addUser", base58.Encode(owner.PubKeys()[0]), "kychash", "testUserID", "true")
 	// get new public keys
-	validatorsPubKeys := make([]string, 0, len(MockValidatorsKeys))
-	validatorsSecretKeys := make([]string, 0, len(MockValidatorsKeys))
-	for pubkey, privkey := range MockValidatorsKeys {
+	validatorsPubKeys := make([]string, 0, len(MockValidatorKeys))
+	validatorsSecretKeys := make([]string, 0, len(MockValidatorKeys))
+	for pubkey, privkey := range MockValidatorKeys {
 		validatorsPubKeys = append(validatorsPubKeys, pubkey)
 		validatorsSecretKeys = append(validatorsSecretKeys, privkey)
 	}

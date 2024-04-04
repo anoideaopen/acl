@@ -6,12 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
+	"gitlab.n-t.io/core/library/chaincode/acl/cc/compositekey"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -24,7 +25,7 @@ import (
 // args[4] nonce
 // args[5:] are the public keys and signatures base58 of all participants in the multi-wallet
 // and signatures confirming the agreement of all participants with the signature policy
-func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen
+func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen,gocognit
 	argsNum := len(args)
 	const minArgsCount = 7
 	const chaincodeName = "acl"
@@ -34,7 +35,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 			"N (signatures required), nonce, public keys, signatures", argsNum))
 	}
 
-	if err := c.checkCert(stub); err != nil {
+	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
 	}
 
@@ -55,21 +56,23 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to parse N, error: %s", err.Error()))
 	}
+	err = validateMinSignatures(N)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("addMultisigWithBase58Signature: failed to validate min signatures: %v", err))
+	}
 
 	nonce := args[4]
-
-	PksAndSignatures := args[5:]
-
-	pks := PksAndSignatures[:len(PksAndSignatures)/2]
-	signatures := PksAndSignatures[len(PksAndSignatures)/2:]
-
-	// check all members signed
-	if len(pks) != len(signatures) {
-		return shim.Error(fmt.Sprintf("the number of signatures (%d) does not match the number of public keys (%d)", len(signatures), len(pks)))
+	pksAndSignatures := args[5:]
+	lenPksAndSignatures := len(pksAndSignatures)
+	if lenPksAndSignatures%2 != 0 {
+		return shim.Error(fmt.Sprintf("uneven number of public keys and signatures provided: %d", lenPksAndSignatures))
 	}
+	pks := pksAndSignatures[:lenPksAndSignatures/2]
+	signatures := pksAndSignatures[lenPksAndSignatures/2:]
 
 	pksNumber := len(pks)
 	signaturesNumber := len(signatures)
+
 	// number of pks should be equal to number of signatures
 	if pksNumber != signaturesNumber {
 		return shim.Error(fmt.Sprintf("multisig signature policy can't be created, number of public keys (%d) does not match number of signatures (%d)", pksNumber, signaturesNumber))
@@ -122,7 +125,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 	}
 
 	// check multisig address doesn't already exist
-	pkToAddrCompositeKey, err := stub.CreateCompositeKey(addressPrefix, []string{hashedHexKeys})
+	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, hashedHexKeys)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -140,7 +143,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.Address.AddrString(), hashedHexKeys))
 	}
 
-	addrToPkCompositeKey, err := stub.CreateCompositeKey(pkPrefix, []string{addr})
+	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -184,8 +187,8 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 }
 
 func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatures []string) error {
-	if signDuplicates := checkDuplicates(signatures); len(signDuplicates) > 0 {
-		return fmt.Errorf(ErrDuplicateSignatures, signDuplicates)
+	if err := checkDuplicates(signatures); err != nil {
+		return fmt.Errorf(ErrDuplicateSignatures, err)
 	}
 
 	strPubKeys := make([]string, 0, len(pks))
@@ -193,8 +196,8 @@ func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatu
 		strPubKeys = append(strPubKeys, base58.Encode(pk))
 	}
 
-	if pkDublicates := checkDuplicates(strPubKeys); len(pkDublicates) > 0 {
-		return fmt.Errorf(ErrDuplicatePubKeys, pkDublicates)
+	if err := checkDuplicates(strPubKeys); err != nil {
+		return fmt.Errorf(ErrDuplicatePubKeys, err)
 	}
 
 	countSigned := 0
@@ -209,6 +212,18 @@ func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatu
 
 	if countSigned < n {
 		return errors.Errorf("%d of %d signed", countSigned, n)
+	}
+	return nil
+}
+
+// minSignaturesRequired defines the minimum number of signatures required for a multisignature transaction.
+const minSignaturesRequired = 1
+
+// validateMinSignatures checks that the number of required signatures is greater than the minimum allowed value.
+// It returns an error if the number of required signatures is less than or equal to the minimum allowed value.
+func validateMinSignatures(n int) error {
+	if n <= minSignaturesRequired {
+		return fmt.Errorf("invalid N '%d', must be greater than %d for multisignature transactions", n, minSignaturesRequired)
 	}
 	return nil
 }

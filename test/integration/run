@@ -1,0 +1,54 @@
+#!/bin/sh
+
+cd "/test" || exit 1
+
+echo "-- setup .netrc"
+export CGO_ENABLED=0
+echo "machine $CI_SERVER_HOST login gitlab-ci-token password $CI_JOB_TOKEN" > ~/.netrc
+go env -w "GOPRIVATE=$CI_SERVER_HOST/*"
+
+echo "-- vendor chaincodes"
+cd "/chaincode/public/acl/acl/"
+       go mod tidy
+       go mod vendor
+cd -
+
+echo "-- deploying chaincode to sandbox"
+rsync -a -v \
+       "/chaincode/public/" \
+       "/data/channel/public/"
+
+echo "-- waiting consistent state"
+include="/state/.include"
+err="yes"
+for i in $(seq 60)
+do
+       echo "-- waiting environment variables: $i $(date)"
+       if [ -r "$include" ]
+       then
+              . "$include" && err="no"
+              break
+       else
+              sleep 10
+       fi
+done
+[ "$err" = "yes" ] && exit 1
+
+for i in $(seq 60)
+do
+       echo "-- waiting hlf-proxy: $i $(date)"
+       if wget -O - "$HLF_PROXY_URL/metrics" | grep -q "HELP"
+       then
+              break
+       else
+              sleep 10
+       fi
+done
+[ "$err" = "yes" ] && exit 1
+
+echo "-- execute tests"
+gotestsum --junitfile /report/report.xml -- --coverprofile=/report/integration_coverage.out ./... || err="yes"
+
+echo "-- generate report"
+allure generate /report/allure-results --clean -o /report/allure-report
+[ "$err" = "yes" ] && exit 1 || exit 0

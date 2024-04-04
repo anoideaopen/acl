@@ -1,17 +1,20 @@
 package cc
 
 import (
+	"encoding/json"
 	"testing"
 
-	"github.com/atomyze-foundation/foundation/mock"
-	mstub "github.com/atomyze-foundation/foundation/mock/stub"
-	pb "github.com/atomyze-foundation/foundation/proto"
-	"github.com/atomyze-foundation/foundation/token"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gitlab.n-t.io/core/library/go/foundation/v3/mock"
+	mstub "gitlab.n-t.io/core/library/go/foundation/v3/mock/stub"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
+	"gitlab.n-t.io/core/library/go/foundation/v3/test/unit/fixtures_test"
+	"gitlab.n-t.io/core/library/go/foundation/v3/token"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -263,11 +266,22 @@ func TestAclCalledFromChaincode(t *testing.T) {
 		ledgerMock.SetACL(aclCC)
 	})
 
-	ledgerMock.NewChainCode("fiat", NewFiatToken(token.BaseToken{
-		Name:     "fiat",
-		Symbol:   "FIAT",
-		Decimals: 0,
-	}), nil, nil, owner.Address())
+	cfg := &pb.Config{
+		Contract: &pb.ContractConfig{
+			Symbol:   "FIAT",
+			RobotSKI: fixtures_test.RobotHashedCert,
+		},
+		Token: &pb.TokenConfig{
+			Name:     "FIAT",
+			Decimals: uint32(0),
+			Issuer:   &pb.Wallet{Address: owner.Address()},
+		},
+	}
+
+	cfgBytes, _ := json.Marshal(cfg)
+
+	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	require.Empty(t, init)
 
 	owner.Invoke("acl", "addUser", base58.Encode(owner.PubKey()), "123", "testuser", "true")
 	user := ledgerMock.NewWallet()

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -139,9 +139,9 @@ func TestAddMultisigWithBase58SignaturePubkeyWithSpesialSymbols(t *testing.T) {
 func AddMultisigWithBase58Signature(t *testing.T, ser *serieAddMultisigWithBase58Signature) {
 	stub := StubCreate(t)
 
-	pubKeys := make([]string, 0, len(MockValidatorsKeys))
-	privKeys := make([]string, 0, len(MockValidatorsKeys))
-	for pubkey, privKey := range MockValidatorsKeys {
+	pubKeys := make([]string, 0, len(MockValidatorKeys))
+	privKeys := make([]string, 0, len(MockValidatorKeys))
+	for pubkey, privKey := range MockValidatorKeys {
 		pubKeys = append(pubKeys, pubkey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -222,9 +222,9 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 	assert.NoError(t, err)
 	stub.MockInit("0", testInitArgs)
 
-	pubKeys := make([]string, 0, len(MockValidatorsKeys))
-	privKeys := make([]string, 0, len(MockValidatorsKeys))
-	for pubkey, privKey := range MockValidatorsKeys {
+	pubKeys := make([]string, 0, len(MockValidatorKeys))
+	privKeys := make([]string, 0, len(MockValidatorKeys))
+	for pubkey, privKey := range MockValidatorKeys {
 		pubKeys = append(pubKeys, pubkey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -345,7 +345,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 				[]byte(nonce)),
 			pubKeysBytes...), signatures[1:]...))
 		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.Equal(t, "the number of signatures (3) does not match the number of public keys (2)", resp.Message)
+		assert.Equal(t, "uneven number of public keys and signatures provided: 5", resp.Message)
 	})
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {

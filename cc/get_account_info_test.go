@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 )
 
 type serieGetAccountInfo struct {

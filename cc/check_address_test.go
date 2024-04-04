@@ -3,13 +3,13 @@ package cc
 import (
 	"testing"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 )
 
 type serieCheckAddress struct {
@@ -59,7 +59,7 @@ func TestCheckAddressWrongAddress(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "no pub keys for address " + s.testAddress
+	errorMsg := "no public keys for address " + s.testAddress
 	s.SetError(errorMsg)
 
 	stub := StubCreate(t)
@@ -75,7 +75,7 @@ func TestCheckAddressWrongAddressSymbols(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "no pub keys for address " + s.testAddress
+	errorMsg := "no public keys for address " + s.testAddress
 	s.SetError(errorMsg)
 
 	stub := StubCreate(t)

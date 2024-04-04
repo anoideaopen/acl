@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/atomyze-foundation/cc/proto"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"gitlab.n-t.io/core/library/chaincode/acl/cc/proto"
 )
 
-// GetInitArgsFromState returns initial arguments from state
+const initStateKey = "__init"
+
 func GetInitArgsFromState(stub shim.ChaincodeStubInterface) (*proto.Args, error) {
 	data, err := stub.GetState(initStateKey)
 	if err != nil {

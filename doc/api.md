@@ -8,12 +8,8 @@ ACL API
   - [TOC](#toc)
   - [Description](#description)
   - [API](#api)
-    - [Init chaincode](#init-chaincode)
-      - [User Management](#user-management)
-      - [Access Matrix](#access-matrix)
-      - [Black/Gray lists management](#blackgray-lists-management)
-      - [Multi Signature](#multi-signature)
   - [Links](#links)
+  - [License](#license)
 
 ## Description
 
@@ -47,7 +43,7 @@ ACL API
   - Not batch tx
   - **Args**:
     - arg[0] - user's address (base58check)
-    - arg[1] - reason (string)
+    - arg[1] - reason (string)А
     - arg[2] - reason ID (string)
     - arg[3] - new key (base58)
     - arg[4] - nonce
@@ -55,12 +51,15 @@ ACL API
 - **ChangePublicKeyWithBase58Signature** - 
   - Not batch tx
   - **Args**:
-    - arg[0] - user's address (base58check)
-    - arg[1] - reason (string)
-    - arg[2] - reason ID (string)
-    - arg[3] - new key (base58)
-    - arg[4] - nonce
-    - arg[5:] - public keys and signatures of validators
+    - arg[0] - Request ID
+    - arg[1] - Chaincode name
+    - arg[2] - Channel ID
+    - arg[3] - User's address (base58check)
+    - arg[4] - Reason (string)
+    - arg[5] - Reason ID (string)
+    - arg[6] - New key (base58)
+    - arg[7] - Nonce
+    - arg[8 and onwards] - List of validators' public keys and their corresponding signatures
 - **Setkyc** - updates KYC for address
   - Not batch tx
   - **Args**:
@@ -168,4 +167,8 @@ ACL API
 
 ## Links
 
-* No
+* [legacy documentation](https://nwty.atlassian.net/wiki/spaces/ATMCORE/pages/3704182/ACL)
+
+## License
+
+Apache-2.0

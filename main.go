@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	acl "github.com/atomyze-foundation/cc"
+	acl "github.com/anoideaopen/acl/cc"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
 

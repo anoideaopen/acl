@@ -20,6 +20,7 @@ import (
 // ACL API Functions
 const (
 	fnAddUser                        = "addUser"
+	fnGetUser                        = "getUser"
 	fnAddMultisig                    = "addMultisig"
 	fnAddMultisigWithBase58Signature = "addMultisigWithBase58Signature"
 	fnAddToList                      = "addToList"
@@ -28,6 +29,8 @@ const (
 	fnGetAccInfoFn                   = "getAccountInfo"
 	fnChangePublicKey                = "changePublicKey"
 	fnSetKYC                         = "setkyc"
+	fnAddAdditionalKey               = "addAdditionalKey"
+	fnRemoveAdditionalKey            = "removeAdditionalKey"
 )
 
 // Access Matrix ACL API Functions
@@ -63,8 +66,8 @@ var (
 	userCert  = "-----BEGIN CERTIFICATE-----\nMIICSDCCAe+gAwIBAgIQAO3rcbDmH/0f1DWQgKhYZTAKBggqhkjOPQQDAjCBhzEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xIzAhBgNVBAoTGmF0b215emUudWF0LmRsdC5hdG9teXplLmNoMSYw\nJAYDVQQDEx1jYS5hdG9teXplLnVhdC5kbHQuYXRvbXl6ZS5jaDAeFw0yMDEwMTMw\nODU2MDBaFw0zMDEwMTEwODU2MDBaMHYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpD\nYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMQ8wDQYDVQQLEwZjbGll\nbnQxKTAnBgNVBAMMIFVzZXIyQGF0b215emUudWF0LmRsdC5hdG9teXplLmNoMFkw\nEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEch+6dRC3SDIZhCSYNNAYE2T7eONz3m/i\n0oEM+/7VbHUJE+IkwZBmV8aCxC177t4OIcOBZuO4fLijnbgipf1cW6NNMEswDgYD\nVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0jBCQwIoAgUr9LnmWgd6lr\nvwMDrWzo2i3evMKAKgJJXyioX7tdCvgwCgYIKoZIzj0EAwIDRwAwRAIgV71buT7/\n2j+dznSFP1es5KJd1c5IANDzjR9cP5qd/kICIGTjJO5rcOv322nPWaTWr5XUtR3R\n/K0Elk9CQQBTzfqY\n-----END CERTIFICATE-----"
 )
 
-// MockValidatorsKeys stores pubkey -> secret key mapping
-var MockValidatorsKeys = map[string]string{
+// MockValidatorKeys stores pubkey -> secret key mapping
+var MockValidatorKeys = map[string]string{
 	"A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4": "3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr",
 	"5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5": "5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
 	"6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4": "3sK2wHWxU58kzAeFtShDMsPm5Qh74NAWgfwCmdKyzvp4npivEDDEp14WgQpg7KGaVNF7qWyyMvkKPzGddVkxagNN",
@@ -142,15 +145,15 @@ func getCert(certPath string) (*x509.Certificate, error) {
 	return parsed, nil
 }
 
-func getMockValidatorsSignsAndPublicKeys(pKeys []string, message []byte) (vPkeys [][]byte, vSignatures [][]byte) {
+func generateTestValidatorSignatures(pKeys []string, digest []byte) (vPkeys [][]byte, vSignatures [][]byte) {
 	for i, pubkey := range pKeys {
-		skey, ok := MockValidatorsKeys[pubkey]
+		skey, ok := MockValidatorKeys[pubkey]
 		if !ok {
 			skey = DuplicateMockValidatorsSecretKeys[i]
 			fmt.Println(skey)
 		}
 		vPkeys = append(vPkeys, []byte(pubkey))
-		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(skey), message))))
+		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(skey), digest))))
 	}
 	return
 }

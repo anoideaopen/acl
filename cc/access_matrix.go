@@ -3,10 +3,10 @@ package cc
 import (
 	"fmt"
 
-	pb "github.com/atomyze-foundation/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 )
 
 // matrix keys
@@ -41,7 +41,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 		return shim.Error(errMsg)
 	}
 
-	if err := c.checkCert(stub); err != nil {
+	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(ErrUnauthorized+": %s", err.Error()))
 	}
 
@@ -67,7 +67,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 		return shim.Error(ErrEmptyAddress)
 	}
 
-	address, err := c.getAddressFromString(stub, addressEncoded)
+	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -181,7 +181,7 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 		return shim.Error(errMsg)
 	}
 
-	if err := c.checkCert(stub); err != nil {
+	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(ErrUnauthorized+": %s", err.Error()))
 	}
 
@@ -191,7 +191,7 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 	operationName := args[3]
 	addressEncoded := args[4]
 
-	address, err := c.getAddressFromString(stub, addressEncoded)
+	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -316,7 +316,7 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 		return shim.Error(ErrEmptyAddress)
 	}
 
-	address, err := c.getAddressFromString(stub, addressEncoded)
+	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -378,7 +378,7 @@ func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []strin
 		return shim.Error(ErrEmptyAddress)
 	}
 
-	address, err := c.getAddressFromString(stub, addressEncoded)
+	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -483,7 +483,7 @@ func (c *ACL) isCalledFromChaincodeOrAdmin(stub shim.ChaincodeStubInterface) (bo
 	}
 
 	// called by admin check
-	if err = c.checkCert(stub); err != nil {
+	if err = c.verifyAccess(stub); err != nil {
 		if err.Error() == ErrCallerNotAdmin {
 			return false, nil
 		}

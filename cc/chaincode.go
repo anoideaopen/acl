@@ -6,20 +6,18 @@ import (
 	"reflect"
 	"runtime/debug"
 
-	"github.com/atomyze-foundation/cc/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"gitlab.n-t.io/core/library/chaincode/acl/cc/proto"
 )
 
 type (
-	// ACL - chaincode struct
 	ACL struct {
 		init *proto.Args
 	}
 	ccfunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
 
-// New - constructor for ACL chaincode
 func New() *ACL {
 	return &ACL{}
 }
@@ -40,13 +38,11 @@ func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
 	return shim.Success(nil)
 }
 
-// Account - account info
 type Account struct {
 	Address string   `json:"address"`
 	Balance *big.Int `json:"balance"`
 }
 
-// Invoke - method for invoke chaincode
 func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	defer func() {
 		if r := recover(); r != nil {
