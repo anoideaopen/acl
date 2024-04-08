@@ -1,0 +1,105 @@
+name: Go
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+env:
+  GO_VER: 1.21.8
+  GO_VER_OLD: 1.18.7
+
+jobs:
+  check-cyrillic-comments:
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - uses: actions/checkout@v4
+      - name: check cyrillic comments
+        run: |
+          grep --exclude-dir={.git,.github} -I -r --color -n -E "[А-Яа-яЁё]+" . && exit 1 || exit 0
+
+  validate-go:
+    needs:
+      - check-cyrillic-comments
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VER }}
+
+      - name: check go.mod
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod
+
+      - name: go fmt
+        run: |
+          go fmt ./...
+          git diff --exit-code
+
+  golangci-lint:
+    needs:
+      - validate-go
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - uses: actions/checkout@v4
+      - name: setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VER }}
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.57
+          args: --out-format=colored-line-number
+          skip-cache: true
+
+  go-test-unit:
+    needs:
+      - golangci-lint
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version:
+          - '1.21.8'
+          - '1.18.7'
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: unit test
+        run: |
+          go test -count 1 ./...
+
+  go-test-coverage:
+    needs:
+      - golangci-lint
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VER }}
+
+      - name: generate test coverage
+        run: |
+          go test ./... -coverprofile=./coverage.out
+
+      # https://github.com/vladopajic/go-test-coverage
+      - uses: vladopajic/go-test-coverage@v2.10.0
+        with:
+          config: ./.testcoverage.yml
+          profile: coverage.out
+          local-prefix: github.com/${{ github.repository }}
+
