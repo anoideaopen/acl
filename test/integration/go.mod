@@ -7,7 +7,7 @@ require (
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/ozontech/allure-go/pkg/allure v0.6.4
 	github.com/ozontech/allure-go/pkg/framework v0.6.19
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 )
 
 require (
