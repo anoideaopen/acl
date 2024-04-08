@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -23,7 +23,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	)
 	const additionalPublicKey = "4PEK3x3CZZtQC9AJtqCVt5RFJgjt5s6PqS7JL7cCboBfYJMiufaMFo4YCp7gKUQ8AXGM5Wb9i15617SS7hhr3P7M"
 
-	// Создание пользователя.
+	// User Creation.
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
@@ -36,7 +36,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	)
 	assert.Equal(t, int32(shim.OK), response.Status)
 
-	// Проверка ключа пользователя.
+	// User Key Verification.
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
@@ -46,7 +46,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	)
 	assert.Equal(t, int32(shim.OK), response.Status)
 
-	// Получение адреса пользователя.
+	// Getting the user's address.
 	var userInfo pb.AclResponse
 	assert.NoError(t, proto.Unmarshal(response.Payload, &userInfo))
 
@@ -59,7 +59,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 
 	nonce := strconv.Itoa(now)
 
-	// Составление сообщения для подписи.
+	// Composing a message to be signed.
 	messageElements := []string{
 		"addAdditionalKey",
 		userAddress,
@@ -69,14 +69,14 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	}
 	messageElements = append(messageElements, validatorPublicKeys...)
 
-	// Создание хеша сообщения.
+	// Creating a hash of the message.
 	messageToSign := []byte(strings.Join(messageElements, ""))
 	messageDigest := sha3.Sum256(messageToSign)
 
-	// Подписывание сообщения.
+	// Signing the message.
 	validatorKeys, validatorSignatures := generateTestValidatorSignatures(validatorPublicKeys, messageDigest[:])
 
-	// Добавление дополнительного ключа пользователя.
+	// Adding an additional user key.
 	args := [][]byte{
 		[]byte(fnAddAdditionalKey),
 		[]byte(userAddress),
@@ -90,7 +90,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke("0", args)
 	assert.Equal(t, int32(shim.OK), response.Status)
 
-	// Повторное добавление дополнительного ключа пользователя.
+	// Re-add an additional user key.
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
@@ -102,7 +102,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	)
 	assert.Equal(t, int32(shim.ERROR), response.Status)
 
-	// Проверка наличия дополнительного ключа пользователя.
+	// Checking for the presence of an additional user key.
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
@@ -115,7 +115,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	assert.Equal(t, additionalPublicKey, userInfo.Address.AdditionalKeys[0].PublicKeyBase58)
 	assert.Len(t, userInfo.Address.AdditionalKeys[0].Labels, 3)
 
-	// Получение информации об аккаунте по адресу.
+	// Obtaining account information at.
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
@@ -134,7 +134,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	now++
 	nonce = strconv.Itoa(now)
 
-	// Составление сообщения для подписи.
+	// Composing a message to be signed.
 	messageElements = []string{
 		"removeAdditionalKey",
 		userAddress,
@@ -143,14 +143,14 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	}
 	messageElements = append(messageElements, validatorPublicKeys...)
 
-	// Создание хеша сообщения.
+	// Creating a hash of the message.
 	messageToSign = []byte(strings.Join(messageElements, ""))
 	messageDigest = sha3.Sum256(messageToSign)
 
-	// Подписывание сообщения.
+	// Signing the message.
 	validatorKeys, validatorSignatures = generateTestValidatorSignatures(validatorPublicKeys, messageDigest[:])
 
-	// Удаление дополнительного ключа.
+	// Removal of an additional key.
 	args = [][]byte{
 		[]byte(fnRemoveAdditionalKey),
 		[]byte(userAddress),
@@ -172,7 +172,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	)
 	assert.Equal(t, int32(shim.ERROR), response.Status)
 
-	// Проверка основного ключа.
+	// Verification of the primary key.
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
@@ -182,7 +182,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	)
 	assert.Equal(t, int32(shim.OK), response.Status)
 
-	// Получение информации об аккаунте по адресу.
+	// Obtaining account information at.
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{

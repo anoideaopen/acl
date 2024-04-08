@@ -43,7 +43,7 @@ ACL API
   - Not batch tx
   - **Args**:
     - arg[0] - user's address (base58check)
-    - arg[1] - reason (string)А
+    - arg[1] - reason (string)
     - arg[2] - reason ID (string)
     - arg[3] - new key (base58)
     - arg[4] - nonce

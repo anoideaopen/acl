@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -48,7 +48,7 @@ func TestSetKycTrue(t *testing.T) {
 func TestSetKycEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("https://gitlab.n-t.io/core/library/chaincode/acl/-/issues/3")
+	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
 	s := &serieSetKyc{
 		testAddress: "",
 		newKYC:      "newKychash",

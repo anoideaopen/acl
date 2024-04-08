@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/anoideaopen/foundation/mock"
+	mstub "github.com/anoideaopen/foundation/mock/stub"
+	pb "github.com/anoideaopen/foundation/proto"
+	"github.com/anoideaopen/foundation/test/unit/fixtures_test"
+	"github.com/anoideaopen/foundation/token"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gitlab.n-t.io/core/library/go/foundation/v3/mock"
-	mstub "gitlab.n-t.io/core/library/go/foundation/v3/mock/stub"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
-	"gitlab.n-t.io/core/library/go/foundation/v3/test/unit/fixtures_test"
-	"gitlab.n-t.io/core/library/go/foundation/v3/token"
 	"golang.org/x/crypto/sha3"
 )
 

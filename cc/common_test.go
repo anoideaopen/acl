@@ -45,7 +45,7 @@ const (
 const (
 	pubkey         = "aGGiDES6PZsZYz2ncsEXz8mXPxZRhVzMbgJFNAA7EA8"
 	testaddr       = "2datxk5TmB1spSNn9enVo11dcpgmUoSBSqCx5cCGoWq8qTbZog"
-	testCreatorMSP = "atomyzeMSP"
+	testCreatorMSP = "platformMSP"
 )
 
 const (

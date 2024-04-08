@@ -3,11 +3,11 @@ package cc
 import (
 	"fmt"
 
+	"github.com/anoideaopen/acl/cc/compositekey"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"gitlab.n-t.io/core/library/chaincode/acl/cc/compositekey"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 )
 
 type ListType string

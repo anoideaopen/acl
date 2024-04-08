@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"runtime/debug"
 
+	"github.com/anoideaopen/acl/cc/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"gitlab.n-t.io/core/library/chaincode/acl/cc/proto"
 )
 
 type (

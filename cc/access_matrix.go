@@ -3,10 +3,10 @@ package cc
 import (
 	"fmt"
 
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 )
 
 // matrix keys
@@ -401,7 +401,7 @@ func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []strin
 // args[1] -GetOperationAllRights> chaincodeName
 // args[2] -> roleName
 // args[3] -> operationName
-func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []string) peer.Response { 
+func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	argsNum := len(args)
 	const requiredArgsCount = 4
 	if argsNum != requiredArgsCount {
