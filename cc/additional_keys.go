@@ -6,51 +6,51 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/anoideaopen/acl/cc/compositekey"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
-	"gitlab.n-t.io/core/library/chaincode/acl/cc/compositekey"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
 /*
-Описание хранения и обработки дополнительных ключей:
+Description of storage and handling of additional keys:
 
-Хранение ключей:
- 1. Ключи хранятся в стейте Hyperledger Fabric с использованием композитных ключей.
- 2. Каждый дополнительный ключ ассоциируется с основным адресом аккаунта пользователя.
- 3. Хранение выполняется в двух направлениях:
-    a. 'additional_key_parent' + <дополнительный публичный ключ> -> <адрес пользователя>,
-       для обратного поиска родительского адреса по дополнительному ключу.
- 4. Структуры хранятся в формате protobuf, что обеспечивает согласованность с остальным кодом.
+Key Storage:
+ 1. Keys are stored in the Hyperledger Fabric stack using composite keys.
+ 2. Each additional key is associated with the primary address of the user's account.
+ 3. Storage is performed in two directions:
+    a. 'additional_key_parent' + <additional public key> -> <user address>,
+       for reverse lookup of the parent address by the additional key.
+ 4. Structures are stored in protobuf format to ensure consistency with the rest of the code.
 
-Обработка ключей:
- 1. Добавление ключа включает в себя проверку формата нового ключа, проверку на уникальность и
-    ассоциацию с основным адресом пользователя.
- 2. Удаление ключа требует проверки, что ключ действительно связан с данным пользователем, и удаление его
-    из всех связанных структур.
- 3. Попытка проверки дополнительного ключа возвращает информацию о пользователе и его адресе, если ключ
-    является дополнительным для какого-либо аккаунта.
+Key handling:
+ 1. Adding a key involves checking the format of the new key, checking for uniqueness, and
+    association with the user's primary address.
+ 2. Deleting a key requires verifying that the key is actually associated with the given user and removing it
+    from all associated structures.
+ 3. Attempting to validate an additional key returns information about the user and the user's address if the key
+    is optional for any account.
 
-Примечание:
-  - Механизмы мультиподписи не используются и вместо этого проводится проверка подписей валидаторов.
-  - Метод tryCheckAdditionalKey возвращает данные в формате protobuf для совместимости с методом
+Note:
+  - Multi-signature mechanisms are not used and validator signatures are checked instead.
+  - The tryCheckAdditionalKey method returns data in protobuf format for compatibility with method
     CheckKeys.
 */
 
-// AddAdditionalKey добавлет новый дополнительный публичный ключ учетной записи пользователя.
-// Связывает новый ключ с "родительским" адресом пользователя в ACL.
+// AddAdditionalKey adds a new additional public key to the user account.
+// Associates the new key with the "parent" address of the user in the ACL.
 //
-// Аргументы вызова:
-//   - arg[0]  - адрес пользователя для "линковки" дополнительного ключа
-//   - arg[1]  - дополниельный ключ в формате base58 для добавления к аккаунту
-//   - arg[2]  - JSON массив строк тегов к ключу
-//   - arg[3]  - значение nonce в формате строки
-//   - arg[4:] - публичные ключи и подписи валидаторов
+// Call Arguments:
+//   - arg[0]  - user address for linking the additional key
+//   - arg[1]  - additional key in base58 format to add to your account
+//   - arg[2]  - JSON array of tag strings to the key
+//   - arg[3]  - nonce value in string format
+//   - arg[4:] - public keys and validator signatures
 func (c *ACL) AddAdditionalKey(
 	stub shim.ChaincodeStubInterface,
 	args []string,
@@ -61,7 +61,7 @@ func (c *ACL) AddAdditionalKey(
 		return errf("incorrect number of arguments: expected %d, got %d", argsLen, len(args))
 	}
 
-	// Параметры запроса.
+	// Request parameters.
 	var (
 		userAddress         = args[0]
 		additionalPublicKey = args[1]
@@ -70,7 +70,7 @@ func (c *ACL) AddAdditionalKey(
 		validatorSignatures = args[4:]
 	)
 
-	// Проверка аргументов.
+	// Argument checking.
 	if userAddress == "" {
 		return errf("request validation failed: %s", ErrEmptyAddress)
 	}
@@ -84,29 +84,29 @@ func (c *ACL) AddAdditionalKey(
 		return errf("request validation failed: invalid labels format: %s", err)
 	}
 
-	// Проверка корректности дополнительного публичного ключа.
+	// Checking the correctness of the additional public key.
 	if err := validateKeyFormat(additionalPublicKey); err != nil {
 		return errf("validation of additional public key for %s failed: %s", userAddress, err)
 	}
 
-	// Проверка прав доступа.
+	// Verification of access rights.
 	if err := c.verifyAccess(stub); err != nil {
 		return errf("unauthorized access: %s", err)
 	}
 
-	// Проверка nonce.
+	// Nonce check.
 	if err := checkNonce(stub, userAddress, nonce); err != nil {
 		return errf("request validation failed: %s", err)
 	}
 
-	// Проверка подписей валидаторов.
+	// Validation of validator signatures.
 	var (
 		numSignatures          = len(validatorSignatures) / 2
 		validatorKeys          = validatorSignatures[:numSignatures]
 		validatorHexSignatures = validatorSignatures[numSignatures:]
 	)
 
-	// Составление сообщения для подписи.
+	// Composing a message to be signed.
 	messageElements := []string{
 		"addAdditionalKey",
 		userAddress,
@@ -116,11 +116,11 @@ func (c *ACL) AddAdditionalKey(
 	}
 	messageElements = append(messageElements, validatorKeys...)
 
-	// Создание хеша сообщения.
+	// Creating a hash of the message.
 	messageToSign := []byte(strings.Join(messageElements, ""))
 	messageDigest := sha3.Sum256(messageToSign)
 
-	// Сверка подписей с хешем сообщения.
+	// Reconciling signatures with the hash of the message.
 	if err := c.verifyValidatorSignatures(
 		messageDigest[:],
 		validatorKeys,
@@ -129,7 +129,7 @@ func (c *ACL) AddAdditionalKey(
 		return errf("validation of validator signatures failed: %s", err)
 	}
 
-	// Проверка на дублирование ключа в стейте.
+	// Check for key duplication in the state.
 	parentAddress, additionalKeyParentComposite, err := c.retrieveParentAddress(stub, additionalPublicKey)
 	if err != nil {
 		return errf("get parent address for %s: %s", userAddress, err)
@@ -143,24 +143,24 @@ func (c *ACL) AddAdditionalKey(
 		)
 	}
 
-	// Загрузка родительского дескриптора SignedAddress по адресу пользователя.
+	// Load the SignedAddress parent descriptor at the user's address.
 	signedAddress, publicKeyHash, err := c.retrieveSignedAddress(stub, userAddress)
 	if err != nil {
 		return errf("retrieve user address for %s: %s", userAddress, err)
 	}
 
-	// Добавление публичного ключа пользователю.
+	// Adding a public key to a user.
 	signedAddress.AdditionalKeys = append(signedAddress.AdditionalKeys, &pb.AdditionalKey{
 		PublicKeyBase58: additionalPublicKey,
 		Labels:          labelsList,
 	})
 
-	// Сохранение обновленой структуры родительского адреса.
+	// Saves the updated parent address structure.
 	if err = c.updateSignedAddress(stub, signedAddress, publicKeyHash); err != nil {
 		return errf("update user address for %s: %s", userAddress, err)
 	}
 
-	// Сохранение ссылки на родительский адрес.
+	// Saves a link to the parent address.
 	if err = stub.PutState(additionalKeyParentComposite, []byte(userAddress)); err != nil {
 		return errf("put state (parent link address) for %s: %s", userAddress, err)
 	}
@@ -168,14 +168,14 @@ func (c *ACL) AddAdditionalKey(
 	return shim.Success(nil)
 }
 
-// RemoveAdditionalKey удаляет дополнительный ключ из учетной записи пользователя. Для случаев,
-// когда ключ больше не нужен или был скомпрометирован.
+// RemoveAdditionalKey removes the optional key from the user account.
+// For cases, when the key is no longer needed or has been compromised.
 //
-// Аргументы вызова:
-//   - arg[0]  - адрес пользователя для "отлинковки" дополнительного ключа
-//   - arg[1]  - дополниельный ключ в формате base58 для удаления из аккаунта
-//   - arg[2]  - значение nonce в формате строки
-//   - arg[3:] - публичные ключи и подписи валидаторов
+// Call Arguments:
+//   - arg[0]  - user address for "linking" the additional key
+//   - arg[1]  - additional key in base58 format for deletion from the account
+//   - arg[2]  - nonce value in string format
+//   - arg[3:] - public keys and validator signatures
 func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	const argsLen = 5
 
@@ -183,7 +183,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 		return errf("incorrect number of arguments: expected %d, got %d", argsLen, len(args))
 	}
 
-	// Параметры запроса.
+	// Request Parameters.
 	var (
 		userAddress         = args[0]
 		additionalPublicKey = args[1]
@@ -191,7 +191,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 		validatorSignatures = args[3:]
 	)
 
-	// Проверка аргументов.
+	// Argument Validation.
 	if userAddress == "" {
 		return errf("request validation failed: %s", ErrEmptyAddress)
 	}
@@ -200,29 +200,29 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 		return errf("request validation failed: %s", ErrEmptyPubKey)
 	}
 
-	// Проверка валидности ключа.
+	// Checking the validity of the key.
 	if err := validateKeyFormat(additionalPublicKey); err != nil {
 		return errf("validate additional public key for %s: %s", userAddress, err)
 	}
 
-	// Проверка прав доступа.
+	// Verification of access rights.
 	if err := c.verifyAccess(stub); err != nil {
 		return errf(ErrUnauthorizedMsg, err)
 	}
 
-	// Проверка nonce.
+	// Nonce verification.
 	if err := checkNonce(stub, userAddress, nonce); err != nil {
 		return errf("request validation failed: %s", err)
 	}
 
-	// Проверка подписей валидаторов.
+	// Validation of validator signatures.
 	var (
 		numSignatures          = len(validatorSignatures) / 2
 		validatorKeys          = validatorSignatures[:numSignatures]
 		validatorHexSignatures = validatorSignatures[numSignatures:]
 	)
 
-	// Составление сообщения для подписи.
+	// Composing a message to be signed.
 	messageElements := []string{
 		"removeAdditionalKey",
 		userAddress,
@@ -231,11 +231,11 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 	}
 	messageElements = append(messageElements, validatorKeys...)
 
-	// Создание хеша сообщения.
+	// Creating a hash of the message.
 	messageToSign := []byte(strings.Join(messageElements, ""))
 	messageDigest := sha3.Sum256(messageToSign)
 
-	// Сверка подписей с хешем сообщения.
+	// Reconciling signatures with the hash of the message.
 	if err := c.verifyValidatorSignatures(
 		messageDigest[:],
 		validatorKeys,
@@ -244,7 +244,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 		return errf("validation of validator signatures failed: %s", err)
 	}
 
-	// Проверка, что у публичного ключа родитель совпадает с адресом пользователя.
+	// Check that the public key has a parent that matches the user's address.
 	parentAddress, additionalKeyParentComposite, err := c.retrieveParentAddress(stub, additionalPublicKey)
 	if err != nil {
 		return errf("get parent address for %s: %s", userAddress, err)
@@ -266,13 +266,13 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 		)
 	}
 
-	// Загрузка родительского дескриптора SignedAddress по адресу пользователя.
+	// Load the SignedAddress parent descriptor at the user's address.
 	signedAddress, publicKeyHash, err := c.retrieveSignedAddress(stub, userAddress)
 	if err != nil {
 		return errf("retrieve user address for %s: %s", userAddress, err)
 	}
 
-	// Удаление публичного ключа пользователя.
+	// Deleting a user's public key.
 	additionalKeys := make([]*pb.AdditionalKey, 0, len(signedAddress.AdditionalKeys))
 	for _, additionalKey := range signedAddress.AdditionalKeys {
 		if additionalKey.PublicKeyBase58 == additionalPublicKey {
@@ -287,12 +287,12 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 		signedAddress.AdditionalKeys = additionalKeys
 	}
 
-	// Сохранение обновленой структуры родительского адреса.
+	// Saves the updated parent address structure.
 	if err = c.updateSignedAddress(stub, signedAddress, publicKeyHash); err != nil {
 		return errf("update user address for %s: %s", userAddress, err)
 	}
 
-	// Удаление ссылки на родительский адрес.
+	// Removing the link to the parent address.
 	if err = stub.DelState(additionalKeyParentComposite); err != nil {
 		return errf("delete state (parent link address) for %s: %s", userAddress, err)
 	}
@@ -309,31 +309,31 @@ func (c *ACL) tryCheckAdditionalKey(
 		multisignSeparator = "/"
 	)
 
-	// Проверка, что аргумент единственный необходимый для случая дополнительного ключа.
+	// Checking that the argument is the only one needed for the extra key case.
 	if len(args) != argsLen {
 		return resp, false
 	}
 
-	// Параметры запроса.
+	// Query Parameters.
 	publicKey := args[0]
 
-	// Проврека, является ли аргумент мультиподписью.
+	// Check if the argument is a multisignature.
 	if strings.Count(publicKey, multisignSeparator) > 0 {
 		return resp, false
 	}
 
-	// Попытка получить адрес пользователя по дополнительному публичному ключу.
+	// Attempting to get the user's address by an additional public key.
 	parentAddress, _, err := c.retrieveParentAddress(stub, publicKey)
 	if err != nil {
 		return errf("get parent address for %s: %s", publicKey, err), true
 	}
 
-	// Если родитель не найден, то ключ обычный и управление передается вышестоящему обработчику.
+	// If no parent is found, the key is normal and control is passed to the higher handler.
 	if parentAddress == "" {
 		return resp, false
 	}
 
-	// Получение информации о пользователе по его дополнительному ключу.
+	// Retrieving information about a user by their additional key.
 	signedAddress, _, err := c.retrieveSignedAddress(stub, parentAddress)
 	if err != nil {
 		return errf("get parent signed address for %s: %s", parentAddress, err), true

@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -108,7 +108,7 @@ func TestChangePublicKeyLessThan43Symbols(t *testing.T) {
 func TestChangePublicKeyWrongString(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("https://gitlab.n-t.io/core/library/chaincode/acl/-/issues/3")
+	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
 	s := &serieChangePublicKey{
 		newPubKey:  "AbracadabraAbracadabraAbracadabraAbracadabra",
 		respStatus: int32(shim.OK),
@@ -123,7 +123,7 @@ func TestChangePublicKeyWrongString(t *testing.T) {
 func TestChangePublicKeyWrongNumeric(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("https://gitlab.n-t.io/core/library/chaincode/acl/-/issues/3")
+	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
 	s := &serieChangePublicKey{
 		newPubKey:  "11111111111111111111111111111111",
 		respStatus: int32(shim.OK),
@@ -172,7 +172,7 @@ func TestChangePublicKeyWithSpesialSymbols(t *testing.T) {
 func TestChangePublicKeySameKey(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("https://gitlab.n-t.io/core/library/chaincode/acl/-/issues/3")
+	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
 	s := &serieChangePublicKey{
 		newPubKey:  pubkey,
 		respStatus: int32(shim.OK),

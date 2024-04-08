@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/anoideaopen/acl/cc/proto"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"gitlab.n-t.io/core/library/chaincode/acl/cc/proto"
 )
 
 const initStateKey = "__init"

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"gitlab.n-t.io/core/library/go/foundation/v3/core/acl"
-	"gitlab.n-t.io/core/library/go/foundation/v3/core/types"
-	"gitlab.n-t.io/core/library/go/foundation/v3/core/types/big"
-	"gitlab.n-t.io/core/library/go/foundation/v3/token"
+	"github.com/anoideaopen/foundation/core/acl"
+	"github.com/anoideaopen/foundation/core/types"
+	"github.com/anoideaopen/foundation/core/types/big"
+	"github.com/anoideaopen/foundation/token"
 )
 
 // FiatToken - base struct

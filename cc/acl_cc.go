@@ -15,14 +15,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/anoideaopen/acl/cc/compositekey"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
-	"gitlab.n-t.io/core/library/chaincode/acl/cc/compositekey"
-	pb "gitlab.n-t.io/core/library/go/foundation/v3/proto"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -158,7 +158,7 @@ func (c *ACL) GetUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 
 // CheckKeys returns AclResponse with account indo fetched by public keys
 func (c *ACL) CheckKeys(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	// Попытка обработать запрос как дополнительный ключ. --
+	// Attempting to process the request as an additional key. --
 	if resp, ok := c.tryCheckAdditionalKey(stub, args); ok {
 		return resp
 	}
@@ -326,7 +326,7 @@ func (c *ACL) updateSignedAddress(
 		return err
 	}
 
-	// Сохранение обновленой структуры адреса.
+	// Saves the updated address structure.
 	return stub.PutState(signedAddressCompositeKey, marshaledSignedAddress)
 }
 
@@ -638,7 +638,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 
 // ChangePublicKey changes public key of user
 // arg[0] - user's address (base58check)
-// arg[1] - reason (string)А
+// arg[1] - reason (string)
 // arg[2] - reason ID (string)
 // arg[3] - new key (base58)
 // arg[4] - nonce
