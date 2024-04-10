@@ -3,6 +3,8 @@ package cc
 import (
 	"bytes"
 	"fmt"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	"strconv"
 	"strings"
 
@@ -36,7 +38,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	// args[0] is request id
@@ -56,7 +58,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to parse N, error: %s", err.Error()))
 	}
-	err = validateMinSignatures(N)
+	err = helpers.ValidateMinSignatures(N)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("addMultisigWithBase58Signature: failed to validate min signatures: %v", err))
 	}
@@ -91,17 +93,17 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 		}
 	}
 
-	if err = checkKeysArr(pks); err != nil {
+	if err = helpers.CheckKeysArr(pks); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%v'", err.Error(), pks))
 	}
-	hashedHexKeys, err := keyStringToSortedHashedHex(pks)
+	hashedHexKeys, err := helpers.KeyStringToSortedHashedHex(pks)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
 
 	pksDecodedOriginalOrder := make([][]byte, 0, len(pks))
 	for _, encodedBase58PublicKey := range pks {
-		decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -109,7 +111,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 	}
 
 	// derive address from hash of sorted base58-(DE)coded public keys
-	keysArrSorted, err := DecodeAndSort(strings.Join(pks, "/"))
+	keysArrSorted, err := helpers.DecodeAndSort(strings.Join(pks, "/"))
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -150,7 +152,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 
 	pksDecodedOrigOrder := make([][]byte, 0, len(pks))
 	for _, encodedBase58PublicKey := range pks {
-		decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -187,8 +189,8 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 }
 
 func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatures []string) error {
-	if err := checkDuplicates(signatures); err != nil {
-		return fmt.Errorf(ErrDuplicateSignatures, err)
+	if err := helpers.CheckDuplicates(signatures); err != nil {
+		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
 
 	strPubKeys := make([]string, 0, len(pks))
@@ -196,8 +198,8 @@ func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatu
 		strPubKeys = append(strPubKeys, base58.Encode(pk))
 	}
 
-	if err := checkDuplicates(strPubKeys); err != nil {
-		return fmt.Errorf(ErrDuplicatePubKeys, err)
+	if err := helpers.CheckDuplicates(strPubKeys); err != nil {
+		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
 	countSigned := 0
@@ -212,18 +214,6 @@ func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatu
 
 	if countSigned < n {
 		return errors.Errorf("%d of %d signed", countSigned, n)
-	}
-	return nil
-}
-
-// minSignaturesRequired defines the minimum number of signatures required for a multisignature transaction.
-const minSignaturesRequired = 1
-
-// validateMinSignatures checks that the number of required signatures is greater than the minimum allowed value.
-// It returns an error if the number of required signatures is less than or equal to the minimum allowed value.
-func validateMinSignatures(n int) error {
-	if n <= minSignaturesRequired {
-		return fmt.Errorf("invalid N '%d', must be greater than %d for multisignature transactions", n, minSignaturesRequired)
 	}
 	return nil
 }

@@ -1,7 +1,10 @@
-package cc
+package tests
 
 import (
 	"encoding/hex"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"strings"
 	"testing"
@@ -38,7 +41,7 @@ func TestChangePublicKeyEqual43Symbols(t *testing.T) {
 		errorMsg:   "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -52,7 +55,7 @@ func TestChangePublicKeyEqual44Symbols(t *testing.T) {
 		errorMsg:   "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -63,10 +66,10 @@ func TestChangePublicKeyEmpty(t *testing.T) {
 	s := &serieChangePublicKey{
 		newPubKey:  "",
 		respStatus: int32(shim.ERROR),
-		errorMsg:   errorMsgEmptyKey,
+		errorMsg:   errs.ErrEmptyNewKey,
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -83,7 +86,7 @@ func TestChangePublicKeyMoreThan44Symbols(t *testing.T) {
 		s.newPubKey + "'. decoded public key len is 33 but expected 32, input: '" + s.newPubKey + "'"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -100,7 +103,7 @@ func TestChangePublicKeyLessThan43Symbols(t *testing.T) {
 		s.newPubKey + "'. decoded public key len is 31 but expected 32, input: '" + s.newPubKey + "'"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -115,7 +118,7 @@ func TestChangePublicKeyWrongString(t *testing.T) {
 		errorMsg:   "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -130,7 +133,7 @@ func TestChangePublicKeyWrongNumeric(t *testing.T) {
 		errorMsg:   "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -147,7 +150,7 @@ func TestChangePublicKeyWrongNumericZero(t *testing.T) {
 		s.newPubKey + ", input: '" + s.newPubKey + "'"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -164,7 +167,7 @@ func TestChangePublicKeyWithSpesialSymbols(t *testing.T) {
 		s.newPubKey + ", input: '" + s.newPubKey + "'"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -174,12 +177,12 @@ func TestChangePublicKeySameKey(t *testing.T) {
 
 	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
 	s := &serieChangePublicKey{
-		newPubKey:  pubkey,
+		newPubKey:  common.PubKey,
 		respStatus: int32(shim.OK),
 		errorMsg:   "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := changePublicKey(t, stub, s)
 	validationResultChangePublicKey(t, stub, resp, s)
 }
@@ -188,13 +191,13 @@ func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *serieChangePubl
 	// prepare (create pk -> addr and addr -> pk mappings in ACL)
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
-	pKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey := range MockValidatorKeys {
+	pKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey := range common.MockValidatorKeys {
 		pKeys = append(pKeys, pubkey)
 	}
 
@@ -211,16 +214,16 @@ func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *serieChangePubl
 	reasonID := "1"
 	message := sha3.Sum256([]byte(
 		strings.Join(
-			append([]string{fnChangePublicKey, testaddr, defaultReason, reasonID, ser.newPubKey, nonce}, pKeys...),
+			append([]string{common.FnChangePublicKey, common.TestAddr, common.DefaultReason, reasonID, ser.newPubKey, nonce}, pKeys...),
 			""),
 	))
-	vPkeys, vSignatures := generateTestValidatorSignatures(pKeys, message[:])
+	vPkeys, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
 
 	invokeArgs := append(
 		append([][]byte{
-			[]byte(fnChangePublicKey),
-			[]byte(testaddr),
-			[]byte(defaultReason),
+			[]byte(common.FnChangePublicKey),
+			[]byte(common.TestAddr),
+			[]byte(common.DefaultReason),
 			[]byte(reasonID),
 			[]byte(ser.newPubKey),
 			[]byte(nonce),
@@ -241,18 +244,18 @@ func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp
 	}
 
 	// check pb.Address
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(ser.newPubKey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.newPubKey)})
 	assert.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
 	assert.NoError(t, proto.Unmarshal(result.Payload, response))
 	assert.NotNil(t, response.Address)
-	assert.Equal(t, testaddr, response.Address.Address.AddrString(),
-		"failed to find address %s by new key %s", testaddr, newPubKey)
+	assert.Equal(t, common.TestAddr, response.Address.Address.AddrString(),
+		"failed to find address %s by new key %s", common.TestAddr, newPubKey)
 	assert.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
 	assert.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
 	assert.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
-	assert.Equal(t, defaultReason, response.Address.Reason)
+	assert.Equal(t, common.DefaultReason, response.Address.Reason)
 	assert.Equal(t, int32(1), response.Address.ReasonId)
 
 	// check signature
@@ -262,12 +265,12 @@ func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp
 	decodedMessage := sha3.Sum256([]byte(strings.Join(append(srcArgs, pksOfValidators...), "")))
 	signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
 
-	mockValidatorsPublicKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey := range MockValidatorKeys {
+	mockValidatorsPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey := range common.MockValidatorKeys {
 		mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubkey)
 	}
 	for i, vpk := range pksOfValidators {
-		assert.True(t, IsValidator(mockValidatorsPublicKeys, vpk),
+		assert.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk),
 			"pk %s does not belong to any validator", vpk)
 		decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
 		assert.NoError(t, err)
@@ -278,23 +281,17 @@ func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp
 
 func TestChangePublicKeyNegatives(t *testing.T) {
 	// prepare (create pk -> addr and addr -> pk mappings in ACL)
-	stub := shimtest.NewMockStub("mockStub", New())
-	assert.NotNil(t, stub)
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	err = SetCreator(stub, testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	stub.MockInit("0", testInitArgs)
+	stub := common.StubCreateAndInit(t)
 
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
-	pKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey := range MockValidatorKeys {
+	pKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey := range common.MockValidatorKeys {
 		pKeys = append(pKeys, pubkey)
 	}
 
@@ -313,18 +310,18 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 		message := sha3.Sum256([]byte(
 			strings.Join(
 				append(
-					[]string{fnChangePublicKey, testaddr, defaultReason, reasonID, newPubKey, nonce},
+					[]string{common.FnChangePublicKey, common.TestAddr, common.DefaultReason, reasonID, newPubKey, nonce},
 					duplicateKeysString...,
 				),
 				""),
 		))
-		duplicatePubKeysBytes, duplicateSignatures := generateTestValidatorSignatures(duplicateKeysString, message[:])
+		duplicatePubKeysBytes, duplicateSignatures := common.GenerateTestValidatorSignatures(duplicateKeysString, message[:])
 
 		invokeArgs := append(
 			append([][]byte{
-				[]byte(fnChangePublicKey),
-				[]byte(testaddr),
-				[]byte(defaultReason),
+				[]byte(common.FnChangePublicKey),
+				[]byte(common.TestAddr),
+				[]byte(common.DefaultReason),
 				[]byte(reasonID),
 				[]byte(newPubKey),
 				[]byte(nonce),
@@ -340,14 +337,14 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 		nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 		reasonID := "1"
 		message := sha3.Sum256([]byte(strings.Join(append(
-			[]string{fnChangePublicKey, testaddr, defaultReason, reasonID, newPubKey, nonce}, pKeys...), "")))
-		vPkeys, vSignatures := generateTestValidatorSignatures(pKeys, message[:])
+			[]string{common.FnChangePublicKey, common.TestAddr, common.DefaultReason, reasonID, newPubKey, nonce}, pKeys...), "")))
+		vPkeys, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
 
 		invokeArgs := append(
 			append([][]byte{
-				[]byte(fnChangePublicKey),
-				[]byte(testaddr),
-				[]byte(defaultReason),
+				[]byte(common.FnChangePublicKey),
+				[]byte(common.TestAddr),
+				[]byte(common.DefaultReason),
 				[]byte(reasonID),
 				[]byte(newPubKey),
 				[]byte(nonce),
@@ -364,13 +361,13 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 		nonce := strconv.Itoa(int(time.Now().UnixNano() * 1000))
 		reason := "because..."
 		reasonID := "1"
-		message := sha3.Sum256([]byte(strings.Join(append([]string{fnChangePublicKey, testaddr, reason, reasonID, "blabla", nonce}, pKeys...), "")))
-		vPkeys, vSignatures := generateTestValidatorSignatures(pKeys, message[:])
+		message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnChangePublicKey, common.TestAddr, reason, reasonID, "blabla", nonce}, pKeys...), "")))
+		vPkeys, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
 
 		invokeArgs := append(
 			append([][]byte{
-				[]byte(fnChangePublicKey),
-				[]byte(testaddr),
+				[]byte(common.FnChangePublicKey),
+				[]byte(common.TestAddr),
 				[]byte(reason),
 				[]byte(reasonID),
 				[]byte("blabla"),

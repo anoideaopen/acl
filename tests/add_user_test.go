@@ -1,8 +1,9 @@
-package cc
+package tests
 
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/anoideaopen/acl/tests/common"
 	"testing"
 
 	pb "github.com/anoideaopen/foundation/proto"
@@ -48,7 +49,7 @@ func TestAddUserPubkeyEqual43Symbols(t *testing.T) {
 		errorMsg:    "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -65,7 +66,7 @@ func TestAddUserPubkeyEqual44Symbols(t *testing.T) {
 		errorMsg:    "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -82,7 +83,7 @@ func TestAddUserPubkeyEmpty(t *testing.T) {
 		errorMsg:    "encoded base 58 public key is empty",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -102,7 +103,7 @@ func TestAddUserPubkeyMoreThan44Symbols(t *testing.T) {
 		s.testPubKey + "'. decoded public key len is 33 but expected 32"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -122,7 +123,7 @@ func TestAddUserPubkeyLessThan43Symbols(t *testing.T) {
 		s.testPubKey + "'. decoded public key len is 31 but expected 32"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -141,7 +142,7 @@ func TestAddUserPubkeyWrongString(t *testing.T) {
 
 	s.SetError("failed base58 decoding of key " + s.testPubKey)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -160,7 +161,7 @@ func TestAddUserPubkeyWrongNumeric(t *testing.T) {
 
 	s.SetError("failed base58 decoding of key " + s.testPubKey)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -179,7 +180,7 @@ func TestAddUserPubkeyWrongNumericZero(t *testing.T) {
 	errorMsg := "failed base58 decoding of key " + s.testPubKey
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -198,7 +199,7 @@ func TestAddUserPubkeyWithSpesialSymbols(t *testing.T) {
 	errorMsg := "failed base58 decoding of key " + s.testPubKey
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -207,15 +208,15 @@ func TestAddUserEmptyKycHash(t *testing.T) {
 	t.Parallel()
 
 	s := &serieAddUser{
-		testPubKey:  pubkey,
-		testAddress: testaddr,
+		testPubKey:  common.PubKey,
+		testAddress: common.TestAddr,
 		kycHash:     "",
 		testUserID:  testUserID,
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    "empty kyc hash",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -224,38 +225,38 @@ func TestAddUserEmptyUserID(t *testing.T) {
 	t.Parallel()
 
 	s := &serieAddUser{
-		testPubKey:  pubkey,
-		testAddress: testaddr,
+		testPubKey:  common.PubKey,
+		testAddress: common.TestAddr,
 		kycHash:     kycHash,
 		testUserID:  "",
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    "empty userID",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
 func TestAddUserAddExistedUser(t *testing.T) {
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 
 	t.Run("Happy path", func(t *testing.T) {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte("true")},
+			[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
 		)
 		assert.Equal(t, int32(shim.OK), resp.Status)
 
 		// check
-		result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pubkey)})
+		result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
 		assert.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AclResponse{}
 		assert.NoError(t, proto.Unmarshal(result.Payload, response))
 		assert.NotNil(t, response.Address)
 		assert.NotNil(t, response.Account)
-		assert.Equal(t, testaddr, response.Address.Address.AddrString(), "invalid address")
+		assert.Equal(t, common.TestAddr, response.Address.Address.AddrString(), "invalid address")
 		assert.Equal(t, kycHash, response.Account.KycHash)
 		assert.False(t, response.Account.GrayListed)
 		assert.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
@@ -267,13 +268,13 @@ func TestAddUserAddExistedUser(t *testing.T) {
 		// and add this user again
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		// check err status
 		assert.Equal(t, int32(shim.ERROR), resp.Status)
 
 		// construct addr
-		hashed := sha3.Sum256(base58.Decode(pubkey))
+		hashed := sha3.Sum256(base58.Decode(common.PubKey))
 		pkeys := hex.EncodeToString(hashed[:])
 		addr := base58.CheckEncode(hashed[1:], hashed[0])
 		expectedError := fmt.Sprintf("The address %s associated with key %s already exists", addr, pkeys)
@@ -286,7 +287,7 @@ func TestAddUserAddExistedUser(t *testing.T) {
 func addUser(stub *shimtest.MockStub, ser *serieAddUser) peer.Response {
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
 	)
 	return resp
 }
@@ -299,7 +300,7 @@ func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Re
 		return
 	}
 
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(ser.testPubKey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.testPubKey)})
 	assert.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}

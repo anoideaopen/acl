@@ -1,9 +1,10 @@
-package cc
+package tests
 
 import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
+	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"strings"
 	"testing"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/sha3"
 )
@@ -48,19 +48,14 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 }
 
 func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithBase58Signature, validatorCount int) {
-	stub := shimtest.NewMockStub("mockStub", New())
-	assert.NotNil(t, stub)
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	err = SetCreator(stub, testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
+	stub := common.StubCreateAndInit(t)
 
 	ss, err := newSecrets(validatorCount)
 	assert.NoError(t, err)
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	reasonID := "1"
-	mArgs := []string{"changePublicKeyWithBase58Signature", "", "acl", "", testaddr, defaultReason, reasonID, ser.newPubKey, nonce}
+	mArgs := []string{"changePublicKeyWithBase58Signature", "", "acl", "", common.TestAddr, common.DefaultReason, reasonID, ser.newPubKey, nonce}
 	message := sha3.Sum256([]byte(strings.Join(append(mArgs, ss.pKeys()...), "")))
 	err = ss.signs(message[:])
 	assert.NoError(t, err)
@@ -69,7 +64,7 @@ func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithB
 		[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"),
 		[]byte(strconv.Itoa(len(ss.pKeys()))),
 	}
-	invokeArgs := [][]byte{}
+	var invokeArgs [][]byte
 
 	for _, arg := range mArgs {
 		invokeArgs = append(invokeArgs, []byte(arg))
@@ -86,7 +81,7 @@ func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithB
 
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
 	assert.Equal(t, int32(shim.OK), resp.Status)
 

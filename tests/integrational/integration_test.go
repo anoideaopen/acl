@@ -1,9 +1,11 @@
-package cc
+package integrational
 
 import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,26 +29,8 @@ const (
 	signedTxChangePrefix  = "signedtx"
 )
 
-var testValidators = [][]byte{
-	[]byte("A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4"),
-	[]byte("5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5"),
-	[]byte("6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4"),
-}
-
-var testInitArgs = append(
-	[][]byte{
-		[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"),
-		[]byte(strconv.Itoa(len(testValidators))),
-	},
-	testValidators...)
-
 func TestAclInitWrongAdminSkiFormat(t *testing.T) {
-	aclCC := mstub.NewMockStub("acl", New())
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	aclCC.SetCreator(creator)
+	aclCC := common.StubCreate(t)
 
 	response := aclCC.MockInit("0", [][]byte{[]byte("a"), []byte("0")})
 	assert.NotNil(t, response)
@@ -55,12 +39,7 @@ func TestAclInitWrongAdminSkiFormat(t *testing.T) {
 }
 
 func TestAclInitWrongValidatorCountFormat(t *testing.T) {
-	aclCC := mstub.NewMockStub("acl", New())
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	aclCC.SetCreator(creator)
+	aclCC := common.StubCreate(t)
 
 	response := aclCC.MockInit("0", [][]byte{[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"), []byte("a")})
 	assert.NotNil(t, response)
@@ -69,12 +48,7 @@ func TestAclInitWrongValidatorCountFormat(t *testing.T) {
 }
 
 func TestAclInitZeroArgs(t *testing.T) {
-	aclCC := mstub.NewMockStub("acl", New())
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	aclCC.SetCreator(creator)
+	aclCC := common.StubCreate(t)
 
 	response := aclCC.MockInit("0", [][]byte{})
 	assert.NotNil(t, response)
@@ -83,12 +57,7 @@ func TestAclInitZeroArgs(t *testing.T) {
 }
 
 func TestAclInitTwoArgs(t *testing.T) {
-	aclCC := mstub.NewMockStub("acl", New())
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	aclCC.SetCreator(creator)
+	aclCC := common.StubCreate(t)
 
 	adminSkiArg := "dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"
 	decodeString, err := hex.DecodeString(adminSkiArg)
@@ -99,7 +68,7 @@ func TestAclInitTwoArgs(t *testing.T) {
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	stateInitArgs, err := GetInitArgsFromState(aclCC)
+	stateInitArgs, err := cc.GetInitArgsFromState(aclCC)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(stateInitArgs.Validators))
 	assert.Equal(t, decodeString, stateInitArgs.AdminSKI)
@@ -107,34 +76,29 @@ func TestAclInitTwoArgs(t *testing.T) {
 }
 
 func TestAclInitArgs(t *testing.T) {
-	aclCC := mstub.NewMockStub("acl", New())
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	aclCC.SetCreator(creator)
+	aclCC := common.StubCreate(t)
 
-	response := aclCC.MockInit("0", testInitArgs)
+	response := aclCC.MockInit("0", common.TestInitArgs)
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	stateInitArgs, err := GetInitArgsFromState(aclCC)
+	stateInitArgs, err := cc.GetInitArgsFromState(aclCC)
 	assert.NoError(t, err)
-	assert.Equal(t, len(testValidators), len(stateInitArgs.Validators))
+	assert.Equal(t, len(common.TestValidators), len(stateInitArgs.Validators))
 }
 
 func TestEmitTransfer(t *testing.T) {
 	ledgerMock := mock.NewLedger(t)
 	owner := ledgerMock.NewWallet()
 
-	aclCC := mstub.NewMockStub("acl", New())
-	cert, err := getCert(adminCertPath)
+	aclCC := mstub.NewMockStub("acl", cc.New())
+	cert, err := common.GetCert(common.AdminCertPath)
 	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
+	creator, err := common.MarshalIdentity(common.TestCreatorMSP, cert.Raw)
 	assert.NoError(t, err)
 	aclCC.SetCreator(creator)
-	aclCC.MockInit("0", testInitArgs)
+	aclCC.MockInit("0", common.TestInitArgs)
 	ledgerMock.SetACL(aclCC)
 
 	cfg := &pb.Config{
@@ -151,7 +115,7 @@ func TestEmitTransfer(t *testing.T) {
 
 	cfgBytes, _ := json.Marshal(cfg)
 
-	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	init := ledgerMock.NewCC("fiat", common.NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
 
 	user := ledgerMock.NewWallet()
@@ -164,27 +128,27 @@ func TestEmitTransfer(t *testing.T) {
 
 func TestMultisigEmitTransfer(t *testing.T) {
 	ledgerMock := mock.NewLedger(t)
-	aclCC := mstub.NewMockStub("acl", New())
+	aclCC := mstub.NewMockStub("acl", cc.New())
 	ledgerMock.SetACL(aclCC)
-	cert, err := getCert(adminCertPath)
+	cert, err := common.GetCert(common.AdminCertPath)
 	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
+	creator, err := common.MarshalIdentity(common.TestCreatorMSP, cert.Raw)
 	assert.NoError(t, err)
 	aclCC.SetCreator(creator)
-	aclCC.MockInit("0", testInitArgs)
+	aclCC.MockInit("0", common.TestInitArgs)
 
 	owner := ledgerMock.NewMultisigWallet(3)
 
 	pubKeysEncodedString := make([]string, 0, len(owner.PubKeys()))
 	// pubKeysEncodedBytes := make([][]byte, 0, len(owner.PubKeys()))
 	for _, memberPk := range owner.PubKeys() {
-		owner.Invoke("acl", fnAddUser, base58.Encode(memberPk), "kychash", "testUserID", "true")
+		owner.Invoke("acl", common.FnAddUser, base58.Encode(memberPk), "kychash", "testUserID", "true")
 		// pubKeysEncodedBytes = append(pubKeysEncodedBytes, []byte(base58.Encode(memberPk)))
 		pubKeysEncodedString = append(pubKeysEncodedString, base58.Encode(memberPk))
 	}
 
 	nanoNonce := strconv.Itoa(int(time.Now().UnixNano()))
-	sourceMsg := append([]string{fnAddMultisig, "3", nanoNonce}, pubKeysEncodedString...)
+	sourceMsg := append([]string{common.FnAddMultisig, "3", nanoNonce}, pubKeysEncodedString...)
 	message := sha3.Sum256([]byte(strings.Join(sourceMsg, "")))
 
 	// signatures := make([][]byte, 0, len(owner.SecretKeys()))
@@ -194,7 +158,7 @@ func TestMultisigEmitTransfer(t *testing.T) {
 		signaturesString = append(signaturesString, hex.EncodeToString(ed25519.Sign(privkey, message[:])))
 	}
 
-	owner.Invoke("acl", fnAddMultisig, append(sourceMsg[1:], signaturesString...)...)
+	owner.Invoke("acl", common.FnAddMultisig, append(sourceMsg[1:], signaturesString...)...)
 
 	cfg := &pb.Config{
 		Contract: &pb.ContractConfig{
@@ -209,14 +173,14 @@ func TestMultisigEmitTransfer(t *testing.T) {
 	}
 	cfgBytes, _ := json.Marshal(cfg)
 
-	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	init := ledgerMock.NewCC("fiat", common.NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
 
-	err = ledgerMock.GetStub("fiat").SetCreatorCert(testCreatorMSP, cert.Raw)
+	err = ledgerMock.GetStub("fiat").SetCreatorCert(common.TestCreatorMSP, cert.Raw)
 	assert.NoError(t, err)
 
 	user1 := ledgerMock.NewWallet()
-	owner.Invoke("acl", fnAddUser, base58.Encode(user1.PubKey()), "kychash", "testUserID", "true")
+	owner.Invoke("acl", common.FnAddUser, base58.Encode(user1.PubKey()), "kychash", "testUserID", "true")
 
 	_, res, _ := owner.RawSignedInvoke(3, "fiat", "emit", user1.Address(), "1000")
 	assert.Equal(t, "", res.Error)
@@ -225,10 +189,10 @@ func TestMultisigEmitTransfer(t *testing.T) {
 
 func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	ledgerMock := mock.NewLedger(t)
-	aclCC := mstub.NewMockStub("acl", New())
-	cert, err := getCert(adminCertPath)
+	aclCC := mstub.NewMockStub("acl", cc.New())
+	cert, err := common.GetCert(common.AdminCertPath)
 	assert.NoError(t, err)
-	creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
+	creator, err := common.MarshalIdentity(common.TestCreatorMSP, cert.Raw)
 	assert.NoError(t, err)
 	aclCC.SetCreator(creator)
 	aclCC.MockInit(
@@ -248,7 +212,7 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	pubKeysEncodedString := make([]string, 0, len(owner.PubKeys()))
 	// pubKeysEncodedBytes := make([][]byte, 0, len(owner.PubKeys()))
 	for _, memberPk := range owner.PubKeys() {
-		owner.Invoke("acl", fnAddUser, base58.Encode(memberPk), "kychash", "testUserID", "true")
+		owner.Invoke("acl", common.FnAddUser, base58.Encode(memberPk), "kychash", "testUserID", "true")
 		// pubKeysEncodedBytes = append(pubKeysEncodedBytes, []byte(base58.Encode(memberPk)))
 		pubKeysEncodedString = append(pubKeysEncodedString, base58.Encode(memberPk))
 	}
@@ -280,10 +244,10 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	}
 	cfgBytes, _ := json.Marshal(cfg)
 
-	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	init := ledgerMock.NewCC("fiat", common.NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
 
-	err = ledgerMock.GetStub("fiat").SetCreatorCert(testCreatorMSP, cert.Raw)
+	err = ledgerMock.GetStub("fiat").SetCreatorCert(common.TestCreatorMSP, cert.Raw)
 	assert.NoError(t, err)
 
 	// replace one user's keys
@@ -296,9 +260,9 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	// 										now owner.PubKeys()[0] is another key (after owner.ChangeKeysFor() invoke)
 	owner.Invoke("acl", "addUser", base58.Encode(owner.PubKeys()[0]), "kychash", "testUserID", "true")
 	// get new public keys
-	validatorsPubKeys := make([]string, 0, len(MockValidatorKeys))
-	validatorsSecretKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey, privkey := range MockValidatorKeys {
+	validatorsPubKeys := make([]string, 0, len(common.MockValidatorKeys))
+	validatorsSecretKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey, privkey := range common.MockValidatorKeys {
 		validatorsPubKeys = append(validatorsPubKeys, pubkey)
 		validatorsSecretKeys = append(validatorsSecretKeys, privkey)
 	}

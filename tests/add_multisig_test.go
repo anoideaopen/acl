@@ -1,9 +1,12 @@
-package cc
+package tests
 
 import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,7 +16,6 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
@@ -33,7 +35,7 @@ func TestAddMultisigPubkeyEqual43Symbols(t *testing.T) {
 	t.Parallel()
 	s := &serieAddMultisig{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
-		errorMsg:   errorMsgNotRecords,
+		errorMsg:   errs.ErrRecordsNotFound,
 	}
 
 	addMultisig(t, s)
@@ -43,7 +45,7 @@ func TestAddMultisigPubkeyEqual44Symbols(t *testing.T) {
 	t.Parallel()
 	s := &serieAddMultisig{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
-		errorMsg:   errorMsgNotRecords,
+		errorMsg:   errs.ErrRecordsNotFound,
 	}
 
 	addMultisig(t, s)
@@ -114,11 +116,11 @@ func TestAddMultisigPubkeyWithSpesialSymbols(t *testing.T) {
 }
 
 func addMultisig(t *testing.T, ser *serieAddMultisig) {
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(MockValidatorKeys))
-	privKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey, privKey := range MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
+	privKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey, privKey := range common.MockValidatorKeys {
 		pubKeys = append(pubKeys, pubkey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -127,7 +129,7 @@ func addMultisig(t *testing.T, ser *serieAddMultisig) {
 	for _, memberPk := range pubKeys {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		assert.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -150,9 +152,9 @@ func addMultisig(t *testing.T, ser *serieAddMultisig) {
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	nonceForCaseWithDuplicates := strconv.Itoa(int(time.Now().Unix() * 1000))
-	message := sha3.Sum256([]byte(strings.Join(append([]string{fnAddMultisig, "3", nonce}, pubKeys...), "")))
+	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisig, "3", nonce}, pubKeys...), "")))
 	messageForCaseWithDuplicates := sha3.Sum256([]byte(strings.Join(
-		append([]string{fnAddMultisig, "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
+		append([]string{common.FnAddMultisig, "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
 
 	signatures := make([][]byte, 0, len(privKeys))
 	// duplicateSignatures      []string
@@ -178,7 +180,7 @@ func addMultisig(t *testing.T, ser *serieAddMultisig) {
 		"0",
 		append(append(
 			append([][]byte{},
-				[]byte(fnAddMultisig),
+				[]byte(common.FnAddMultisig),
 				[]byte("3"),
 				[]byte(nonce)),
 			pubKeysBytes...,
@@ -189,17 +191,11 @@ func addMultisig(t *testing.T, ser *serieAddMultisig) {
 }
 
 func TestAddMultisig(t *testing.T) {
-	stub := shimtest.NewMockStub("mockStub", New())
-	assert.NotNil(t, stub)
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	err = SetCreator(stub, testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	stub.MockInit("0", testInitArgs)
+	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(MockValidatorKeys))
-	privKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey, privKey := range MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
+	privKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey, privKey := range common.MockValidatorKeys {
 		pubKeys = append(pubKeys, pubkey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -208,7 +204,7 @@ func TestAddMultisig(t *testing.T) {
 	for _, memberPk := range pubKeys {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		assert.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -229,9 +225,9 @@ func TestAddMultisig(t *testing.T) {
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	nonceForCaseWithDuplicates := strconv.Itoa(int(time.Now().Unix() * 1000))
-	message := sha3.Sum256([]byte(strings.Join(append([]string{fnAddMultisig, "3", nonce}, pubKeys...), "")))
+	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisig, "3", nonce}, pubKeys...), "")))
 	messageForCaseWithDuplicates := sha3.Sum256([]byte(strings.Join(
-		append([]string{fnAddMultisig, "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
+		append([]string{common.FnAddMultisig, "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
 
 	signatures := make([][]byte, 0, len(privKeys))
 	// duplicateSignatures      []string
@@ -258,7 +254,7 @@ func TestAddMultisig(t *testing.T) {
 			"0",
 			append(append(
 				append([][]byte{},
-					[]byte(fnAddMultisig),
+					[]byte(common.FnAddMultisig),
 					[]byte("3"),
 					[]byte(nonce)),
 				pubKeysBytes...,
@@ -268,13 +264,13 @@ func TestAddMultisig(t *testing.T) {
 
 		// derive address from hash of sorted base58-(DE)coded pubKeys
 		pkeysString := strings.Join(pubKeys, "/")
-		keysArrSorted, err := DecodeAndSort(pkeysString)
+		keysArrSorted, err := helpers.DecodeAndSort(pkeysString)
 		assert.NoError(t, err)
 		hashedPksSortedOrder := sha3.Sum256(bytes.Join(keysArrSorted, []byte("")))
 		addrEncoded := base58.CheckEncode(hashedPksSortedOrder[1:], hashedPksSortedOrder[0])
 
 		// check pb.Address
-		result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pkeysString)})
+		result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(pkeysString)})
 		assert.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AclResponse{}
@@ -302,7 +298,7 @@ func TestAddMultisig(t *testing.T) {
 		resp := stub.MockInvoke(
 			"0",
 			append(append(
-				append([][]byte{}, []byte(fnAddMultisig), []byte("3"),
+				append([][]byte{}, []byte(common.FnAddMultisig), []byte("3"),
 					[]byte(nonceForCaseWithDuplicates)),
 				duplicatePubKeysBytes...,
 			), duplicateSignaturesBytes...),
@@ -314,7 +310,7 @@ func TestAddMultisig(t *testing.T) {
 	t.Run("not all members signed (wrong case)", func(t *testing.T) {
 		resp := stub.MockInvoke("0", append(append(
 			append([][]byte{},
-				[]byte(fnAddMultisig),
+				[]byte(common.FnAddMultisig),
 				[]byte("3"),
 				[]byte(nonce)),
 			pubKeysBytes...), signatures[1:]...))
@@ -324,7 +320,7 @@ func TestAddMultisig(t *testing.T) {
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {
 		nonce = strconv.Itoa(int(time.Now().Unix()*1000 + 1))
-		message = sha3.Sum256([]byte(strings.Join(append([]string{fnAddMultisig, "3", nonce}, pubKeys...), "")))
+		message = sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisig, "3", nonce}, pubKeys...), "")))
 
 		signatures = signatures[:0]
 		for i, privkey := range privKeys {
@@ -343,7 +339,7 @@ func TestAddMultisig(t *testing.T) {
 			append(
 				append(
 					append([][]byte{},
-						[]byte(fnAddMultisig),
+						[]byte(common.FnAddMultisig),
 						[]byte("3"),
 						[]byte(nonce)),
 					pubKeysBytes...,
@@ -360,7 +356,7 @@ func TestAddMultisig(t *testing.T) {
 		n := "10"
 		resp := stub.MockInvoke("0", append(append(
 			append([][]byte{},
-				[]byte(fnAddMultisig),
+				[]byte(common.FnAddMultisig),
 				[]byte(n),
 				[]byte(nonce)),
 			pubKeysBytes...), signatures...))
@@ -369,11 +365,11 @@ func TestAddMultisig(t *testing.T) {
 	})
 
 	t.Run("wrong number of parameters", func(t *testing.T) {
-		s := make([][]byte, 0, len(""))
-		p := make([][]byte, 0, len(""))
+		s := make([][]byte, 0)
+		p := make([][]byte, 0)
 		resp := stub.MockInvoke("0", append(append(
 			append([][]byte{},
-				[]byte(fnAddMultisig),
+				[]byte(common.FnAddMultisig),
 				[]byte(nonce)),
 			p...), s...))
 		assert.Equal(t, int32(shim.ERROR), resp.Status)
@@ -382,11 +378,11 @@ func TestAddMultisig(t *testing.T) {
 }
 
 func TestNonce(t *testing.T) {
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(MockValidatorKeys))
-	privKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey, privKey := range MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
+	privKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey, privKey := range common.MockValidatorKeys {
 		pubKeys = append(pubKeys, pubkey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -395,7 +391,7 @@ func TestNonce(t *testing.T) {
 	for _, memberPk := range pubKeys {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		assert.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -406,7 +402,7 @@ func TestNonce(t *testing.T) {
 	}
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
-	message := sha3.Sum256([]byte(strings.Join(append([]string{fnAddMultisig, "3", nonce}, pubKeys...), "")))
+	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisig, "3", nonce}, pubKeys...), "")))
 
 	signatures := make([][]byte, 0, len(privKeys))
 	for _, privkey := range privKeys {
@@ -418,7 +414,7 @@ func TestNonce(t *testing.T) {
 			"0",
 			append(append(
 				append([][]byte{},
-					[]byte(fnAddMultisig),
+					[]byte(common.FnAddMultisig),
 					[]byte("3"),
 					[]byte(nonceForDuplicateNonceTest)),
 				pubKeysBytes...,
@@ -430,7 +426,7 @@ func TestNonce(t *testing.T) {
 			"0",
 			append(append(
 				append([][]byte{},
-					[]byte(fnAddMultisig),
+					[]byte(common.FnAddMultisig),
 					[]byte("3"),
 					[]byte(nonceForDuplicateNonceTest)),
 				pubKeysBytes...,
@@ -446,7 +442,7 @@ func TestNonce(t *testing.T) {
 			"0",
 			append(append(
 				append([][]byte{},
-					[]byte(fnAddMultisig),
+					[]byte(common.FnAddMultisig),
 					[]byte("3"),
 					[]byte(n)),
 				pubKeysBytes...,

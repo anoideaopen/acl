@@ -1,7 +1,9 @@
-package cc
+package tests
 
 import (
 	"encoding/json"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"testing"
 
@@ -25,14 +27,14 @@ func TestSetAccountInfoTrueAddressFalseLists(t *testing.T) {
 	t.Parallel()
 
 	s := &serieSetAccountInfo{
-		testAddress:   testaddr,
+		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "false",
 		isBlacklisted: "false",
 		errorMsg:      "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -41,14 +43,14 @@ func TestSetAccountInfoTrueAddressTrueGrayListFalseBlackLists(t *testing.T) {
 	t.Parallel()
 
 	s := &serieSetAccountInfo{
-		testAddress:   testaddr,
+		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "true",
 		isBlacklisted: "false",
 		errorMsg:      "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -57,14 +59,14 @@ func TestSetAccountInfoTrueAddressFalseGrayListTrueBlackLists(t *testing.T) {
 	t.Parallel()
 
 	s := &serieSetAccountInfo{
-		testAddress:   testaddr,
+		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "false",
 		isBlacklisted: "true",
 		errorMsg:      "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -73,14 +75,14 @@ func TestSetAccountInfoTrueAddressTrueLists(t *testing.T) {
 	t.Parallel()
 
 	s := &serieSetAccountInfo{
-		testAddress:   testaddr,
+		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "true",
 		isBlacklisted: "true",
 		errorMsg:      "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -93,10 +95,10 @@ func TestSetAccountInfoEmptyAddress(t *testing.T) {
 		respStatus:    int32(shim.ERROR),
 		isGraylisted:  "false",
 		isBlacklisted: "false",
-		errorMsg:      errorMsgEmptyAddress,
+		errorMsg:      errs.ErrEmptyAddress,
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -109,10 +111,10 @@ func TestSetAccountInfoWrongAddress(t *testing.T) {
 		respStatus:    int32(shim.ERROR),
 		isGraylisted:  "false",
 		isBlacklisted: "false",
-		errorMsg:      "Account info for address 2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt is empty",
+		errorMsg:      "account info for address 2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt is empty",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -128,7 +130,7 @@ func TestSetAccountInfoWrongAddressString(t *testing.T) {
 		errorMsg:      "invalid address, checksum error",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -144,7 +146,7 @@ func TestSetAccountInfoWrongAddressNumeric(t *testing.T) {
 		errorMsg:      "invalid address, checksum error",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := setAccountInfo(t, stub, s)
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
@@ -153,7 +155,7 @@ func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *serieSetAccountI
 	// add user first
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
@@ -173,7 +175,7 @@ func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp 
 		return
 	}
 
-	check := stub.MockInvoke("0", [][]byte{[]byte(fnGetAccInfoFn), []byte(ser.testAddress)})
+	check := stub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccInfoFn), []byte(ser.testAddress)})
 	assert.Equal(t, ser.respStatus, check.Status)
 
 	isGraylistedBool, err := strconv.ParseBool(ser.isGraylisted)
@@ -188,7 +190,7 @@ func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp 
 	assert.Equal(t, isBlacklistedBool, addrFromLedger.BlackListed)
 
 	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pubkey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
 	assert.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}

@@ -2,6 +2,8 @@ package cc
 
 import (
 	"fmt"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -15,17 +17,6 @@ const (
 	addressKey = "acl_access_matrix_address"
 )
 
-// Errors
-const (
-	ErrUnauthorized       = "unauthorized"
-	ErrArgumentsCount     = "incorrect number of arguments %d, but this method expects: '%s'"
-	ErrEmptyChannelName   = "channel name is empty"
-	ErrEmptyChaincodeName = "chaincode name is empty"
-	ErrEmptyRoleName      = "role name is empty"
-	ErrCalledNotCCOrAdmin = "unauthorized; should be called via another chaincode or by platform administrator"
-	ErrCallAthFailed      = "call authorization failed, err: %s"
-)
-
 // AddRights adds rights to the access matrix
 // args[0] -> channelName
 // args[1] -GetOperationAllRights> chaincodeName
@@ -36,13 +27,13 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	argsNum := len(args)
 	const requiredArgsCount = 5
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(ErrArgumentsCount, argsNum,
+		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
 		return shim.Error(errMsg)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorized+": %s", err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorized+": %s", err.Error()))
 	}
 
 	channelName := args[0]
@@ -52,19 +43,19 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	addressEncoded := args[4]
 
 	if len(channelName) == 0 {
-		return shim.Error(ErrEmptyChannelName)
+		return shim.Error(errs.ErrEmptyChannelName)
 	}
 
 	if len(chaincodeName) == 0 {
-		return shim.Error(ErrEmptyChaincodeName)
+		return shim.Error(errs.ErrEmptyChaincodeName)
 	}
 
 	if len(roleName) == 0 {
-		return shim.Error(ErrEmptyRoleName)
+		return shim.Error(errs.ErrEmptyRoleName)
 	}
 
 	if len(addressEncoded) == 0 {
-		return shim.Error(ErrEmptyAddress)
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
@@ -176,13 +167,13 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 	argsNum := len(args)
 	const requiredArgsCount = 5
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(ErrArgumentsCount, argsNum,
+		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
 		return shim.Error(errMsg)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorized+": %s", err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorized+": %s", err.Error()))
 	}
 
 	channelName := args[0]
@@ -281,17 +272,17 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 	argsNum := len(args)
 	const requiredArgsCount = 5
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(ErrArgumentsCount, argsNum,
+		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
 		return shim.Error(errMsg)
 	}
 
 	canCall, err := c.isCalledFromChaincodeOrAdmin(stub)
 	if err != nil {
-		return shim.Error(fmt.Sprintf(ErrCallAthFailed, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrCallAthFailed, err.Error()))
 	}
 	if !canCall {
-		return shim.Error(ErrCalledNotCCOrAdmin)
+		return shim.Error(errs.ErrCalledNotCCOrAdmin)
 	}
 
 	channelName := args[0]
@@ -301,19 +292,19 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 	addressEncoded := args[4]
 
 	if len(channelName) == 0 {
-		return shim.Error(ErrEmptyChannelName)
+		return shim.Error(errs.ErrEmptyChannelName)
 	}
 
 	if len(chaincodeName) == 0 {
-		return shim.Error(ErrEmptyChaincodeName)
+		return shim.Error(errs.ErrEmptyChaincodeName)
 	}
 
 	if len(roleName) == 0 {
-		return shim.Error(ErrEmptyRoleName)
+		return shim.Error(errs.ErrEmptyRoleName)
 	}
 
 	if len(addressEncoded) == 0 {
-		return shim.Error(ErrEmptyAddress)
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
@@ -361,21 +352,21 @@ func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []strin
 	argsNum := len(args)
 	const argsCount = 1
 	if argsNum != argsCount {
-		errMsg := fmt.Sprintf(ErrArgumentsCount, argsNum, "user address")
+		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum, "user address")
 		return shim.Error(errMsg)
 	}
 
 	canCall, err := c.isCalledFromChaincodeOrAdmin(stub)
 	if err != nil {
-		return shim.Error(fmt.Sprintf(ErrCallAthFailed, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrCallAthFailed, err.Error()))
 	}
 	if !canCall {
-		return shim.Error(ErrCalledNotCCOrAdmin)
+		return shim.Error(errs.ErrCalledNotCCOrAdmin)
 	}
 
 	addressEncoded := args[0]
 	if len(addressEncoded) == 0 {
-		return shim.Error(ErrEmptyAddress)
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
@@ -405,16 +396,16 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 	argsNum := len(args)
 	const requiredArgsCount = 4
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(ErrArgumentsCount, argsNum, "channel name, chaincode name, role name and operation name")
+		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum, "channel name, chaincode name, role name and operation name")
 		return shim.Error(errMsg)
 	}
 
 	canCall, err := c.isCalledFromChaincodeOrAdmin(stub)
 	if err != nil {
-		return shim.Error(fmt.Sprintf(ErrCallAthFailed, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrCallAthFailed, err.Error()))
 	}
 	if !canCall {
-		return shim.Error(ErrCalledNotCCOrAdmin)
+		return shim.Error(errs.ErrCalledNotCCOrAdmin)
 	}
 
 	channelName := args[0]
@@ -423,15 +414,15 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 	operationName := args[3]
 
 	if len(channelName) == 0 {
-		return shim.Error(ErrEmptyChannelName)
+		return shim.Error(errs.ErrEmptyChannelName)
 	}
 
 	if len(chaincodeName) == 0 {
-		return shim.Error(ErrEmptyChaincodeName)
+		return shim.Error(errs.ErrEmptyChaincodeName)
 	}
 
 	if len(roleName) == 0 {
-		return shim.Error(ErrEmptyRoleName)
+		return shim.Error(errs.ErrEmptyRoleName)
 	}
 
 	operCompositeKey, err := stub.CreateCompositeKey(operKey, []string{channelName, chaincodeName, roleName, operationName})
@@ -484,7 +475,7 @@ func (c *ACL) isCalledFromChaincodeOrAdmin(stub shim.ChaincodeStubInterface) (bo
 
 	// called by admin check
 	if err = c.verifyAccess(stub); err != nil {
-		if err.Error() == ErrCallerNotAdmin {
+		if err.Error() == errs.ErrCallerNotAdmin {
 			return false, nil
 		}
 
@@ -496,7 +487,7 @@ func (c *ACL) isCalledFromChaincodeOrAdmin(stub shim.ChaincodeStubInterface) (bo
 
 // calledFromChaincode get chaincode name from proposal; if errors occurs return false, error
 func calledFromChaincode(stub shim.ChaincodeStubInterface, ccNameEtl string) (bool, error) {
-	ccName, err := parseCCName(stub)
+	ccName, err := helpers.ParseCCName(stub)
 	if err != nil {
 		return false, err
 	}

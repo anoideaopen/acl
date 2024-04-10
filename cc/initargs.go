@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/anoideaopen/acl/helpers"
 	"strconv"
 
-	"github.com/anoideaopen/acl/cc/proto"
+	"github.com/anoideaopen/acl/proto"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
@@ -47,7 +48,7 @@ func getNewInitArgsByChaincodeArgs(stub shim.ChaincodeStubInterface) (*proto.Arg
 		return nil, fmt.Errorf("invalid validator count (index of args 1) format found '%s' but expected value with type int", args[1])
 	}
 
-	ccName, err := parseCCName(stub)
+	ccName, err := helpers.ParseCCName(stub)
 	if err != nil {
 		return nil, err
 	}

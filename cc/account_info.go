@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	"strconv"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
@@ -23,7 +25,7 @@ import (
 func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	addrEncoded := args[0]
 	if len(addrEncoded) == 0 {
-		return shim.Error("empty address")
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 
 	_, _, err := base58.CheckDecode(addrEncoded)
@@ -62,7 +64,7 @@ func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 	}
 
 	if err = c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	infoMsg, err := proto.Marshal(&pb.AccountInfo{KycHash: kycHash, GrayListed: isGraylisted, BlackListed: isBlacklisted})
@@ -86,7 +88,7 @@ func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 func (c *ACL) GetAccountInfo(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	addrEncoded := args[0]
 	if len(addrEncoded) == 0 {
-		return shim.Error("empty address")
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 	accInfo, err := getAccountInfo(stub, addrEncoded)
 	if err != nil {
@@ -118,7 +120,7 @@ func getAccountInfo(stub shim.ChaincodeStubInterface, address string) (*pb.Accou
 
 // checkBlocked fetch account by public key and check account not in black or gray list
 func checkBlocked(stub shim.ChaincodeStubInterface, encodedBase58PublicKey string) error {
-	decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+	decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 	if err != nil {
 		return err
 	}
@@ -135,7 +137,7 @@ func checkBlocked(stub shim.ChaincodeStubInterface, encodedBase58PublicKey strin
 		return err
 	}
 	if len(keyData) == 0 {
-		return fmt.Errorf("not found any records")
+		return fmt.Errorf(errs.ErrRecordsNotFound)
 	}
 	var a pb.SignedAddress
 	if err = proto.Unmarshal(keyData, &a); err != nil {
@@ -173,7 +175,7 @@ func isAccountInfoInBlockedLists(accInfo *pb.AccountInfo) bool {
 func fetchAccountInfoFromPubKeys(stub shim.ChaincodeStubInterface, pubKeys []string) (*pb.AccountInfo, error) {
 	var info *pb.AccountInfo
 
-	pkeys, err := keyStringToSortedHashedHex(pubKeys)
+	pkeys, err := helpers.KeyStringToSortedHashedHex(pubKeys)
 	if err != nil {
 		return nil, fmt.Errorf("converting keys '%s'to sorted hash failed, err: %w", pubKeys, err)
 	}
@@ -198,7 +200,7 @@ func checkIfAccountInfoExistsAndGetData(stub shim.ChaincodeStubInterface, ckeyIn
 	}
 
 	if len(infoData) == 0 {
-		return nil, fmt.Errorf("Account info for address %s is empty", address)
+		return nil, fmt.Errorf(errs.ErrAccountForAddressIsEmpty, address)
 	}
 
 	return infoData, nil

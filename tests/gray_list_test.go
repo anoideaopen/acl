@@ -1,6 +1,9 @@
-package cc
+package tests
 
 import (
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/tests/common"
 	"testing"
 
 	pb "github.com/anoideaopen/foundation/proto"
@@ -26,12 +29,12 @@ func TestGrayListTrue(t *testing.T) {
 	t.Parallel()
 
 	s := &serieGrayList{
-		testAddress: testaddr,
+		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
 		errorMsg:    "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addAddressToGrayListTest(t, stub, s)
 	validationResultAddAddressToGrayListTest(t, stub, resp, s)
 }
@@ -42,10 +45,10 @@ func TestGrayListEmptyAddress(t *testing.T) {
 	s := &serieGrayList{
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
-		errorMsg:    ErrEmptyAddress,
+		errorMsg:    errs.ErrEmptyAddress,
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addAddressToGrayListTest(t, stub, s)
 	validationResultAddAddressToGrayListTest(t, stub, resp, s)
 }
@@ -58,10 +61,10 @@ func TestGrayListWrongAddress(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "Account info for address " + s.testAddress + " is empty"
+	errorMsg := "account info for address " + s.testAddress + " is empty"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addAddressToGrayListTest(t, stub, s)
 	validationResultAddAddressToGrayListTest(t, stub, resp, s)
 }
@@ -70,12 +73,12 @@ func TestRemoveAddressFromGrayListTrue(t *testing.T) {
 	t.Parallel()
 
 	s := &serieGrayList{
-		testAddress: testaddr,
+		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
 		errorMsg:    "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := removeAddressFromGrayList(t, stub, s)
 	validationResultRemoveAddressFromGrayList(t, stub, resp, s)
 }
@@ -86,10 +89,10 @@ func TestRemoveAddressFromGrayListEmptyAddress(t *testing.T) {
 	s := &serieGrayList{
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
-		errorMsg:    ErrEmptyAddress,
+		errorMsg:    errs.ErrEmptyAddress,
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := removeAddressFromGrayList(t, stub, s)
 	validationResultRemoveAddressFromGrayList(t, stub, resp, s)
 }
@@ -102,10 +105,10 @@ func TestRemoveAddressFromGrayListWrongAddress(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "Account info for address " + s.testAddress + " is empty"
+	errorMsg := "account info for address " + s.testAddress + " is empty"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := removeAddressFromGrayList(t, stub, s)
 	validationResultRemoveAddressFromGrayList(t, stub, resp, s)
 }
@@ -113,11 +116,11 @@ func TestRemoveAddressFromGrayListWrongAddress(t *testing.T) {
 func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *serieGrayList) peer.Response {
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte("true")},
+		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
 	)
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
-	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(fnAddToList), []byte(ser.testAddress), []byte(GrayList)})
+	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(ser.testAddress), []byte(cc.GrayList)})
 
 	return respGrayList
 }
@@ -131,7 +134,7 @@ func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockS
 	}
 
 	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pubkey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
 	assert.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
@@ -144,15 +147,15 @@ func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockS
 func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *serieGrayList) peer.Response {
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte("true")},
+		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
 	)
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
-	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(fnAddToList), []byte(testaddr), []byte(GrayList)})
+	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(common.TestAddr), []byte(cc.GrayList)})
 	assert.Equal(t, int32(shim.OK), respGrayList.Status)
 
 	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pubkey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
 	assert.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
@@ -161,7 +164,7 @@ func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *serie
 	assert.NotNil(t, response.Account)
 	assert.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
 
-	respDelFromList := stub.MockInvoke("0", [][]byte{[]byte(fnDelFromList), []byte(ser.testAddress), []byte(GrayList)})
+	respDelFromList := stub.MockInvoke("0", [][]byte{[]byte(common.FnDelFromList), []byte(ser.testAddress), []byte(cc.GrayList)})
 
 	return respDelFromList
 }
@@ -175,7 +178,7 @@ func validationResultRemoveAddressFromGrayList(t *testing.T, stub *shimtest.Mock
 	}
 
 	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pubkey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
 	assert.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
