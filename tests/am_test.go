@@ -1,12 +1,11 @@
 package tests
 
 import (
-	"encoding/json"
+	"testing"
+
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/common"
-	"testing"
-
 	"github.com/anoideaopen/foundation/mock"
 	mstub "github.com/anoideaopen/foundation/mock/stub"
 	pb "github.com/anoideaopen/foundation/proto"
@@ -19,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -273,7 +273,7 @@ func TestAclCalledFromChaincode(t *testing.T) {
 		},
 	}
 
-	cfgBytes, _ := json.Marshal(cfg)
+	cfgBytes, _ := protojson.Marshal(cfg)
 
 	init := ledgerMock.NewCC("fiat", common.NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)

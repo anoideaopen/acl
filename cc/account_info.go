@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/helpers"
 	"strconv"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
