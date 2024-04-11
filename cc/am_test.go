@@ -1,7 +1,6 @@
 package cc
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/anoideaopen/foundation/mock"
@@ -16,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -278,7 +278,7 @@ func TestAclCalledFromChaincode(t *testing.T) {
 		},
 	}
 
-	cfgBytes, _ := json.Marshal(cfg)
+	cfgBytes, _ := protojson.Marshal(cfg)
 
 	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
