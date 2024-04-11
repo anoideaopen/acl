@@ -4,6 +4,7 @@ package cc
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
@@ -918,15 +919,8 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 		return fmt.Errorf("bad public key, type conversion of parsed public key failed")
 	}
 
-	ecdhPk, err := pk.ECDH()
-	if err != nil {
-		return fmt.Errorf("public key transition failed: %w", err)
-	}
 	hash := sha256.New()
-	// deprecated
-	// hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
-
-	hash.Write(ecdhPk.Bytes())
+	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 	hashed := sha3.Sum256(cert)
 	if !bytes.Equal(hashed[:], c.init.AdminSKI) &&
 		!bytes.Equal(hash.Sum(nil), c.init.AdminSKI) {
