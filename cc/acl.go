@@ -920,6 +920,14 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	}
 
 	hash := sha256.New()
+
+	// ToDo - need to remove deprecated elliptic.Marshal to when Go version will be updated to 1.20
+	// ToDo right way to create hash is as follows:
+	// ecdhPk, err := pk.ECDH()
+	// if err != nil {
+	// 	return fmt.Errorf("public key transition failed: %w", err)
+	// }
+	// hash.Write(ecdhPk.Bytes())
 	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 	hashed := sha3.Sum256(cert)
 	if !bytes.Equal(hashed[:], c.init.AdminSKI) &&
