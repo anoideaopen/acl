@@ -10,13 +10,13 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/helpers"
 	"math/big"
 	"strconv"
 	"strings"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -920,11 +920,11 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 
 	ecdhPk, err := pk.ECDH()
 	if err != nil {
-		shim.Error("public key transition failed")
+		return fmt.Errorf("public key transition failed: %w", err)
 	}
 	hash := sha256.New()
 	// deprecated
-	//hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
+	// hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 
 	hash.Write(ecdhPk.Bytes())
 	hashed := sha3.Sum256(cert)

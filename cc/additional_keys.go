@@ -4,10 +4,10 @@ package cc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/anoideaopen/acl/cc/errs"
 	"strings"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
+	"github.com/anoideaopen/acl/cc/errs"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
