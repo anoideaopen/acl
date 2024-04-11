@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -149,7 +150,7 @@ func TestEmitTransfer(t *testing.T) {
 		},
 	}
 
-	cfgBytes, _ := json.Marshal(cfg)
+	cfgBytes, _ := protojson.Marshal(cfg)
 
 	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
@@ -207,7 +208,7 @@ func TestMultisigEmitTransfer(t *testing.T) {
 			Issuer:   &pb.Wallet{Address: owner.Address()},
 		},
 	}
-	cfgBytes, _ := json.Marshal(cfg)
+	cfgBytes, _ := protojson.Marshal(cfg)
 
 	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
@@ -278,7 +279,7 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 			Issuer:   &pb.Wallet{Address: owner.Address()},
 		},
 	}
-	cfgBytes, _ := json.Marshal(cfg)
+	cfgBytes, _ := protojson.Marshal(cfg)
 
 	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
@@ -293,7 +294,7 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	err = owner.ChangeKeysFor(0, newSecretKey)
 	assert.NoError(t, err)
 
-	// 										now owner.PubKeys()[0] is another key (after owner.ChangeKeysFor() invoke)
+	// now owner.PubKeys()[0] is another key (after owner.ChangeKeysFor() invoke)
 	owner.Invoke("acl", "addUser", base58.Encode(owner.PubKeys()[0]), "kychash", "testUserID", "true")
 	// get new public keys
 	validatorsPubKeys := make([]string, 0, len(MockValidatorKeys))
