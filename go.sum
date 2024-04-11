@@ -1,6 +1,4 @@
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
-github.com/anoideaopen/foundation v0.0.0-20240408064907-19c346547189 h1:rOUqQqZkSOjcezhYWv+zK+2uXdKwb0s+m7r2pD8zaJE=
-github.com/anoideaopen/foundation v0.0.0-20240408064907-19c346547189/go.mod h1:9vEFLaOEqFfSodps31kLVFqYUIbHFaVdXSH988mv61o=
 github.com/anoideaopen/foundation v0.0.0-20240411055802-53b67be060ea h1:D7vAVEbmajpcBGPxj07IKjGeNoOg71g1Y9U4HnFj1jM=
 github.com/anoideaopen/foundation v0.0.0-20240411055802-53b67be060ea/go.mod h1:9vEFLaOEqFfSodps31kLVFqYUIbHFaVdXSH988mv61o=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
