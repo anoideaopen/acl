@@ -21,19 +21,19 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-type serieAddMultisig struct {
+type seriesAddMultisig struct {
 	testPubKey string
 	errorMsg   string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieAddMultisig) SetError(errMsg string) {
+// add dynamic errorMsg in serie
+func (s *seriesAddMultisig) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
 func TestAddMultisigPubkeyEqual43Symbols(t *testing.T) {
 	t.Parallel()
-	s := &serieAddMultisig{
+	s := &seriesAddMultisig{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
 		errorMsg:   errs.ErrRecordsNotFound,
 	}
@@ -43,7 +43,7 @@ func TestAddMultisigPubkeyEqual43Symbols(t *testing.T) {
 
 func TestAddMultisigPubkeyEqual44Symbols(t *testing.T) {
 	t.Parallel()
-	s := &serieAddMultisig{
+	s := &seriesAddMultisig{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
 		errorMsg:   errs.ErrRecordsNotFound,
 	}
@@ -53,7 +53,7 @@ func TestAddMultisigPubkeyEqual44Symbols(t *testing.T) {
 
 func TestAddMultisigPubkeyEmpty(t *testing.T) {
 	t.Parallel()
-	s := &serieAddMultisig{
+	s := &seriesAddMultisig{
 		testPubKey: "",
 		errorMsg:   "encoded base 58 public key is empty",
 	}
@@ -64,7 +64,7 @@ func TestAddMultisigPubkeyEmpty(t *testing.T) {
 func TestAddMultisigPubkeyMoreThan44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddMultisig{
+	s := &seriesAddMultisig{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
 	}
 
@@ -78,7 +78,7 @@ func TestAddMultisigPubkeyMoreThan44Symbols(t *testing.T) {
 func TestAddMultisigPubkeyLessThan43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddMultisig{
+	s := &seriesAddMultisig{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
 	}
 
@@ -92,7 +92,7 @@ func TestAddMultisigPubkeyLessThan43Symbols(t *testing.T) {
 func TestAddMultisigPubkeyWrongNumericZero(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddMultisig{
+	s := &seriesAddMultisig{
 		testPubKey: "00000000000000000000000000000000",
 	}
 
@@ -105,7 +105,7 @@ func TestAddMultisigPubkeyWrongNumericZero(t *testing.T) {
 func TestAddMultisigPubkeyWithSpesialSymbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddMultisig{
+	s := &seriesAddMultisig{
 		testPubKey: "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 	}
 
@@ -115,7 +115,7 @@ func TestAddMultisigPubkeyWithSpesialSymbols(t *testing.T) {
 	addMultisig(t, s)
 }
 
-func addMultisig(t *testing.T, ser *serieAddMultisig) {
+func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 	stub := common.StubCreateAndInit(t)
 
 	pubKeys := make([]string, 0, len(common.MockValidatorKeys))

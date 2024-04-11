@@ -2,11 +2,11 @@ package tests
 
 import (
 	"encoding/json"
-	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"testing"
 
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type serieSetAccountInfo struct {
+type seriesSetAccountInfo struct {
 	testAddress   string
 	respStatus    int32
 	isGraylisted  string
@@ -26,7 +26,7 @@ type serieSetAccountInfo struct {
 func TestSetAccountInfoTrueAddressFalseLists(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "false",
@@ -42,7 +42,7 @@ func TestSetAccountInfoTrueAddressFalseLists(t *testing.T) {
 func TestSetAccountInfoTrueAddressTrueGrayListFalseBlackLists(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "true",
@@ -58,7 +58,7 @@ func TestSetAccountInfoTrueAddressTrueGrayListFalseBlackLists(t *testing.T) {
 func TestSetAccountInfoTrueAddressFalseGrayListTrueBlackLists(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "false",
@@ -74,7 +74,7 @@ func TestSetAccountInfoTrueAddressFalseGrayListTrueBlackLists(t *testing.T) {
 func TestSetAccountInfoTrueAddressTrueLists(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
 		isGraylisted:  "true",
@@ -90,7 +90,7 @@ func TestSetAccountInfoTrueAddressTrueLists(t *testing.T) {
 func TestSetAccountInfoEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   "",
 		respStatus:    int32(shim.ERROR),
 		isGraylisted:  "false",
@@ -106,7 +106,7 @@ func TestSetAccountInfoEmptyAddress(t *testing.T) {
 func TestSetAccountInfoWrongAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
 		respStatus:    int32(shim.ERROR),
 		isGraylisted:  "false",
@@ -122,7 +122,7 @@ func TestSetAccountInfoWrongAddress(t *testing.T) {
 func TestSetAccountInfoWrongAddressString(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   "AbracadabraAbracadabraAbracadabraAbracadabra",
 		respStatus:    int32(shim.ERROR),
 		isGraylisted:  "false",
@@ -138,7 +138,7 @@ func TestSetAccountInfoWrongAddressString(t *testing.T) {
 func TestSetAccountInfoWrongAddressNumeric(t *testing.T) {
 	t.Parallel()
 
-	s := &serieSetAccountInfo{
+	s := &seriesSetAccountInfo{
 		testAddress:   "111111111111111111111111111111111111111",
 		respStatus:    int32(shim.ERROR),
 		isGraylisted:  "false",
@@ -151,7 +151,7 @@ func TestSetAccountInfoWrongAddressNumeric(t *testing.T) {
 	validationResultSetAccountInfo(t, stub, resp, s)
 }
 
-func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *serieSetAccountInfo) peer.Response {
+func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *seriesSetAccountInfo) peer.Response {
 	// add user first
 	resp := stub.MockInvoke(
 		"0",
@@ -167,7 +167,7 @@ func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *serieSetAccountI
 	return check
 }
 
-func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *serieSetAccountInfo) {
+func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesSetAccountInfo) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 

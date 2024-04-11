@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"github.com/anoideaopen/acl/helpers"
 	"testing"
 
+	"github.com/anoideaopen/acl/helpers"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,9 +3,9 @@ package tests
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/anoideaopen/acl/tests/common"
 	"testing"
 
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck

@@ -2,14 +2,14 @@ package tests
 
 import (
 	"encoding/hex"
-	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/helpers"
-	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck

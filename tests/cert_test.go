@@ -1,10 +1,10 @@
 package tests
 
 import (
-	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/tests/common"
 	"testing"
 
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/tests/common"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/assert"
 )

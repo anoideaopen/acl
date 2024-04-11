@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/anoideaopen/acl/helpers"
 	"strconv"
 
+	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
