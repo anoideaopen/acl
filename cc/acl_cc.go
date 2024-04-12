@@ -364,7 +364,7 @@ func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Respo
 	pksAndSignatures := args[3:]
 	lenPksAndSignatures := len(pksAndSignatures)
 	if lenPksAndSignatures == 0 {
-		return shim.Error("no public keys and signatures provided")
+		return shim.Error("no public keys and signatures  provided")
 	}
 	if lenPksAndSignatures%2 != 0 {
 		return shim.Error(fmt.Sprintf("uneven number of public keys and signatures provided: %d", lenPksAndSignatures))
