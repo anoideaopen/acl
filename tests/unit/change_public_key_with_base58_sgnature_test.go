@@ -9,11 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/tests/common"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/sha3"
 )
@@ -50,13 +48,15 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 }
 
 func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithBase58Signature, validatorCount int) {
-	stub := shimtest.NewMockStub("mockStub", cc.New())
-	assert.NotNil(t, stub)
-	cert, err := common.GetCert(common.AdminCertPath)
-	assert.NoError(t, err)
-	err = common.SetCreator(stub, common.TestCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-
+	stub := common.StubCreate(t)
+	/*
+		stub := shimtest.NewMockStub("mockStub", cc.New())
+		assert.NotNil(t, stub)
+		cert, err := common.GetCert(common.AdminCertPath)
+		assert.NoError(t, err)
+		err = common.SetCreator(stub, common.TestCreatorMSP, cert.Raw)
+		assert.NoError(t, err)
+	*/
 	ss, err := newSecrets(validatorCount)
 	assert.NoError(t, err)
 

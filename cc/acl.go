@@ -69,9 +69,9 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 	}
 
 	hashed := sha3.Sum256(decodedPublicKey)
-	pkeys := hex.EncodeToString(hashed[:])
+	pKeys := hex.EncodeToString(hashed[:])
 	addr := base58.CheckEncode(hashed[1:], hashed[0])
-	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, pkeys)
+	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, pKeys)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -86,7 +86,7 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.Address.AddrString(), pkeys))
+		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.Address.AddrString(), pKeys))
 	}
 
 	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)
@@ -108,8 +108,8 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 		return shim.Error(err.Error())
 	}
 
-	// save address -> pubkey hash mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(pkeys)); err != nil {
+	// save address -> pubKey hash mapping
+	if err = stub.PutState(addrToPkCompositeKey, []byte(pKeys)); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -118,11 +118,11 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 		return shim.Error(err.Error())
 	}
 
-	ckey, err := compositekey.AccountInfo(stub, addr)
+	cKey, err := compositekey.AccountInfo(stub, addr)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	if err = stub.PutState(ckey, infoMsg); err != nil {
+	if err = stub.PutState(cKey, infoMsg); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -180,12 +180,12 @@ func (c *ACL) CheckKeys(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	if err := helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
 	}
-	pkeys, err := helpers.KeyStringToSortedHashedHex(strKeys)
+	pKeys, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
 	}
 
-	addr, err := getAddressByHashedKeys(stub, pkeys)
+	addr, err := getAddressByHashedKeys(stub, pKeys)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -224,8 +224,8 @@ func (c *ACL) CheckKeys(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	return shim.Success(result)
 }
 
-// CheckAddress checks if the address is graylisted
-// returns an error if the address is graylisted or returns pb.Address if not
+// CheckAddress checks if the address is grayListed
+// returns an error if the address is grayListed or returns pb.Address if not
 // args[0] - base58-encoded address
 func (c *ACL) CheckAddress(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	argsNum := len(args)
@@ -252,7 +252,7 @@ func (c *ACL) CheckAddress(stub shim.ChaincodeStubInterface, args []string) peer
 	return shim.Success(addrResponse)
 }
 
-// retrieveAndVerifySignedAddress decodes a base58-encoded address and verifies it's not graylisted.
+// retrieveAndVerifySignedAddress decodes a base58-encoded address and verifies it's not grayListed.
 func (c *ACL) retrieveAndVerifySignedAddress(
 	stub shim.ChaincodeStubInterface,
 	addressBase58Check string,
@@ -332,12 +332,12 @@ func (c *ACL) updateSignedAddress(
 	return stub.PutState(signedAddressCompositeKey, marshaledSignedAddress)
 }
 
-// Setkyc updates KYC for address
+// SetKyc updates KYC for address
 // arg[0] - address
 // arg[1] - KYC hash
 // arg[2] - nonce
 // arg[3:] - public keys and signatures of validators
-func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) SetKyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	argsNum := len(args)
 	const minArgsCount = 5
 	if argsNum < minArgsCount {
@@ -387,11 +387,11 @@ func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Respo
 	if err := c.verifyValidatorSignatures(message[:], pks, signatures); err != nil {
 		return shim.Error(err.Error())
 	}
-	ckey, err := compositekey.AccountInfo(stub, address)
+	cKey, err := compositekey.AccountInfo(stub, address)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	infoData, err := checkIfAccountInfoExistsAndGetData(stub, ckey, address)
+	infoData, err := checkIfAccountInfoExistsAndGetData(stub, cKey, address)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -408,7 +408,7 @@ func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Respo
 		return shim.Error(err.Error())
 	}
 
-	if err = stub.PutState(ckey, newAccInfo); err != nil {
+	if err = stub.PutState(cKey, newAccInfo); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -439,7 +439,7 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		_ = iterator.Close()
 	}()
 
-	var addrs []string
+	var addresses []string
 	for iterator.HasNext() {
 		kv, err := iterator.Next()
 		if err != nil {
@@ -449,11 +449,11 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		addrs = append(addrs, extractedAddr[0])
+		addresses = append(addresses, extractedAddr[0])
 	}
 
 	serialized, err := json.Marshal(AddrsWithPagination{
-		Addrs:    addrs,
+		Addrs:    addresses,
 		Bookmark: result.Bookmark,
 	})
 	if err != nil {
@@ -528,7 +528,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	if err = helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
-	newkey, err := helpers.KeyStringToSortedHashedHex(strKeys)
+	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
@@ -578,7 +578,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	if len(keys) == 0 {
 		return shim.Error(fmt.Sprintf("no public keys for address %s", forAddrOrig))
 	}
-	if bytes.Equal(keys, []byte(newkey)) {
+	if bytes.Equal(keys, []byte(newKey)) {
 		return shim.Error("the new key is equivalent to an existing one")
 	}
 
@@ -613,7 +613,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	}
 
 	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newkey)
+	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -631,7 +631,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	}
 
 	// set new address -> key mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(newkey)); err != nil {
+	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -686,7 +686,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	if err = helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
-	newkey, err := helpers.KeyStringToSortedHashedHex(strKeys)
+	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
@@ -763,7 +763,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newkey)
+	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -781,7 +781,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	// set new address -> key mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(newkey)); err != nil {
+	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -821,7 +821,7 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 	}
 
 	for i, encodedBase58PublicKey := range pks {
-		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -837,15 +837,15 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		}
 	}
 
-	if countValidatorsSigned < c.init.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.init.ValidatorsCount)
+	if countValidatorsSigned < c.config.ValidatorsCount {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.config.ValidatorsCount)
 	}
 	return nil
 }
 
-func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatiorSignatures []string) error {
+func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorSignatures []string) error {
 	var countValidatorsSigned int64
-	if err := helpers.CheckDuplicates(validatiorSignatures); err != nil {
+	if err := helpers.CheckDuplicates(validatorSignatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
 	if err := helpers.CheckDuplicates(validatorKeys); err != nil {
@@ -853,13 +853,13 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatior
 	}
 
 	for i, encodedBase58PublicKey := range validatorKeys {
-		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
 
 		// check signature
-		decodedSignature, err := hex.DecodeString(validatiorSignatures[i])
+		decodedSignature, err := hex.DecodeString(validatorSignatures[i])
 		if err != nil {
 			return err
 		}
@@ -874,8 +874,8 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatior
 		}
 	}
 
-	if countValidatorsSigned < c.init.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.init.ValidatorsCount)
+	if countValidatorsSigned < c.config.ValidatorsCount {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.config.ValidatorsCount)
 	}
 	return nil
 }
@@ -931,8 +931,8 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	// hash.Write(ecdhPk.Bytes())
 	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 	hashed := sha3.Sum256(cert)
-	if !bytes.Equal(hashed[:], c.init.AdminSKI) &&
-		!bytes.Equal(hash.Sum(nil), c.init.AdminSKI) {
+	if !bytes.Equal(hashed[:], c.config.AdminSKI) &&
+		!bytes.Equal(hash.Sum(nil), c.config.AdminSKI) {
 		return errors.New(errs.ErrCallerNotAdmin)
 	}
 	return nil
