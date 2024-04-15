@@ -464,7 +464,7 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 
 // isCalledFromChaincodeOrAdmin checks that function called from another chaincode or by acl admin
 func (c *ACL) isCalledFromChaincodeOrAdmin(stub shim.ChaincodeStubInterface) (bool, error) {
-	ccIsSet, err := calledFromChaincode(stub, c.init.CCName)
+	ccIsSet, err := calledFromChaincode(stub, c.config.CCName)
 	if err != nil {
 		return false, err
 	}

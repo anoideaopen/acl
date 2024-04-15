@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"github.com/anoideaopen/acl/proto"
 	"strconv"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/golang/protobuf/proto" //nolint:staticcheck
+	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/msp"
@@ -19,18 +20,33 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var TestValidators = [][]byte{
-	[]byte("A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4"),
-	[]byte("5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5"),
-	[]byte("6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4"),
+var TestAdminSKI = []byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99")
+
+var TestValidators = []string{
+	"A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4",
+	"5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
+	"6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4",
+}
+
+var TestValidatorsBytes = [][]byte{
+	[]byte(TestValidators[0]),
+	[]byte(TestValidators[1]),
+	[]byte(TestValidators[2]),
 }
 
 var TestInitArgs = append(
 	[][]byte{
-		[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"),
-		[]byte(strconv.Itoa(len(TestValidators))),
+		TestAdminSKI,
+		[]byte(strconv.Itoa(len(TestValidatorsBytes))),
 	},
-	TestValidators...)
+	TestValidatorsBytes...)
+
+var TestInitConfig = &proto.Config{
+	CCName:          "acl",
+	AdminSKI:        TestAdminSKI,
+	ValidatorsCount: int64(len(TestValidators)),
+	Validators:      TestValidators,
+}
 
 // ACL API Functions
 const (
@@ -98,7 +114,7 @@ func MarshalIdentity(creatorMSP string, creatorCert []byte) ([]byte, error) {
 	}
 
 	creator := &msp.SerializedIdentity{Mspid: creatorMSP, IdBytes: pemBytes}
-	marshaledIdentity, err := proto.Marshal(creator)
+	marshaledIdentity, err := pb.Marshal(creator)
 	if err != nil {
 		return nil, err
 	}

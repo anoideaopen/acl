@@ -2,6 +2,7 @@ package cc
 
 import (
 	"fmt"
+	"github.com/anoideaopen/acl/internal/config"
 	"math/big"
 	"reflect"
 	"runtime/debug"
@@ -14,9 +15,9 @@ import (
 
 type (
 	ACL struct {
-		init *proto.Args
+		config *proto.Config
 	}
-	ccfunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
+	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
 
 func New() *ACL {
@@ -26,15 +27,17 @@ func New() *ACL {
 // Init - method for initialize chaincode
 // args: adminSKI, validatorsCount, validatorBase58Ed25519PublicKey1, ..., validatorBase58Ed25519PublicKeyN
 func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	newInitArgs, err := getNewInitArgsByChaincodeArgs(stub)
+	cfgBytes, err := config.InitConfig(stub)
 	if err != nil {
-		return shim.Error(err.Error())
+		shim.Error(err.Error())
 	}
 
-	err = putInitArgsToState(stub, newInitArgs)
+	cfg, err := config.FromBytes(cfgBytes)
 	if err != nil {
-		return shim.Error(err.Error())
+		shim.Error(err.Error())
 	}
+
+	c.config = cfg
 
 	return shim.Success(nil)
 }
@@ -51,17 +54,21 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}()
 	fn, args := stub.GetFunctionAndParameters()
-	if c.init == nil {
-		init, err := GetInitArgsFromState(stub)
+	if c.config == nil {
+		cfgBytes, err := config.InitConfig(stub)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		if init == nil {
+		if cfgBytes == nil {
 			return shim.Error("ACL chaincode not initialized, please invoke Init with init args first")
 		}
-		c.init = init
+		cfg, err := config.FromBytes(cfgBytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+		c.config = cfg
 	}
-	methods := make(map[string]ccfunc)
+	methods := make(map[string]ccFunc)
 	t := reflect.TypeOf(c)
 	var ok bool
 	for i := 0; i < t.NumMethod(); i++ {
@@ -74,10 +81,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}
 
-	ccinvoke, ok := methods[fn]
+	ccInvoke, ok := methods[fn]
 	if !ok {
 		return shim.Error(fmt.Sprintf("unknown method %s in tx %s", fn, stub.GetTxID()))
 	}
 
-	return ccinvoke(stub, args)
+	return ccInvoke(stub, args)
 }
