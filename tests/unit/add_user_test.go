@@ -1,4 +1,4 @@
-package tests
+package unit
 
 import (
 	"encoding/hex"
@@ -23,7 +23,7 @@ const (
 	stateTrue  = "true"
 )
 
-type serieAddUser struct {
+type seriesAddUser struct {
 	testPubKey  string
 	testAddress string
 	kycHash     string
@@ -32,15 +32,15 @@ type serieAddUser struct {
 	errorMsg    string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieAddUser) SetError(errMsg string) {
+// add dynamic errorMsg in series
+func (s *seriesAddUser) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
-func TestAddUserPubkeyEqual43Symbols(t *testing.T) {
+func TestAddUserPubKeyEqual43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
 		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
 		kycHash:     kycHash,
@@ -54,10 +54,10 @@ func TestAddUserPubkeyEqual43Symbols(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyEqual44Symbols(t *testing.T) {
+func TestAddUserPubKeyEqual44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
 		testAddress: "FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N",
 		kycHash:     kycHash,
@@ -71,10 +71,10 @@ func TestAddUserPubkeyEqual44Symbols(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyEmpty(t *testing.T) {
+func TestAddUserPubKeyEmpty(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -91,7 +91,7 @@ func TestAddUserPubkeyEmpty(t *testing.T) {
 func TestAddUserPubkeyMoreThan44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -108,10 +108,10 @@ func TestAddUserPubkeyMoreThan44Symbols(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyLessThan43Symbols(t *testing.T) {
+func TestAddUserPubKeyLessThan43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -128,10 +128,10 @@ func TestAddUserPubkeyLessThan43Symbols(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWrongString(t *testing.T) {
+func TestAddUserPubKeyWrongString(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "AbracadabraAbracadabraAbracadabraAbracada0oI",
 		testAddress: "2i1EhJeQG3hyXZiv64XPNAHFhHRPbXFw6Tt6P6ewV4Q98KaKZM",
 		kycHash:     kycHash,
@@ -147,10 +147,10 @@ func TestAddUserPubkeyWrongString(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWrongNumeric(t *testing.T) {
+func TestAddUserPubKeyWrongNumeric(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "01111111111111111111111111111111",
 		testAddress: "2CkjXDKfcFFMVdLP9QzBBqFG8PGUxaERwhyvrh4BLsPNwW1T6F",
 		kycHash:     kycHash,
@@ -166,10 +166,10 @@ func TestAddUserPubkeyWrongNumeric(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWrongNumericZero(t *testing.T) {
+func TestAddUserPubKeyWrongNumericZero(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "00000000000000000000000000000000",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -185,10 +185,10 @@ func TestAddUserPubkeyWrongNumericZero(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWithSpesialSymbols(t *testing.T) {
+func TestAddUserPubKeyWithSpecialSymbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -207,7 +207,7 @@ func TestAddUserPubkeyWithSpesialSymbols(t *testing.T) {
 func TestAddUserEmptyKycHash(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  common.PubKey,
 		testAddress: common.TestAddr,
 		kycHash:     "",
@@ -224,7 +224,7 @@ func TestAddUserEmptyKycHash(t *testing.T) {
 func TestAddUserEmptyUserID(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  common.PubKey,
 		testAddress: common.TestAddr,
 		kycHash:     kycHash,
@@ -284,7 +284,7 @@ func TestAddUserAddExistedUser(t *testing.T) {
 	})
 }
 
-func addUser(stub *shimtest.MockStub, ser *serieAddUser) peer.Response {
+func addUser(stub *shimtest.MockStub, ser *seriesAddUser) peer.Response {
 	resp := stub.MockInvoke(
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
@@ -292,7 +292,7 @@ func addUser(stub *shimtest.MockStub, ser *serieAddUser) peer.Response {
 	return resp
 }
 
-func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *serieAddUser) {
+func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesAddUser) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 
