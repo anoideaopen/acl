@@ -914,6 +914,7 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	if err != nil {
 		return err
 	}
+
 	pk, ok := parsed.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
 		return fmt.Errorf("bad public key, type conversion of parsed public key failed")
