@@ -2,12 +2,12 @@ package cc
 
 import (
 	"fmt"
-	"github.com/anoideaopen/acl/internal/config"
 	"math/big"
 	"reflect"
 	"runtime/debug"
 
 	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
