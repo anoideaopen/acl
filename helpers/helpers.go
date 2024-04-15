@@ -1,4 +1,4 @@
-package cc
+package helpers
 
 import (
 	"bytes"
@@ -17,8 +17,8 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// decodeBase58PublicKey decode public key from base58 to ed25519 byte array
-func decodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
+// DecodeBase58PublicKey decode public key from base58 to ed25519 byte array
+func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 	if len(encodedBase58PublicKey) == 0 {
 		return nil, errors.New("encoded base 58 public key is empty")
 	}
@@ -44,7 +44,8 @@ func IsValidator(authorities []string, pk string) bool {
 	return false
 }
 
-func checkKeysArr(keysArr []string) error {
+// CheckKeysArr checks keys if not empty or having duplicates
+func CheckKeysArr(keysArr []string) error {
 	uniqPks := make(map[string]struct{})
 	for _, p := range keysArr {
 		if p == "" {
@@ -58,9 +59,9 @@ func checkKeysArr(keysArr []string) error {
 	return nil
 }
 
-// checkDuplicates checks a string array for duplicates.
+// CheckDuplicates checks a string array for duplicates.
 // It returns an error if duplicates are found, indicating the first duplicated item encountered.
-func checkDuplicates(arr []string) error {
+func CheckDuplicates(arr []string) error {
 	// itemsMap stores unique items encountered so far.
 	itemsMap := make(map[string]struct{})
 
@@ -87,14 +88,16 @@ func stringSliceContains(arr []string, item string) bool { //nolint:unused
 	return false
 }
 
-func toLowerFirstLetter(in string) string {
+// ToLowerFirstLetter returns string with first letter in lower case
+func ToLowerFirstLetter(in string) string {
 	return string(unicode.ToLower(rune(in[0]))) + in[1:]
 }
 
-func keyStringToSortedHashedHex(keys []string) (string, error) {
+// KeyStringToSortedHashedHex returns keys encoded to sorted hashed hex
+func KeyStringToSortedHashedHex(keys []string) (string, error) {
 	binKeys := make([][]byte, len(keys))
 	for i, encodedBase58PublicKey := range keys {
-		publicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		publicKey, err := DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return "", err
 		}
@@ -107,12 +110,13 @@ func keyStringToSortedHashedHex(keys []string) (string, error) {
 	return hex.EncodeToString(hashed[:]), nil
 }
 
+// DecodeAndSort returns decoded and sorted collection
 func DecodeAndSort(item string) ([][]byte, error) {
 	const delimiter = "/"
 	publicKeys := strings.Split(item, delimiter)
 	binKeys := make([][]byte, len(publicKeys))
 	for i, encodedBase58PublicKey := range publicKeys {
-		decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		decodedPublicKey, err := DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -124,8 +128,8 @@ func DecodeAndSort(item string) ([][]byte, error) {
 	return binKeys, nil
 }
 
-// parseCCName get chaincode name from proposal
-func parseCCName(stub shim.ChaincodeStubInterface) (string, error) {
+// ParseCCName returns chaincode name from proposal
+func ParseCCName(stub shim.ChaincodeStubInterface) (string, error) {
 	signedProp, err := stub.GetSignedProposal()
 	if err != nil {
 		return "", err
@@ -162,8 +166,8 @@ func parseCCName(stub shim.ChaincodeStubInterface) (string, error) {
 	return cis.ChaincodeSpec.ChaincodeId.Name, nil
 }
 
-// checkPublicKey verify public key in the address variable
-func checkPublicKey(address string) error {
+// CheckPublicKey verifies public key in the address variable
+func CheckPublicKey(address string) error {
 	result, version, err := base58.CheckDecode(address)
 	if err != nil {
 		return fmt.Errorf("check decode address : %w", err)
@@ -176,5 +180,17 @@ func checkPublicKey(address string) error {
 		return fmt.Errorf("decoded size %d, but must be equal to the length of the ed25519 public key (%d)", len(hash), ed25519.PublicKeySize)
 	}
 
+	return nil
+}
+
+// MinSignaturesRequired defines the minimum number of signatures required for a multisignature transaction.
+const MinSignaturesRequired = 1
+
+// ValidateMinSignatures checks that the number of required signatures is greater than the minimum allowed value.
+// It returns an error if the number of required signatures is less than or equal to the minimum allowed value.
+func ValidateMinSignatures(n int) error {
+	if n <= MinSignaturesRequired {
+		return fmt.Errorf("invalid N '%d', must be greater than %d for multisignature transactions", n, MinSignaturesRequired)
+	}
 	return nil
 }

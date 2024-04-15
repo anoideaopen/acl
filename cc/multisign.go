@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -32,7 +34,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	N, err := strconv.Atoi(args[0])
@@ -70,17 +72,17 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 		}
 	}
 
-	if err = checkKeysArr(pks); err != nil {
+	if err = helpers.CheckKeysArr(pks); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%v'", err.Error(), pks))
 	}
-	hashedHexKeys, err := keyStringToSortedHashedHex(pks)
+	hashedHexKeys, err := helpers.KeyStringToSortedHashedHex(pks)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
 
 	pksDecodedOriginalOrder := make([][]byte, 0, len(pks))
 	for _, encodedBase58PublicKey := range pks {
-		decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -88,7 +90,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 	}
 
 	// derive address from hash of sorted base58-(DE)coded public keys
-	keysArrSorted, err := DecodeAndSort(strings.Join(pks, "/"))
+	keysArrSorted, err := helpers.DecodeAndSort(strings.Join(pks, "/"))
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -129,7 +131,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 
 	pksDecodedOrigOrder := make([][]byte, 0, len(pks))
 	for _, encodedBase58PublicKey := range pks {
-		decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -166,8 +168,8 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 }
 
 func checkNOutMSigned(n int, message []byte, pks [][]byte, signatures []string) error {
-	if err := checkDuplicates(signatures); err != nil {
-		return fmt.Errorf(ErrDuplicateSignatures, err)
+	if err := helpers.CheckDuplicates(signatures); err != nil {
+		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
 
 	strPubKeys := make([]string, 0, len(pks))
@@ -175,8 +177,8 @@ func checkNOutMSigned(n int, message []byte, pks [][]byte, signatures []string) 
 		strPubKeys = append(strPubKeys, hex.EncodeToString(pk))
 	}
 
-	if err := checkDuplicates(strPubKeys); err != nil {
-		return fmt.Errorf(ErrDuplicatePubKeys, err)
+	if err := helpers.CheckDuplicates(strPubKeys); err != nil {
+		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
 	countSigned := 0
@@ -215,7 +217,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	multisigAddr := args[0]
@@ -236,7 +238,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	nonce := args[5]
 	pksAndSignatures := args[6:]
 	if len(multisigAddr) == 0 {
-		return shim.Error("empty address")
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 	if len(oldKey) == 0 {
 		return shim.Error("empty old key")
@@ -294,7 +296,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	var newKeys []string
 	for index, pk := range signedAddr.SignaturePolicy.PubKeys {
 		if base58.Encode(pk) == oldKey {
-			decodedPublicKey, err := decodeBase58PublicKey(encodedBase58NewPublicKey)
+			decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58NewPublicKey)
 			if err != nil {
 				return shim.Error(err.Error())
 			}
@@ -338,10 +340,10 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	}
 
 	strKeys := strings.Split(newKeysString, "/")
-	if err = checkKeysArr(strKeys); err != nil {
+	if err = helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), newKeysString))
 	}
-	hashedHexKeys, err := keyStringToSortedHashedHex(strKeys)
+	hashedHexKeys, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(err.Error())
 	}

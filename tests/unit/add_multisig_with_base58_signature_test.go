@@ -1,8 +1,11 @@
-package cc
+package unit
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"strings"
 	"testing"
@@ -12,7 +15,6 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
@@ -32,7 +34,7 @@ func TestAddMultisigWithBase58SignaturePubkeyEqual43Symbols(t *testing.T) {
 	t.Parallel()
 	s := &serieAddMultisigWithBase58Signature{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
-		errorMsg:   errorMsgNotRecords,
+		errorMsg:   errs.ErrRecordsNotFound,
 	}
 
 	AddMultisigWithBase58Signature(t, s)
@@ -42,7 +44,7 @@ func TestAddMultisigWithBase58SignaturePubkeyEqual44Symbols(t *testing.T) {
 	t.Parallel()
 	s := &serieAddMultisigWithBase58Signature{
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
-		errorMsg:   errorMsgNotRecords,
+		errorMsg:   errs.ErrRecordsNotFound,
 	}
 
 	AddMultisigWithBase58Signature(t, s)
@@ -92,7 +94,7 @@ func TestAddMultisigWithBase58SignaturePubkeyWrongString(t *testing.T) {
 
 	s := &serieAddMultisigWithBase58Signature{
 		testPubKey: "AbracadabraAbracadabraAbracadabraAbracadabra",
-		errorMsg:   errorMsgNotRecords,
+		errorMsg:   errs.ErrRecordsNotFound,
 	}
 
 	AddMultisigWithBase58Signature(t, s)
@@ -104,7 +106,7 @@ func TestAddMultisigWithBase58SignaturePubkeyWrongNumeric(t *testing.T) {
 
 	s := &serieAddMultisigWithBase58Signature{
 		testPubKey: "11111111111111111111111111111111",
-		errorMsg:   errorMsgNotRecords,
+		errorMsg:   errs.ErrRecordsNotFound,
 	}
 
 	AddMultisigWithBase58Signature(t, s)
@@ -137,11 +139,11 @@ func TestAddMultisigWithBase58SignaturePubkeyWithSpesialSymbols(t *testing.T) {
 }
 
 func AddMultisigWithBase58Signature(t *testing.T, ser *serieAddMultisigWithBase58Signature) {
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(MockValidatorKeys))
-	privKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey, privKey := range MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
+	privKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey, privKey := range common.MockValidatorKeys {
 		pubKeys = append(pubKeys, pubkey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -150,7 +152,7 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *serieAddMultisigWithBase5
 	for _, memberPk := range pubKeys {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		assert.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -173,9 +175,9 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *serieAddMultisigWithBase5
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	nonceForCaseWithDuplicates := strconv.Itoa(int(time.Now().Unix() * 1000))
-	message := sha3.Sum256([]byte(strings.Join(append([]string{fnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce}, pubKeys...), "")))
+	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce}, pubKeys...), "")))
 	messageForCaseWithDuplicates := sha3.Sum256([]byte(strings.Join(
-		append([]string{fnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
+		append([]string{common.FnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
 
 	signatures := make([][]byte, 0, len(privKeys))
 	// duplicateSignatures      []string
@@ -201,7 +203,7 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *serieAddMultisigWithBase5
 		"0",
 		append(append(
 			append([][]byte{},
-				[]byte(fnAddMultisigWithBase58Signature),
+				[]byte(common.FnAddMultisigWithBase58Signature),
 				[]byte("req"), []byte("acl"), []byte("acl"),
 				[]byte("3"),
 				[]byte(nonce)),
@@ -213,18 +215,11 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *serieAddMultisigWithBase5
 }
 
 func TestAddMultisigWithBase58Signature(t *testing.T) {
-	stub := shimtest.NewMockStub("mockStub", New())
-	stub.ChannelID = "acl"
-	assert.NotNil(t, stub)
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	err = SetCreator(stub, testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	stub.MockInit("0", testInitArgs)
+	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(MockValidatorKeys))
-	privKeys := make([]string, 0, len(MockValidatorKeys))
-	for pubkey, privKey := range MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
+	privKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubkey, privKey := range common.MockValidatorKeys {
 		pubKeys = append(pubKeys, pubkey)
 		privKeys = append(privKeys, privKey)
 	}
@@ -233,7 +228,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 	for _, memberPk := range pubKeys {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		assert.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -254,9 +249,9 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	nonceForCaseWithDuplicates := strconv.Itoa(int(time.Now().Unix() * 1000))
-	message := sha3.Sum256([]byte(strings.Join(append([]string{fnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce}, pubKeys...), "")))
+	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce}, pubKeys...), "")))
 	messageForCaseWithDuplicates := sha3.Sum256([]byte(strings.Join(
-		append([]string{fnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
+		append([]string{common.FnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonceForCaseWithDuplicates}, pubKeys...), "")))
 
 	signatures := make([][]byte, 0, len(privKeys))
 	// duplicateSignatures      []string
@@ -283,7 +278,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 			"0",
 			append(append(
 				append([][]byte{},
-					[]byte(fnAddMultisigWithBase58Signature),
+					[]byte(common.FnAddMultisigWithBase58Signature),
 					[]byte("req"), []byte("acl"), []byte("acl"),
 					[]byte("3"),
 					[]byte(nonce)),
@@ -294,13 +289,13 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 
 		// derive address from hash of sorted base58-(DE)coded pubKeys
 		pkeysString := strings.Join(pubKeys, "/")
-		keysArrSorted, err := DecodeAndSort(pkeysString)
+		keysArrSorted, err := helpers.DecodeAndSort(pkeysString)
 		assert.NoError(t, err)
 		hashedPksSortedOrder := sha3.Sum256(bytes.Join(keysArrSorted, []byte("")))
 		addrEncoded := base58.CheckEncode(hashedPksSortedOrder[1:], hashedPksSortedOrder[0])
 
 		// check pb.Address
-		result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pkeysString)})
+		result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(pkeysString)})
 		assert.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AclResponse{}
@@ -327,7 +322,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 		resp := stub.MockInvoke(
 			"0",
 			append(append(
-				append([][]byte{}, []byte(fnAddMultisigWithBase58Signature), []byte("req"), []byte("acl"), []byte("acl"), []byte("3"),
+				append([][]byte{}, []byte(common.FnAddMultisigWithBase58Signature), []byte("req"), []byte("acl"), []byte("acl"), []byte("3"),
 					[]byte(nonceForCaseWithDuplicates)),
 				duplicatePubKeysBytes...,
 			), duplicateSignaturesBytes...),
@@ -339,7 +334,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 	t.Run("not all members signed (wrong case)", func(t *testing.T) {
 		resp := stub.MockInvoke("0", append(append(
 			append([][]byte{},
-				[]byte(fnAddMultisigWithBase58Signature),
+				[]byte(common.FnAddMultisigWithBase58Signature),
 				[]byte("req"), []byte("acl"), []byte("acl"),
 				[]byte("3"),
 				[]byte(nonce)),
@@ -350,7 +345,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {
 		nonce = strconv.Itoa(int(time.Now().Unix()*1000 + 1))
-		message = sha3.Sum256([]byte(strings.Join(append([]string{fnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce}, pubKeys...), "")))
+		message = sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce}, pubKeys...), "")))
 
 		signatures = signatures[:0]
 		for i, privkey := range privKeys {
@@ -369,7 +364,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 			append(
 				append(
 					append([][]byte{},
-						[]byte(fnAddMultisigWithBase58Signature),
+						[]byte(common.FnAddMultisigWithBase58Signature),
 						[]byte("req"), []byte("acl"), []byte("acl"),
 						[]byte("3"),
 						[]byte(nonce)),

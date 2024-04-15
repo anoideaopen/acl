@@ -1,8 +1,11 @@
-package cc
+package unit
 
 import (
 	"testing"
 
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/tests/common"
 	"github.com/anoideaopen/foundation/mock"
 	mstub "github.com/anoideaopen/foundation/mock/stub"
 	pb "github.com/anoideaopen/foundation/proto"
@@ -28,25 +31,17 @@ const (
 func TestAclAccessMatrix(t *testing.T) {
 	var mockStub *shimtest.MockStub
 	t.Run("Initializing acl stub", func(t *testing.T) {
-		mockStub = shimtest.NewMockStub("mockStub", New())
-		assert.NotNil(t, mockStub, "MockStub creation failed")
-
-		cert, err := getCert(adminCertPath)
-		assert.NoError(t, err)
-		err = SetCreator(mockStub, testCreatorMSP, cert.Raw)
-		assert.NoError(t, err)
-		resp := mockStub.MockInit("0", testInitArgs)
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		mockStub = common.StubCreateAndInit(t)
 	})
 
 	// check address
-	hashed := sha3.Sum256(base58.Decode(pubkey))
+	hashed := sha3.Sum256(base58.Decode(common.PubKey))
 	addr := base58.CheckEncode(hashed[1:], hashed[0])
 
 	t.Run("Adding user", func(t *testing.T) {
 		resp := mockStub.MockInvoke("0", [][]byte{
-			[]byte(fnAddUser),
-			[]byte(pubkey),
+			[]byte(common.FnAddUser),
+			[]byte(common.PubKey),
 			[]byte("kychash"),
 			[]byte("testUserID"),
 			[]byte("true"),
@@ -56,7 +51,7 @@ func TestAclAccessMatrix(t *testing.T) {
 
 	t.Run("Adding new user right", func(t *testing.T) {
 		resp := mockStub.MockInvoke("0", [][]byte{
-			[]byte(fnAddRights),
+			[]byte(common.FnAddRights),
 			[]byte(channelName),
 			[]byte(chaincodeName),
 			[]byte(roleName),
@@ -68,7 +63,7 @@ func TestAclAccessMatrix(t *testing.T) {
 
 	t.Run("Checking if right was added", func(t *testing.T) {
 		result := mockStub.MockInvoke("0", [][]byte{
-			[]byte(fnGetAccOpRight),
+			[]byte(common.FnGetAccOpRight),
 			[]byte(channelName),
 			[]byte(chaincodeName),
 			[]byte(roleName),
@@ -85,7 +80,7 @@ func TestAclAccessMatrix(t *testing.T) {
 
 	t.Run("Checking user rights", func(t *testing.T) {
 		result := mockStub.MockInvoke("0", [][]byte{
-			[]byte(fnGetAccAllRights),
+			[]byte(common.FnGetAccAllRights),
 			[]byte(addr),
 		})
 		assert.Equal(t, int32(shim.OK), result.Status)
@@ -106,14 +101,14 @@ func TestAclAccessMatrix(t *testing.T) {
 	})
 
 	t.Run("[negative] Check operation rights by user", func(t *testing.T) {
-		ucert, err := getCert(userCertPath)
+		ucert, err := common.GetCert(common.UserCertPath)
 		assert.NoError(t, err)
 		assert.NotNil(t, ucert)
-		err = SetCreator(mockStub, testCreatorMSP, ucert.Raw)
+		err = common.SetCreator(mockStub, common.TestCreatorMSP, ucert.Raw)
 		assert.NoError(t, err)
 
 		result := mockStub.MockInvoke("1", [][]byte{
-			[]byte(fnGetAccOpRight),
+			[]byte(common.FnGetAccOpRight),
 			[]byte(channelName),
 			[]byte(chaincodeName),
 			[]byte(roleName),
@@ -121,20 +116,20 @@ func TestAclAccessMatrix(t *testing.T) {
 			[]byte(addr),
 		})
 		assert.Equal(t, int32(shim.ERROR), result.Status)
-		assert.Equal(t, ErrCalledNotCCOrAdmin, result.Message)
+		assert.Equal(t, errs.ErrCalledNotCCOrAdmin, result.Message)
 	})
 
 	t.Run("Checking operation rights", func(t *testing.T) {
-		cert, err := getCert(adminCertPath)
+		cert, err := common.GetCert(common.AdminCertPath)
 		assert.NoError(t, err)
 		assert.NotNil(t, cert)
-		err = SetCreator(mockStub, testCreatorMSP, cert.Raw)
+		err = common.SetCreator(mockStub, common.TestCreatorMSP, cert.Raw)
 		assert.NoError(t, err)
 
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(fnGetOpAllRights),
+				[]byte(common.FnGetOpAllRights),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(roleName),
@@ -162,7 +157,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		resp := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(fnAddRights),
+				[]byte(common.FnAddRights),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(roleName),
@@ -177,7 +172,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		resp := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(fnAddRights),
+				[]byte(common.FnAddRights),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(roleName),
@@ -190,7 +185,7 @@ func TestAclAccessMatrix(t *testing.T) {
 
 	t.Run("Removing right", func(t *testing.T) {
 		resp := mockStub.MockInvoke("0", [][]byte{
-			[]byte(fnRemoveRights),
+			[]byte(common.FnRemoveRights),
 			[]byte(channelName),
 			[]byte(chaincodeName),
 			[]byte(roleName),
@@ -202,7 +197,7 @@ func TestAclAccessMatrix(t *testing.T) {
 
 	t.Run("Checking if right was removed", func(t *testing.T) {
 		result := mockStub.MockInvoke("0", [][]byte{
-			[]byte(fnGetAccOpRight),
+			[]byte(common.FnGetAccOpRight),
 			[]byte(channelName),
 			[]byte(chaincodeName),
 			[]byte(roleName),
@@ -218,7 +213,7 @@ func TestAclAccessMatrix(t *testing.T) {
 	})
 
 	t.Run("Checking user rights", func(t *testing.T) {
-		result := mockStub.MockInvoke("0", [][]byte{[]byte(fnGetAccAllRights), []byte(addr)})
+		result := mockStub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccAllRights), []byte(addr)})
 		assert.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AccountRights{}
@@ -233,7 +228,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(fnGetOpAllRights),
+				[]byte(common.FnGetOpAllRights),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(roleName),
@@ -256,13 +251,13 @@ func TestAclCalledFromChaincode(t *testing.T) {
 	owner := ledgerMock.NewWallet()
 
 	t.Run("Initializing acl chaincode", func(t *testing.T) {
-		aclCC := mstub.NewMockStub("acl", New())
-		cert, err := getCert(adminCertPath)
+		aclCC := mstub.NewMockStub("acl", cc.New())
+		cert, err := common.GetCert(common.AdminCertPath)
 		assert.NoError(t, err)
-		creator, err := marshalIdentity(testCreatorMSP, cert.Raw)
+		creator, err := common.MarshalIdentity(common.TestCreatorMSP, cert.Raw)
 		assert.NoError(t, err)
 		aclCC.SetCreator(creator)
-		aclCC.MockInit("0", testInitArgs)
+		aclCC.MockInit("0", common.TestInitArgs)
 		ledgerMock.SetACL(aclCC)
 	})
 
@@ -280,7 +275,7 @@ func TestAclCalledFromChaincode(t *testing.T) {
 
 	cfgBytes, _ := protojson.Marshal(cfg)
 
-	init := ledgerMock.NewCC("fiat", NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	init := ledgerMock.NewCC("fiat", common.NewFiatToken(token.BaseToken{}), string(cfgBytes))
 	require.Empty(t, init)
 
 	owner.Invoke("acl", "addUser", base58.Encode(owner.PubKey()), "123", "testuser", "true")

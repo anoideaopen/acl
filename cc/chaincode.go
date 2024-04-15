@@ -6,7 +6,8 @@ import (
 	"reflect"
 	"runtime/debug"
 
-	"github.com/anoideaopen/acl/cc/proto"
+	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 )
@@ -66,7 +67,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	for i := 0; i < t.NumMethod(); i++ {
 		method := t.Method(i)
 		if method.Name != "Init" && method.Name != "Invoke" {
-			name := toLowerFirstLetter(method.Name)
+			name := helpers.ToLowerFirstLetter(method.Name)
 			if methods[name], ok = reflect.ValueOf(c).MethodByName(method.Name).Interface().(func(shim.ChaincodeStubInterface, []string) peer.Response); !ok {
 				return shim.Error(fmt.Sprintf("Chaincode initialization failure: cc method %s does not satisfy signature func(stub shim.ChaincodeStubInterface, args []string) peer.Response", method.Name))
 			}

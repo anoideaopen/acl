@@ -1,10 +1,11 @@
-package cc
+package unit
 
 import (
 	"encoding/hex"
 	"fmt"
 	"testing"
 
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -22,7 +23,7 @@ const (
 	stateTrue  = "true"
 )
 
-type serieAddUser struct {
+type seriesAddUser struct {
 	testPubKey  string
 	testAddress string
 	kycHash     string
@@ -31,15 +32,15 @@ type serieAddUser struct {
 	errorMsg    string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieAddUser) SetError(errMsg string) {
+// add dynamic errorMsg in series
+func (s *seriesAddUser) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
-func TestAddUserPubkeyEqual43Symbols(t *testing.T) {
+func TestAddUserPubKeyEqual43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
 		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
 		kycHash:     kycHash,
@@ -48,15 +49,15 @@ func TestAddUserPubkeyEqual43Symbols(t *testing.T) {
 		errorMsg:    "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyEqual44Symbols(t *testing.T) {
+func TestAddUserPubKeyEqual44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
 		testAddress: "FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N",
 		kycHash:     kycHash,
@@ -65,15 +66,15 @@ func TestAddUserPubkeyEqual44Symbols(t *testing.T) {
 		errorMsg:    "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyEmpty(t *testing.T) {
+func TestAddUserPubKeyEmpty(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -82,7 +83,7 @@ func TestAddUserPubkeyEmpty(t *testing.T) {
 		errorMsg:    "encoded base 58 public key is empty",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -90,7 +91,7 @@ func TestAddUserPubkeyEmpty(t *testing.T) {
 func TestAddUserPubkeyMoreThan44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -102,15 +103,15 @@ func TestAddUserPubkeyMoreThan44Symbols(t *testing.T) {
 		s.testPubKey + "'. decoded public key len is 33 but expected 32"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyLessThan43Symbols(t *testing.T) {
+func TestAddUserPubKeyLessThan43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -122,15 +123,15 @@ func TestAddUserPubkeyLessThan43Symbols(t *testing.T) {
 		s.testPubKey + "'. decoded public key len is 31 but expected 32"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWrongString(t *testing.T) {
+func TestAddUserPubKeyWrongString(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "AbracadabraAbracadabraAbracadabraAbracada0oI",
 		testAddress: "2i1EhJeQG3hyXZiv64XPNAHFhHRPbXFw6Tt6P6ewV4Q98KaKZM",
 		kycHash:     kycHash,
@@ -141,15 +142,15 @@ func TestAddUserPubkeyWrongString(t *testing.T) {
 
 	s.SetError("failed base58 decoding of key " + s.testPubKey)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWrongNumeric(t *testing.T) {
+func TestAddUserPubKeyWrongNumeric(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "01111111111111111111111111111111",
 		testAddress: "2CkjXDKfcFFMVdLP9QzBBqFG8PGUxaERwhyvrh4BLsPNwW1T6F",
 		kycHash:     kycHash,
@@ -160,15 +161,15 @@ func TestAddUserPubkeyWrongNumeric(t *testing.T) {
 
 	s.SetError("failed base58 decoding of key " + s.testPubKey)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWrongNumericZero(t *testing.T) {
+func TestAddUserPubKeyWrongNumericZero(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "00000000000000000000000000000000",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -179,15 +180,15 @@ func TestAddUserPubkeyWrongNumericZero(t *testing.T) {
 	errorMsg := "failed base58 decoding of key " + s.testPubKey
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserPubkeyWithSpesialSymbols(t *testing.T) {
+func TestAddUserPubKeyWithSpecialSymbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
+	s := &seriesAddUser{
 		testPubKey:  "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 		testAddress: "",
 		kycHash:     kycHash,
@@ -198,7 +199,7 @@ func TestAddUserPubkeyWithSpesialSymbols(t *testing.T) {
 	errorMsg := "failed base58 decoding of key " + s.testPubKey
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -206,16 +207,16 @@ func TestAddUserPubkeyWithSpesialSymbols(t *testing.T) {
 func TestAddUserEmptyKycHash(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
-		testPubKey:  pubkey,
-		testAddress: testaddr,
+	s := &seriesAddUser{
+		testPubKey:  common.PubKey,
+		testAddress: common.TestAddr,
 		kycHash:     "",
 		testUserID:  testUserID,
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    "empty kyc hash",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
@@ -223,39 +224,39 @@ func TestAddUserEmptyKycHash(t *testing.T) {
 func TestAddUserEmptyUserID(t *testing.T) {
 	t.Parallel()
 
-	s := &serieAddUser{
-		testPubKey:  pubkey,
-		testAddress: testaddr,
+	s := &seriesAddUser{
+		testPubKey:  common.PubKey,
+		testAddress: common.TestAddr,
 		kycHash:     kycHash,
 		testUserID:  "",
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    "empty userID",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := addUser(stub, s)
 	validationResultAddUser(t, stub, resp, s)
 }
 
 func TestAddUserAddExistedUser(t *testing.T) {
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 
 	t.Run("Happy path", func(t *testing.T) {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte("true")},
+			[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
 		)
 		assert.Equal(t, int32(shim.OK), resp.Status)
 
 		// check
-		result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(pubkey)})
+		result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
 		assert.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AclResponse{}
 		assert.NoError(t, proto.Unmarshal(result.Payload, response))
 		assert.NotNil(t, response.Address)
 		assert.NotNil(t, response.Account)
-		assert.Equal(t, testaddr, response.Address.Address.AddrString(), "invalid address")
+		assert.Equal(t, common.TestAddr, response.Address.Address.AddrString(), "invalid address")
 		assert.Equal(t, kycHash, response.Account.KycHash)
 		assert.False(t, response.Account.GrayListed)
 		assert.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
@@ -267,13 +268,13 @@ func TestAddUserAddExistedUser(t *testing.T) {
 		// and add this user again
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		// check err status
 		assert.Equal(t, int32(shim.ERROR), resp.Status)
 
 		// construct addr
-		hashed := sha3.Sum256(base58.Decode(pubkey))
+		hashed := sha3.Sum256(base58.Decode(common.PubKey))
 		pkeys := hex.EncodeToString(hashed[:])
 		addr := base58.CheckEncode(hashed[1:], hashed[0])
 		expectedError := fmt.Sprintf("The address %s associated with key %s already exists", addr, pkeys)
@@ -283,15 +284,15 @@ func TestAddUserAddExistedUser(t *testing.T) {
 	})
 }
 
-func addUser(stub *shimtest.MockStub, ser *serieAddUser) peer.Response {
+func addUser(stub *shimtest.MockStub, ser *seriesAddUser) peer.Response {
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
 	)
 	return resp
 }
 
-func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *serieAddUser) {
+func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesAddUser) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 
@@ -299,7 +300,7 @@ func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Re
 		return
 	}
 
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(ser.testPubKey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.testPubKey)})
 	assert.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}

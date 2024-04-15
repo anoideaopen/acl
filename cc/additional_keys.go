@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
+	"github.com/anoideaopen/acl/cc/errs"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -24,7 +25,7 @@ Key Storage:
  1. Keys are stored in the Hyperledger Fabric stack using composite keys.
  2. Each additional key is associated with the primary address of the user's account.
  3. Storage is performed in two directions:
-    a. 'additional_key_parent' + <additional public key> -> <user address>,
+    -- 'additional_key_parent' + <additional public key> -> <user address>,
        for reverse lookup of the parent address by the additional key.
  4. Structures are stored in protobuf format to ensure consistency with the rest of the code.
 
@@ -72,11 +73,11 @@ func (c *ACL) AddAdditionalKey(
 
 	// Argument checking.
 	if userAddress == "" {
-		return errf("request validation failed: %s", ErrEmptyAddress)
+		return errf("request validation failed: %s", errs.ErrEmptyAddress)
 	}
 
 	if additionalPublicKey == "" {
-		return errf("request validation failed: %s", ErrEmptyPubKey)
+		return errf("request validation failed: %s", errs.ErrEmptyPubKey)
 	}
 
 	var labelsList []string
@@ -193,11 +194,11 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 
 	// Argument Validation.
 	if userAddress == "" {
-		return errf("request validation failed: %s", ErrEmptyAddress)
+		return errf("request validation failed: %s", errs.ErrEmptyAddress)
 	}
 
 	if additionalPublicKey == "" {
-		return errf("request validation failed: %s", ErrEmptyPubKey)
+		return errf("request validation failed: %s", errs.ErrEmptyPubKey)
 	}
 
 	// Checking the validity of the key.
@@ -207,7 +208,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 
 	// Verification of access rights.
 	if err := c.verifyAccess(stub); err != nil {
-		return errf(ErrUnauthorizedMsg, err)
+		return errf(errs.ErrUnauthorizedMsg, err)
 	}
 
 	// Nonce verification.

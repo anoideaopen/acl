@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -47,7 +49,7 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	encodedBase58PublicKey := args[0]
@@ -55,7 +57,7 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 	userID := args[2]
 	isIndustrial := args[3] == "true"
 
-	decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+	decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -170,15 +172,15 @@ func (c *ACL) CheckKeys(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	}
 
 	if len(args[0]) == 0 {
-		return shim.Error(ErrEmptyPubKey)
+		return shim.Error(errs.ErrEmptyPubKey)
 	}
 
 	const multiSignSeparator = "/"
 	strKeys := strings.Split(args[0], multiSignSeparator)
-	if err := checkKeysArr(strKeys); err != nil {
+	if err := helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
 	}
-	pkeys, err := keyStringToSortedHashedHex(strKeys)
+	pkeys, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
 	}
@@ -233,7 +235,7 @@ func (c *ACL) CheckAddress(stub shim.ChaincodeStubInterface, args []string) peer
 
 	addrEncoded := args[0]
 	if len(addrEncoded) == 0 {
-		return shim.Error(ErrEmptyAddress)
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 
 	signedAddr, err := c.retrieveAndVerifySignedAddress(stub, addrEncoded)
@@ -343,11 +345,11 @@ func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Respo
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	if len(args[0]) == 0 {
-		return shim.Error("empty address")
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 	if len(args[1]) == 0 {
 		return shim.Error("empty KYC hash string")
@@ -480,7 +482,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	// args[0] is request id
@@ -498,9 +500,9 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 
 	forAddrOrig := args[3]
 	if len(forAddrOrig) == 0 {
-		return shim.Error("empty address")
+		return shim.Error(errs.ErrEmptyAddress)
 	}
-	err := checkPublicKey(forAddrOrig)
+	err := helpers.CheckPublicKey(forAddrOrig)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("the user's address is not valid: %s", err.Error()))
 	}
@@ -523,10 +525,10 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	}
 
 	strKeys := strings.Split(args[6], "/")
-	if err = checkKeysArr(strKeys); err != nil {
+	if err = helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
-	newkey, err := keyStringToSortedHashedHex(strKeys)
+	newkey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
@@ -651,11 +653,11 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(ErrUnauthorizedMsg, err.Error()))
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
 	if len(args[0]) == 0 {
-		return shim.Error("empty address")
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 	if len(args[1]) == 0 {
 		return shim.Error("reason not provided")
@@ -681,10 +683,10 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	strKeys := strings.Split(args[3], "/")
-	if err = checkKeysArr(strKeys); err != nil {
+	if err = helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
-	newkey, err := keyStringToSortedHashedHex(strKeys)
+	newkey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
@@ -811,22 +813,22 @@ func checkNonce(stub shim.ChaincodeStubInterface, sender, nonceStr string) error
 
 func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, signatures []string) error {
 	var countValidatorsSigned int64
-	if err := checkDuplicates(signatures); err != nil {
-		return fmt.Errorf(ErrDuplicateSignatures, err)
+	if err := helpers.CheckDuplicates(signatures); err != nil {
+		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
-	if err := checkDuplicates(pks); err != nil {
-		return fmt.Errorf(ErrDuplicatePubKeys, err)
+	if err := helpers.CheckDuplicates(pks); err != nil {
+		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
 	for i, encodedBase58PublicKey := range pks {
-		if !IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
 
 		// check signature
 		decodedSignature := base58.Decode(signatures[i])
-		decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return err
 		}
@@ -843,15 +845,15 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 
 func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatiorSignatures []string) error {
 	var countValidatorsSigned int64
-	if err := checkDuplicates(validatiorSignatures); err != nil {
-		return fmt.Errorf(ErrDuplicateSignatures, err)
+	if err := helpers.CheckDuplicates(validatiorSignatures); err != nil {
+		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
-	if err := checkDuplicates(validatorKeys); err != nil {
-		return fmt.Errorf(ErrDuplicatePubKeys, err)
+	if err := helpers.CheckDuplicates(validatorKeys); err != nil {
+		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
 	for i, encodedBase58PublicKey := range validatorKeys {
-		if !IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -861,7 +863,7 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatior
 		if err != nil {
 			return err
 		}
-		decodedPublicKey, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
 		if err != nil {
 			return err
 		}
@@ -912,17 +914,26 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	if err != nil {
 		return err
 	}
+
 	pk, ok := parsed.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
 		return fmt.Errorf("bad public key, type conversion of parsed public key failed")
 	}
 
 	hash := sha256.New()
+
+	// ToDo - need to remove deprecated elliptic.Marshal to when Go version will be updated to 1.20
+	// ToDo right way to create hash is as follows:
+	// ecdhPk, err := pk.ECDH()
+	// if err != nil {
+	// 	return fmt.Errorf("public key transition failed: %w", err)
+	// }
+	// hash.Write(ecdhPk.Bytes())
 	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 	hashed := sha3.Sum256(cert)
 	if !bytes.Equal(hashed[:], c.init.AdminSKI) &&
 		!bytes.Equal(hash.Sum(nil), c.init.AdminSKI) {
-		return errors.New(ErrCallerNotAdmin)
+		return errors.New(errs.ErrCallerNotAdmin)
 	}
 	return nil
 }

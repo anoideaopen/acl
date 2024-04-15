@@ -1,4 +1,4 @@
-package cc
+package unit
 
 import (
 	"strconv"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -16,7 +17,7 @@ import (
 
 func TestAdditionalKeyManagement(t *testing.T) {
 	var (
-		stub     = StubCreate(t)
+		stub     = common.StubCreateAndInit(t)
 		response peer.Response
 		tags     = `["tag1", "tag2", "tag3"]`
 		now      = int(time.Now().UTC().Unix()) * 1000
@@ -27,8 +28,8 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnAddUser),
-			[]byte(pubkey),
+			[]byte(common.FnAddUser),
+			[]byte(common.PubKey),
 			[]byte(kycHash),
 			[]byte(testUserID),
 			[]byte("true"),
@@ -40,8 +41,8 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnCheckKeys),
-			[]byte(pubkey),
+			[]byte(common.FnCheckKeys),
+			[]byte(common.PubKey),
 		},
 	)
 	assert.Equal(t, int32(shim.OK), response.Status)
@@ -52,8 +53,8 @@ func TestAdditionalKeyManagement(t *testing.T) {
 
 	userAddress := userInfo.Address.Address.AddrString()
 
-	validatorPublicKeys := make([]string, 0, len(MockValidatorKeys))
-	for publicKey := range MockValidatorKeys {
+	validatorPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for publicKey := range common.MockValidatorKeys {
 		validatorPublicKeys = append(validatorPublicKeys, publicKey)
 	}
 
@@ -74,11 +75,11 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	messageDigest := sha3.Sum256(messageToSign)
 
 	// Signing the message.
-	validatorKeys, validatorSignatures := generateTestValidatorSignatures(validatorPublicKeys, messageDigest[:])
+	validatorKeys, validatorSignatures := common.GenerateTestValidatorSignatures(validatorPublicKeys, messageDigest[:])
 
-	// Adding an additional user key.
+	// Appending an additional user key.
 	args := [][]byte{
-		[]byte(fnAddAdditionalKey),
+		[]byte(common.FnAddAdditionalKey),
 		[]byte(userAddress),
 		[]byte(additionalPublicKey),
 		[]byte(tags),
@@ -94,7 +95,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnAddAdditionalKey),
+			[]byte(common.FnAddAdditionalKey),
 			[]byte(userAddress),
 			[]byte(additionalPublicKey),
 			[]byte(tags),
@@ -106,7 +107,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnCheckKeys),
+			[]byte(common.FnCheckKeys),
 			[]byte(additionalPublicKey),
 		},
 	)
@@ -119,7 +120,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnGetUser),
+			[]byte(common.FnGetUser),
 			[]byte(userAddress),
 		},
 	)
@@ -148,11 +149,11 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	messageDigest = sha3.Sum256(messageToSign)
 
 	// Signing the message.
-	validatorKeys, validatorSignatures = generateTestValidatorSignatures(validatorPublicKeys, messageDigest[:])
+	validatorKeys, validatorSignatures = common.GenerateTestValidatorSignatures(validatorPublicKeys, messageDigest[:])
 
 	// Removal of an additional key.
 	args = [][]byte{
-		[]byte(fnRemoveAdditionalKey),
+		[]byte(common.FnRemoveAdditionalKey),
 		[]byte(userAddress),
 		[]byte(additionalPublicKey),
 		[]byte(nonce),
@@ -166,7 +167,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnCheckKeys),
+			[]byte(common.FnCheckKeys),
 			[]byte(additionalPublicKey),
 		},
 	)
@@ -176,8 +177,8 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnCheckKeys),
-			[]byte(pubkey),
+			[]byte(common.FnCheckKeys),
+			[]byte(common.PubKey),
 		},
 	)
 	assert.Equal(t, int32(shim.OK), response.Status)
@@ -186,7 +187,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	response = stub.MockInvoke(
 		"0",
 		[][]byte{
-			[]byte(fnGetUser),
+			[]byte(common.FnGetUser),
 			[]byte(userAddress),
 		},
 	)

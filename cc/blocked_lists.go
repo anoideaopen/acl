@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
+	"github.com/anoideaopen/acl/cc/errs"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -36,7 +37,7 @@ func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	}
 
 	if len(args[0]) == 0 {
-		return shim.Error(ErrEmptyAddress)
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 
 	if args[1] != GrayList.String() && args[1] != BlackList.String() {
@@ -69,7 +70,7 @@ func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) peer.
 	}
 
 	if len(args[0]) == 0 {
-		return shim.Error(ErrEmptyAddress)
+		return shim.Error(errs.ErrEmptyAddress)
 	}
 
 	if args[1] != GrayList.String() && args[1] != BlackList.String() {
