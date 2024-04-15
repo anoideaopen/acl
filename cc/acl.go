@@ -332,12 +332,12 @@ func (c *ACL) updateSignedAddress(
 	return stub.PutState(signedAddressCompositeKey, marshaledSignedAddress)
 }
 
-// Setkyc updates KYC for address
+// SetKyc updates KYC for address
 // arg[0] - address
 // arg[1] - KYC hash
 // arg[2] - nonce
 // arg[3:] - public keys and signatures of validators
-func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) SetKyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	argsNum := len(args)
 	const minArgsCount = 5
 	if argsNum < minArgsCount {
@@ -439,7 +439,7 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		_ = iterator.Close()
 	}()
 
-	var addrs []string
+	var addresses []string
 	for iterator.HasNext() {
 		kv, err := iterator.Next()
 		if err != nil {
@@ -449,11 +449,11 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		addrs = append(addrs, extractedAddr[0])
+		addresses = append(addresses, extractedAddr[0])
 	}
 
 	serialized, err := json.Marshal(AddrsWithPagination{
-		Addrs:    addrs,
+		Addrs:    addresses,
 		Bookmark: result.Bookmark,
 	})
 	if err != nil {
@@ -686,7 +686,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	if err = helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
-	newkey, err := helpers.KeyStringToSortedHashedHex(strKeys)
+	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
@@ -763,7 +763,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newkey)
+	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -781,7 +781,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	// set new address -> key mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(newkey)); err != nil {
+	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -821,7 +821,7 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 	}
 
 	for i, encodedBase58PublicKey := range pks {
-		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -837,8 +837,8 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		}
 	}
 
-	if countValidatorsSigned < c.init.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.init.ValidatorsCount)
+	if countValidatorsSigned < c.config.ValidatorsCount {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.config.ValidatorsCount)
 	}
 	return nil
 }
@@ -853,7 +853,7 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 	}
 
 	for i, encodedBase58PublicKey := range validatorKeys {
-		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -874,8 +874,8 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		}
 	}
 
-	if countValidatorsSigned < c.init.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.init.ValidatorsCount)
+	if countValidatorsSigned < c.config.ValidatorsCount {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.config.ValidatorsCount)
 	}
 	return nil
 }
@@ -931,8 +931,8 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	// hash.Write(ecdhPk.Bytes())
 	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 	hashed := sha3.Sum256(cert)
-	if !bytes.Equal(hashed[:], c.init.AdminSKI) &&
-		!bytes.Equal(hash.Sum(nil), c.init.AdminSKI) {
+	if !bytes.Equal(hashed[:], c.config.AdminSKI) &&
+		!bytes.Equal(hash.Sum(nil), c.config.AdminSKI) {
 		return errors.New(errs.ErrCallerNotAdmin)
 	}
 	return nil

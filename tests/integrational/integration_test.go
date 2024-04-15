@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/tests/common"
 	"github.com/anoideaopen/foundation/mock"
 	mstub "github.com/anoideaopen/foundation/mock/stub"
@@ -69,11 +70,13 @@ func TestAclInitTwoArgs(t *testing.T) {
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	stateInitArgs, err := cc.GetInitArgsFromState(aclCC)
+	cfgBytes, err := config.LoadRawConfig(aclCC)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(stateInitArgs.Validators))
-	assert.Equal(t, decodeString, stateInitArgs.AdminSKI)
-	assert.Equal(t, int64(0), stateInitArgs.ValidatorsCount)
+	cfg, err := config.FromBytes(cfgBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(cfg.Validators))
+	assert.Equal(t, decodeString, cfg.AdminSKI)
+	assert.Equal(t, int64(0), cfg.ValidatorsCount)
 }
 
 func TestAclInitArgs(t *testing.T) {
@@ -84,9 +87,32 @@ func TestAclInitArgs(t *testing.T) {
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	stateInitArgs, err := cc.GetInitArgsFromState(aclCC)
+	cfgBytes, err := config.LoadRawConfig(aclCC)
 	assert.NoError(t, err)
-	assert.Equal(t, len(common.TestValidators), len(stateInitArgs.Validators))
+	cfg, err := config.FromBytes(cfgBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, len(common.TestValidators), len(cfg.Validators))
+}
+
+func TestAclInitConfig(t *testing.T) {
+	aclCC := common.StubCreate(t)
+
+	cfgInitBytes, err := protojson.Marshal(common.TestInitConfig)
+	assert.NoError(t, err)
+
+	var args [][]byte
+	args = append(args, cfgInitBytes)
+
+	response := aclCC.MockInit("0", args)
+	assert.NotNil(t, response)
+	assert.Equal(t, int32(200), response.Status)
+	assert.Empty(t, response.Message)
+
+	cfgBytes, err := config.LoadRawConfig(aclCC)
+	assert.NoError(t, err)
+	cfg, err := config.FromBytes(cfgBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, len(common.TestValidators), len(cfg.Validators))
 }
 
 func TestEmitTransfer(t *testing.T) {
