@@ -1,9 +1,11 @@
-package cc
+package unit
 
 import (
 	"encoding/json"
 	"testing"
 
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
@@ -26,12 +28,12 @@ func TestGetAccountInfoTrue(t *testing.T) {
 	t.Parallel()
 
 	s := &serieGetAccountInfo{
-		testAddress: testaddr,
+		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
 		errorMsg:    "",
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := getTestAccountInfo(t, stub, s)
 	validationResultGetAccountInfo(t, resp, s)
 }
@@ -42,10 +44,10 @@ func TestGetAccountInfoEmptyAddress(t *testing.T) {
 	s := &serieGetAccountInfo{
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
-		errorMsg:    errorMsgEmptyAddress,
+		errorMsg:    errs.ErrEmptyAddress,
 	}
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := getTestAccountInfo(t, stub, s)
 	validationResultGetAccountInfo(t, resp, s)
 }
@@ -58,10 +60,10 @@ func TestGetAccountInfoWrongAddress(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "Account info for address " + s.testAddress + " is empty"
+	errorMsg := "account info for address " + s.testAddress + " is empty"
 	s.SetError(errorMsg)
 
-	stub := StubCreate(t)
+	stub := common.StubCreateAndInit(t)
 	resp := getTestAccountInfo(t, stub, s)
 	validationResultGetAccountInfo(t, resp, s)
 }
@@ -70,11 +72,11 @@ func getTestAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *serieGetAcco
 	// add user first
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
-	resp = stub.MockInvoke("0", [][]byte{[]byte(fnGetAccInfoFn), []byte(ser.testAddress)})
+	resp = stub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccInfoFn), []byte(ser.testAddress)})
 
 	return resp
 }

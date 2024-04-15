@@ -1,4 +1,4 @@
-package cc
+package helpers
 
 import (
 	"fmt"
@@ -16,26 +16,26 @@ const (
 
 func TestDecodeBase58PublicKey(t *testing.T) {
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey is empty", func(t *testing.T) {
-		key, err := decodeBase58PublicKey("")
+		key, err := DecodeBase58PublicKey("")
 		assert.EqualError(t, err, "encoded base 58 public key is empty")
 		assert.Len(t, key, 0)
 	})
 
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey wrong text", func(t *testing.T) {
-		key, err := decodeBase58PublicKey("wrong key - text")
+		key, err := DecodeBase58PublicKey("wrong key - text")
 		assert.EqualError(t, err, "failed base58 decoding of key wrong key - text")
 		assert.Len(t, key, 0)
 	})
 
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey in hex", func(t *testing.T) {
-		key, err := decodeBase58PublicKey(encodedHexPublicKey)
+		key, err := DecodeBase58PublicKey(encodedHexPublicKey)
 		assert.EqualError(t, err, fmt.Sprintf("failed base58 decoding of key %s", encodedHexPublicKey))
 		assert.Len(t, key, 0)
 	})
 
 	t.Run("POSITIVE. SHOULD RETURN endorsement descriptor WHEN encodedBase58PublicKey in base58 format", func(t *testing.T) {
 		expected := base58.Decode(encodedBase58PublicKey)
-		key, err := decodeBase58PublicKey(encodedBase58PublicKey)
+		key, err := DecodeBase58PublicKey(encodedBase58PublicKey)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, key)
 	})
@@ -54,7 +54,7 @@ func TestCheckDuplicates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := checkDuplicates(tt.input)
+			err := CheckDuplicates(tt.input)
 			if tt.isErrExpected {
 				require.Error(t, err)
 			}
@@ -69,6 +69,6 @@ func BenchmarkCheckDuplicates(b *testing.B) {
 		r = append(r, input...)
 	}
 	for i := 0; i < b.N; i++ {
-		_ = checkDuplicates(r)
+		_ = CheckDuplicates(r)
 	}
 }

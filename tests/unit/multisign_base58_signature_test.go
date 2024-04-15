@@ -1,8 +1,9 @@
-package cc
+package unit
 
 import (
 	"testing"
 
+	"github.com/anoideaopen/acl/helpers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,7 @@ func TestValidateMinSignatures(t *testing.T) {
 		},
 		{
 			name:          "NegativeNEqualToMin1",
-			n:             minSignaturesRequired,
+			n:             helpers.MinSignaturesRequired,
 			expectedError: "invalid N '1', must be greater than 1 for multisignature transactions",
 		},
 		{
@@ -35,7 +36,7 @@ func TestValidateMinSignatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateMinSignatures(tt.n)
+			err := helpers.ValidateMinSignatures(tt.n)
 			if tt.expectedError != "" {
 				require.EqualError(t, err, tt.expectedError)
 			} else {

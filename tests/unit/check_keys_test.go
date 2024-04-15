@@ -1,12 +1,13 @@
-package cc
+package unit
 
 import (
 	"testing"
 
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,7 +64,7 @@ func TestCheckKeysPublicKeyEmpty(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 		kycHash:     "kycHash",
 		testUserID:  "testUserID",
-		errorMsg:    ErrEmptyPubKey,
+		errorMsg:    errs.ErrEmptyPubKey,
 	}
 
 	checkKeys(t, s)
@@ -165,7 +166,7 @@ func TestCheckKeysDuplicateKeys(t *testing.T) {
 	t.Parallel()
 
 	s := &serieCheckKeys{
-		testPubKey:  pubkey + "/" + pubkey,
+		testPubKey:  common.PubKey + "/" + common.PubKey,
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
 		kycHash:     "kycHash",
@@ -181,33 +182,27 @@ func TestCheckKeysDuplicateKeys(t *testing.T) {
 
 func checkKeys(t *testing.T, ser *serieCheckKeys) {
 	// add user first
-	stub := shimtest.NewMockStub("mockStub", New())
-	assert.NotNil(t, stub)
-	cert, err := getCert(adminCertPath)
-	assert.NoError(t, err)
-	err = SetCreator(stub, testCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
-	stub.MockInit("0", testInitArgs)
+	stub := common.StubCreateAndInit(t)
 
 	valid := true
 	// attempt to add a user if we use valid values in the serieCheckKeys structure in test
 	resp := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte(fnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
+		[][]byte{[]byte(common.FnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
 	)
 	// if not, we substitute default valid values
 	if resp.Status != int32(shim.OK) {
 		valid = false
 		resp = stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(fnAddUser), []byte(pubkey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 	}
 	// then check that the user has been added
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
 	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(fnCheckKeys), []byte(ser.testPubKey)})
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.testPubKey)})
 	assert.Equal(t, ser.respStatus, result.Status)
 
 	assert.Equal(t, ser.errorMsg, result.Message)
