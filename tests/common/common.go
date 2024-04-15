@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"github.com/anoideaopen/acl/proto"
 	"strconv"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/proto"
 	"github.com/btcsuite/btcutil/base58"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
