@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/anoideaopen/acl/helpers"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"strconv"
 
+	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
