@@ -38,7 +38,7 @@ func TestAclInitWrongAdminSkiFormat(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{[]byte("a"), []byte("0")})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrInvalidAdminSKI, "a")), response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrInvalidAdminSKI, "a"), response.Message)
 }
 
 func TestAclInitWrongValidatorCountFormat(t *testing.T) {
