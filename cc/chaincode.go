@@ -29,12 +29,12 @@ func New() *ACL {
 func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
 	cfgBytes, err := config.InitConfig(stub)
 	if err != nil {
-		shim.Error(fmt.Sprintf("init config: %s", err))
+		return shim.Error(fmt.Sprintf("init config: %s", err))
 	}
 
 	cfg, err := config.FromBytes(cfgBytes)
 	if err != nil {
-		shim.Error(fmt.Sprintf("error unmarshalling config: %s", err))
+		return shim.Error(fmt.Sprintf("error unmarshalling config: %s", err))
 	}
 
 	c.config = cfg
