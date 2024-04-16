@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -37,7 +38,7 @@ func TestAclInitWrongAdminSkiFormat(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{[]byte("a"), []byte("0")})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, "invalid admin SKI (index of args 0) format found 'a' but expected hex encoded string", response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrInvalidAdminSKI, "a")), response.Message)
 }
 
 func TestAclInitWrongValidatorCountFormat(t *testing.T) {
@@ -46,7 +47,7 @@ func TestAclInitWrongValidatorCountFormat(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"), []byte("a")})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, "invalid validator count (index of args 1) format found 'a' but expected value with type int", response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrInvalidValidatorsCount, "a")), response.Message)
 }
 
 func TestAclInitZeroArgs(t *testing.T) {
@@ -55,7 +56,7 @@ func TestAclInitZeroArgs(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, "arguments should be at least 2", response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrArgsLessThanMin, 0, 2)), response.Message)
 }
 
 func TestAclInitTwoArgs(t *testing.T) {
