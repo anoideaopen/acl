@@ -145,8 +145,8 @@ func IsJSONConfig(args []string) bool {
 // Accepts the channel name (chaincode) and the list of positional initialization parameters.
 // Only needed to maintain backward compatibility.
 // Marked for deletion after all deploy tools will be switched to JSON-config initialization of chaincodes.
-// Deprecated
-func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) { //nolint:funlen,gocognit
+// ToDo - need to be deleted after switching to json-config initialization
+func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	const minArgsCount = 2
 	argsCount := len(args)
 	if argsCount < minArgsCount {
@@ -160,7 +160,6 @@ func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, erro
 	adminSKI, err := hex.DecodeString(args[indexAdminSKI])
 	if err != nil {
 		return nil, fmt.Errorf(ErrInvalidAdminSKI, args[indexAdminSKI])
-
 	}
 
 	if args[indexValidatorsCount] == "" {
