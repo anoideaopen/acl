@@ -27,12 +27,7 @@ func New() *ACL {
 // Init - method for initialize chaincode
 // args: adminSKI, validatorsCount, validatorBase58Ed25519PublicKey1, ..., validatorBase58Ed25519PublicKeyN
 func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	cfgBytes, err := config.InitConfig(stub)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	cfg, err := config.FromBytes(cfgBytes)
+	cfg, err := config.InitConfig(stub)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -55,14 +50,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}()
 	fn, args := stub.GetFunctionAndParameters()
 	if c.config == nil {
-		cfgBytes, err := config.InitConfig(stub)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-		if cfgBytes == nil {
-			return shim.Error("ACL chaincode not initialized, please invoke Init with init args first")
-		}
-		cfg, err := config.FromBytes(cfgBytes)
+		cfg, err := config.InitConfig(stub)
 		if err != nil {
 			return shim.Error(err.Error())
 		}

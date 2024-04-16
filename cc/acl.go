@@ -332,12 +332,12 @@ func (c *ACL) updateSignedAddress(
 	return stub.PutState(signedAddressCompositeKey, marshaledSignedAddress)
 }
 
-// SetKyc updates KYC for address
+// Setkyc updates KYC for address
 // arg[0] - address
 // arg[1] - KYC hash
 // arg[2] - nonce
 // arg[3:] - public keys and signatures of validators
-func (c *ACL) SetKyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	argsNum := len(args)
 	const minArgsCount = 5
 	if argsNum < minArgsCount {
@@ -439,7 +439,7 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		_ = iterator.Close()
 	}()
 
-	var addresses []string
+	var addrs []string
 	for iterator.HasNext() {
 		kv, err := iterator.Next()
 		if err != nil {
@@ -449,11 +449,11 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		addresses = append(addresses, extractedAddr[0])
+		addrs = append(addrs, extractedAddr[0])
 	}
 
 	serialized, err := json.Marshal(AddrsWithPagination{
-		Addrs:    addresses,
+		Addrs:    addrs,
 		Bookmark: result.Bookmark,
 	})
 	if err != nil {

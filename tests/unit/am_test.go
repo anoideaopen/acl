@@ -101,10 +101,10 @@ func TestAclAccessMatrix(t *testing.T) {
 	})
 
 	t.Run("[negative] Check operation rights by user", func(t *testing.T) {
-		ucert, err := common.GetCert(common.UserCertPath)
+		uCert, err := common.GetCert(common.UserCertPath)
 		assert.NoError(t, err)
-		assert.NotNil(t, ucert)
-		err = common.SetCreator(mockStub, common.TestCreatorMSP, ucert.Raw)
+		assert.NotNil(t, uCert)
+		err = common.SetCreator(mockStub, common.TestCreatorMSP, uCert.Raw)
 		assert.NoError(t, err)
 
 		result := mockStub.MockInvoke("1", [][]byte{

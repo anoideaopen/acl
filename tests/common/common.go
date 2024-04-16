@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"google.golang.org/protobuf/encoding/protojson"
 	"strconv"
 	"testing"
 
@@ -42,8 +43,7 @@ var TestInitArgs = append(
 	TestValidatorsBytes...)
 
 var TestInitConfig = &proto.ACLConfig{
-	CCName:          "acl",
-	AdminSKI:        TestAdminSKI,
+	AdminSKIEncoded: string(TestAdminSKI),
 	ValidatorsCount: int64(len(TestValidators)),
 	Validators:      TestValidators,
 }
@@ -107,8 +107,8 @@ var DuplicateMockValidatorsSecretKeys = []string{
 
 // MarshalIdentity marshals creator identities
 func MarshalIdentity(creatorMSP string, creatorCert []byte) ([]byte, error) {
-	pemblock := &pem.Block{Type: "CERTIFICATE", Bytes: creatorCert}
-	pemBytes := pem.EncodeToMemory(pemblock)
+	pemBlock := &pem.Block{Type: "CERTIFICATE", Bytes: creatorCert}
+	pemBytes := pem.EncodeToMemory(pemBlock)
 	if pemBytes == nil {
 		return nil, errors.New("encoding of identity failed")
 	}
@@ -148,7 +148,15 @@ func StubCreate(t *testing.T) *shimtest.MockStub {
 // StubCreateAndInit creates mock stub and initializes it with TestIniArgs
 func StubCreateAndInit(t *testing.T) *shimtest.MockStub {
 	stub := StubCreate(t)
-	rsp := stub.MockInit("0", TestInitArgs)
+	cfgBytes, err := protojson.Marshal(TestInitConfig)
+	assert.NoError(t, err)
+	var args [][]byte
+	args = append(args, cfgBytes)
+	rsp := stub.MockInit("0", args)
+
+	fmt.Println(args)
+	fmt.Println(TestInitArgs)
+
 	assert.Equal(t, shim.OK, int(rsp.Status))
 
 	return stub
