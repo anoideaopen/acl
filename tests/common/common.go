@@ -41,7 +41,7 @@ var TestInitArgs = append(
 	},
 	TestValidatorsBytes...)
 
-var TestInitConfig = &proto.Config{
+var TestInitConfig = &proto.ACLConfig{
 	CCName:          "acl",
 	AdminSKI:        TestAdminSKI,
 	ValidatorsCount: int64(len(TestValidators)),

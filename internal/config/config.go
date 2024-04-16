@@ -34,6 +34,7 @@ var (
 	ErrValidatorsEmpty        = "'validator #'%d'' is empty"
 	ErrParsingArgsOld         = "init: parsing args old way: %s"
 	ErrSavingConfig           = "init: saving config: %s"
+	ErrArgsLessThanMin        = "minimum required args length is '%d', passed %d"
 )
 
 func InitConfig(stub shim.ChaincodeStubInterface) ([]byte, error) {
@@ -124,8 +125,8 @@ func LoadRawConfig(state State) ([]byte, error) {
 //
 // The function uses protojson.Unmarshal to deserialize the JSON-encoded data into the *proto.ContractConfig struct.
 // If the unmarshalling process fails, an error is returned with additional information about the failure.
-func FromBytes(cfgBytes []byte) (*proto.Config, error) {
-	var cfg proto.Config
+func FromBytes(cfgBytes []byte) (*proto.ACLConfig, error) {
+	var cfg proto.ACLConfig
 	if err := protojson.Unmarshal(cfgBytes, &cfg); err != nil {
 		return nil, fmt.Errorf("unmarshalling failed: %w", err)
 	}
@@ -150,7 +151,7 @@ func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, erro
 	const minArgsCount = 2
 	argsCount := len(args)
 	if argsCount < minArgsCount {
-		return nil, fmt.Errorf("minimum required args length is '%d', passed %d",
+		return nil, fmt.Errorf(ErrArgsLessThanMin,
 			argsCount, minArgsCount)
 	}
 
@@ -172,7 +173,7 @@ func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, erro
 
 	lastValidatorArgIndex := indexValidators + validatorsCount
 
-	validators := args[indexValidatorsCount:lastValidatorArgIndex]
+	validators := args[indexValidators:lastValidatorArgIndex]
 	for i, validator := range validators {
 		if validator == "" {
 			return nil, fmt.Errorf(ErrValidatorsEmpty, i)
@@ -184,7 +185,7 @@ func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, erro
 		return nil, err
 	}
 
-	cfg := &proto.Config{
+	cfg := &proto.ACLConfig{
 		CCName:          ccName,
 		AdminSKI:        adminSKI,
 		ValidatorsCount: validatorsCount,
