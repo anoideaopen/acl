@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/helpers"
-	"github.com/anoideaopen/acl/tests/common"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -353,15 +353,16 @@ func TestAddMultisig(t *testing.T) {
 	})
 
 	t.Run("wrong number of signature policy", func(t *testing.T) {
-		n := "10"
+		n := 10
+		nStr := "10"
 		resp := stub.MockInvoke("0", append(append(
 			append([][]byte{},
 				[]byte(common.FnAddMultisig),
-				[]byte(n),
+				[]byte(nStr),
 				[]byte(nonce)),
 			pubKeysBytes...), signatures...))
 		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.Equal(t, fmt.Sprintf(errs.ErrWrongNumberOfKeys, n, strconv.Itoa(len(pubKeys))), resp.Message)
+		assert.Equal(t, fmt.Sprintf(errs.ErrWrongNumberOfKeys, n, len(pubKeys)), resp.Message)
 	})
 
 	t.Run("wrong number of parameters", func(t *testing.T) {
