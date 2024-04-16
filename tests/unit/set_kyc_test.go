@@ -92,8 +92,8 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *seriesSetKyc) peer.Respo
 	// change KYC
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	pKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubkey := range common.MockValidatorKeys {
-		pKeys = append(pKeys, pubkey)
+	for pubKey := range common.MockValidatorKeys {
+		pKeys = append(pKeys, pubKey)
 	}
 
 	// hashed := sha3.Sum256(base58.Decode(pkey))
@@ -101,16 +101,16 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *seriesSetKyc) peer.Respo
 
 	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnSetKYC, ser.testAddress, ser.newKYC, nonce}, pKeys...), "")))
 
-	vPkeys := make([][]byte, 0, len(pKeys))
+	vPKeys := make([][]byte, 0, len(pKeys))
 	vSignatures := make([][]byte, 0, len(pKeys))
-	for _, pubkey := range pKeys {
-		skey := common.MockValidatorKeys[pubkey]
-		vPkeys = append(vPkeys, []byte(pubkey))
-		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(skey), message[:]))))
+	for _, pubKey := range pKeys {
+		sKey := common.MockValidatorKeys[pubKey]
+		vPKeys = append(vPKeys, []byte(pubKey))
+		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(sKey), message[:]))))
 	}
 
 	invokeArgs := append(
-		append([][]byte{[]byte(common.FnSetKYC), []byte(ser.testAddress), []byte(ser.newKYC), []byte(nonce)}, vPkeys...),
+		append([][]byte{[]byte(common.FnSetKYC), []byte(ser.testAddress), []byte(ser.newKYC), []byte(nonce)}, vPKeys...),
 		vSignatures...,
 	)
 	respNewKey := stub.MockInvoke("0", invokeArgs)
