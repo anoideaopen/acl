@@ -13,22 +13,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type serieBlackList struct {
+type seriesBlackList struct {
 	testAddress string
 	list        string
 	respStatus  int32
 	errorMsg    string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieBlackList) SetError(errMsg string) {
+// add dynamic errorMsg in series
+func (s *seriesBlackList) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
 func TestBlackListTrue(t *testing.T) {
 	t.Parallel()
 
-	s := &serieBlackList{
+	s := &seriesBlackList{
 		testAddress: common.TestAddr,
 		list:        "black",
 		respStatus:  int32(shim.OK),
@@ -43,7 +43,7 @@ func TestBlackListTrue(t *testing.T) {
 func TestBlackListEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieBlackList{
+	s := &seriesBlackList{
 		testAddress: "",
 		list:        "black",
 		respStatus:  int32(shim.ERROR),
@@ -58,8 +58,8 @@ func TestBlackListEmptyAddress(t *testing.T) {
 func TestBlackListWrongAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieBlackList{
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+	s := &seriesBlackList{
+		testAddress: common.TestWrongAddress,
 		list:        "black",
 		respStatus:  int32(shim.ERROR),
 	}
@@ -75,7 +75,7 @@ func TestBlackListWrongAddress(t *testing.T) {
 func TestBlackListWrongParameterList(t *testing.T) {
 	t.Parallel()
 
-	s := &serieBlackList{
+	s := &seriesBlackList{
 		testAddress: common.TestAddr,
 		list:        "kek",
 		respStatus:  int32(shim.ERROR),
@@ -106,7 +106,7 @@ func TestBlackListLessArgs(t *testing.T) {
 func TestRemoveAddressFromBlackListTrue(t *testing.T) {
 	t.Parallel()
 
-	s := &serieBlackList{
+	s := &seriesBlackList{
 		testAddress: common.TestAddr,
 		list:        "black",
 		respStatus:  int32(shim.OK),
@@ -121,7 +121,7 @@ func TestRemoveAddressFromBlackListTrue(t *testing.T) {
 func TestRemoveAddressFromBlackListEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieBlackList{
+	s := &seriesBlackList{
 		testAddress: "",
 		list:        "black",
 		respStatus:  int32(shim.ERROR),
@@ -136,8 +136,8 @@ func TestRemoveAddressFromBlackListEmptyAddress(t *testing.T) {
 func TestRemoveAddressFromBlackListWrongAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieBlackList{
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+	s := &seriesBlackList{
+		testAddress: common.TestWrongAddress,
 		list:        "black",
 		respStatus:  int32(shim.ERROR),
 	}
@@ -150,7 +150,7 @@ func TestRemoveAddressFromBlackListWrongAddress(t *testing.T) {
 	validationResultRemoveAddressFromBlackList(t, stub, resp, s)
 }
 
-func addAddressToBlackList(t *testing.T, stub *shimtest.MockStub, ser *serieBlackList) peer.Response {
+func addAddressToBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBlackList) peer.Response {
 	resp := stub.MockInvoke("0", [][]byte{
 		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue),
 	})
@@ -161,7 +161,7 @@ func addAddressToBlackList(t *testing.T, stub *shimtest.MockStub, ser *serieBlac
 	return respBlackList
 }
 
-func validationResultAddAddressToBlackList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *serieBlackList) {
+func validationResultAddAddressToBlackList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesBlackList) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 
@@ -179,7 +179,7 @@ func validationResultAddAddressToBlackList(t *testing.T, stub *shimtest.MockStub
 	assert.Equal(t, true, response.Account.BlackListed, "user is not blacklisted")
 }
 
-func removeAddressFromBlackList(t *testing.T, stub *shimtest.MockStub, ser *serieBlackList) peer.Response {
+func removeAddressFromBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBlackList) peer.Response {
 	resp := stub.MockInvoke("0", [][]byte{
 		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true"),
 	})
@@ -206,7 +206,7 @@ func validationResultRemoveAddressFromBlackList(
 	t *testing.T,
 	stub *shimtest.MockStub,
 	resp peer.Response,
-	ser *serieBlackList,
+	ser *seriesBlackList,
 ) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)

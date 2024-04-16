@@ -16,7 +16,7 @@ type (
 	ACL struct {
 		init *proto.Args
 	}
-	ccfunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
+	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
 
 func New() *ACL {
@@ -61,7 +61,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 		c.init = init
 	}
-	methods := make(map[string]ccfunc)
+	methods := make(map[string]ccFunc)
 	t := reflect.TypeOf(c)
 	var ok bool
 	for i := 0; i < t.NumMethod(); i++ {
@@ -74,10 +74,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}
 
-	ccinvoke, ok := methods[fn]
+	ccInvoke, ok := methods[fn]
 	if !ok {
 		return shim.Error(fmt.Sprintf("unknown method %s in tx %s", fn, stub.GetTxID()))
 	}
 
-	return ccinvoke(stub, args)
+	return ccInvoke(stub, args)
 }

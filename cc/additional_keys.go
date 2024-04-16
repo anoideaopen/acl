@@ -59,7 +59,7 @@ func (c *ACL) AddAdditionalKey(
 	const argsLen = 6
 
 	if len(args) < argsLen {
-		return errf("incorrect number of arguments: expected %d, got %d", argsLen, len(args))
+		return errF("incorrect number of arguments: expected %d, got %d", argsLen, len(args))
 	}
 
 	// Request parameters.
@@ -73,31 +73,31 @@ func (c *ACL) AddAdditionalKey(
 
 	// Argument checking.
 	if userAddress == "" {
-		return errf("request validation failed: %s", errs.ErrEmptyAddress)
+		return errF("request validation failed: %s", errs.ErrEmptyAddress)
 	}
 
 	if additionalPublicKey == "" {
-		return errf("request validation failed: %s", errs.ErrEmptyPubKey)
+		return errF("request validation failed: %s", errs.ErrEmptyPubKey)
 	}
 
 	var labelsList []string
 	if err := json.Unmarshal([]byte(labels), &labelsList); err != nil {
-		return errf("request validation failed: invalid labels format: %s", err)
+		return errF("request validation failed: invalid labels format: %s", err)
 	}
 
 	// Checking the correctness of the additional public key.
 	if err := validateKeyFormat(additionalPublicKey); err != nil {
-		return errf("validation of additional public key for %s failed: %s", userAddress, err)
+		return errF("validation of additional public key for %s failed: %s", userAddress, err)
 	}
 
 	// Verification of access rights.
 	if err := c.verifyAccess(stub); err != nil {
-		return errf("unauthorized access: %s", err)
+		return errF("unauthorized access: %s", err)
 	}
 
 	// Nonce check.
 	if err := checkNonce(stub, userAddress, nonce); err != nil {
-		return errf("request validation failed: %s", err)
+		return errF("request validation failed: %s", err)
 	}
 
 	// Validation of validator signatures.
@@ -127,17 +127,17 @@ func (c *ACL) AddAdditionalKey(
 		validatorKeys,
 		validatorHexSignatures,
 	); err != nil {
-		return errf("validation of validator signatures failed: %s", err)
+		return errF("validation of validator signatures failed: %s", err)
 	}
 
 	// Check for key duplication in the state.
 	parentAddress, additionalKeyParentComposite, err := c.retrieveParentAddress(stub, additionalPublicKey)
 	if err != nil {
-		return errf("get parent address for %s: %s", userAddress, err)
+		return errF("get parent address for %s: %s", userAddress, err)
 	}
 
 	if parentAddress != "" {
-		return errf(
+		return errF(
 			"additional public key (%s) for %s already added",
 			additionalPublicKey,
 			userAddress,
@@ -147,7 +147,7 @@ func (c *ACL) AddAdditionalKey(
 	// Load the SignedAddress parent descriptor at the user's address.
 	signedAddress, publicKeyHash, err := c.retrieveSignedAddress(stub, userAddress)
 	if err != nil {
-		return errf("retrieve user address for %s: %s", userAddress, err)
+		return errF("retrieve user address for %s: %s", userAddress, err)
 	}
 
 	// Adding a public key to a user.
@@ -158,12 +158,12 @@ func (c *ACL) AddAdditionalKey(
 
 	// Saves the updated parent address structure.
 	if err = c.updateSignedAddress(stub, signedAddress, publicKeyHash); err != nil {
-		return errf("update user address for %s: %s", userAddress, err)
+		return errF("update user address for %s: %s", userAddress, err)
 	}
 
 	// Saves a link to the parent address.
 	if err = stub.PutState(additionalKeyParentComposite, []byte(userAddress)); err != nil {
-		return errf("put state (parent link address) for %s: %s", userAddress, err)
+		return errF("put state (parent link address) for %s: %s", userAddress, err)
 	}
 
 	return shim.Success(nil)
@@ -181,7 +181,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 	const argsLen = 5
 
 	if len(args) < argsLen {
-		return errf("incorrect number of arguments: expected %d, got %d", argsLen, len(args))
+		return errF("incorrect number of arguments: expected %d, got %d", argsLen, len(args))
 	}
 
 	// Request Parameters.
@@ -194,26 +194,26 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 
 	// Argument Validation.
 	if userAddress == "" {
-		return errf("request validation failed: %s", errs.ErrEmptyAddress)
+		return errF("request validation failed: %s", errs.ErrEmptyAddress)
 	}
 
 	if additionalPublicKey == "" {
-		return errf("request validation failed: %s", errs.ErrEmptyPubKey)
+		return errF("request validation failed: %s", errs.ErrEmptyPubKey)
 	}
 
 	// Checking the validity of the key.
 	if err := validateKeyFormat(additionalPublicKey); err != nil {
-		return errf("validate additional public key for %s: %s", userAddress, err)
+		return errF("validate additional public key for %s: %s", userAddress, err)
 	}
 
 	// Verification of access rights.
 	if err := c.verifyAccess(stub); err != nil {
-		return errf(errs.ErrUnauthorizedMsg, err)
+		return errF(errs.ErrUnauthorizedMsg, err)
 	}
 
 	// Nonce verification.
 	if err := checkNonce(stub, userAddress, nonce); err != nil {
-		return errf("request validation failed: %s", err)
+		return errF("request validation failed: %s", err)
 	}
 
 	// Validation of validator signatures.
@@ -242,17 +242,17 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 		validatorKeys,
 		validatorHexSignatures,
 	); err != nil {
-		return errf("validation of validator signatures failed: %s", err)
+		return errF("validation of validator signatures failed: %s", err)
 	}
 
 	// Check that the public key has a parent that matches the user's address.
 	parentAddress, additionalKeyParentComposite, err := c.retrieveParentAddress(stub, additionalPublicKey)
 	if err != nil {
-		return errf("get parent address for %s: %s", userAddress, err)
+		return errF("get parent address for %s: %s", userAddress, err)
 	}
 
 	if parentAddress == "" {
-		return errf(
+		return errF(
 			"additional public key's (%s) parent %s not found",
 			additionalPublicKey,
 			userAddress,
@@ -260,7 +260,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 	}
 
 	if parentAddress != userAddress {
-		return errf(
+		return errF(
 			"additional public key's parent address %s doesn't match with argument %s",
 			parentAddress,
 			userAddress,
@@ -270,7 +270,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 	// Load the SignedAddress parent descriptor at the user's address.
 	signedAddress, publicKeyHash, err := c.retrieveSignedAddress(stub, userAddress)
 	if err != nil {
-		return errf("retrieve user address for %s: %s", userAddress, err)
+		return errF("retrieve user address for %s: %s", userAddress, err)
 	}
 
 	// Deleting a user's public key.
@@ -290,12 +290,12 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 
 	// Saves the updated parent address structure.
 	if err = c.updateSignedAddress(stub, signedAddress, publicKeyHash); err != nil {
-		return errf("update user address for %s: %s", userAddress, err)
+		return errF("update user address for %s: %s", userAddress, err)
 	}
 
 	// Removing the link to the parent address.
 	if err = stub.DelState(additionalKeyParentComposite); err != nil {
-		return errf("delete state (parent link address) for %s: %s", userAddress, err)
+		return errF("delete state (parent link address) for %s: %s", userAddress, err)
 	}
 
 	return shim.Success(nil)
@@ -326,7 +326,7 @@ func (c *ACL) tryCheckAdditionalKey(
 	// Attempting to get the user's address by an additional public key.
 	parentAddress, _, err := c.retrieveParentAddress(stub, publicKey)
 	if err != nil {
-		return errf("get parent address for %s: %s", publicKey, err), true
+		return errF("get parent address for %s: %s", publicKey, err), true
 	}
 
 	// If no parent is found, the key is normal and control is passed to the higher handler.
@@ -337,12 +337,12 @@ func (c *ACL) tryCheckAdditionalKey(
 	// Retrieving information about a user by their additional key.
 	signedAddress, _, err := c.retrieveSignedAddress(stub, parentAddress)
 	if err != nil {
-		return errf("get parent signed address for %s: %s", parentAddress, err), true
+		return errF("get parent signed address for %s: %s", parentAddress, err), true
 	}
 
 	accountInfo, err := getAccountInfo(stub, signedAddress.Address.AddrString())
 	if err != nil {
-		return errf("get account info for %s: %s", parentAddress, err), true
+		return errF("get account info for %s: %s", parentAddress, err), true
 	}
 
 	response, err := proto.Marshal(&pb.AclResponse{
@@ -350,7 +350,7 @@ func (c *ACL) tryCheckAdditionalKey(
 		Address: signedAddress,
 	})
 	if err != nil {
-		return errf("marshal response for %s: %s", parentAddress, err), true
+		return errF("marshal response for %s: %s", parentAddress, err), true
 	}
 
 	return shim.Success(response), true
@@ -395,6 +395,6 @@ func validateKeyFormat(encodedBase58PublicKey string) error {
 	return nil
 }
 
-func errf(format string, a ...any) peer.Response {
+func errF(format string, a ...any) peer.Response {
 	return shim.Error(fmt.Sprintf(format, a...))
 }

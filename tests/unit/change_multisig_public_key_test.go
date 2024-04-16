@@ -22,7 +22,7 @@ import (
 
 const newPubKey = "94EdE9iZRzU9mUiVDNxYKKWymHeBxHR8mA8AetFrg8m4"
 
-type serieChangeMultisigPublicKey struct {
+type seriesChangeMultisigPublicKey struct {
 	newPubKey  string
 	kycHash    string
 	testUserID string
@@ -31,14 +31,14 @@ type serieChangeMultisigPublicKey struct {
 }
 
 // add dynamic errorMsg in series
-func (s *serieChangeMultisigPublicKey) SetError(errMsg string) {
+func (s *seriesChangeMultisigPublicKey) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
 func TestChangeMultisigPublicKeyEqual43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieChangeMultisigPublicKey{
+	s := &seriesChangeMultisigPublicKey{
 		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
 		respStatus: int32(shim.OK),
 		kycHash:    "kycHash",
@@ -52,7 +52,7 @@ func TestChangeMultisigPublicKeyEqual43Symbols(t *testing.T) {
 func TestChangeMultisigPublicKeyEqual44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieChangeMultisigPublicKey{
+	s := &seriesChangeMultisigPublicKey{
 		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
 		respStatus: int32(shim.OK),
 		kycHash:    "kycHash",
@@ -66,7 +66,7 @@ func TestChangeMultisigPublicKeyEqual44Symbols(t *testing.T) {
 func TestChangeMultisigPublicKeyEmpty(t *testing.T) {
 	t.Parallel()
 
-	s := &serieChangeMultisigPublicKey{
+	s := &seriesChangeMultisigPublicKey{
 		newPubKey:  "",
 		respStatus: int32(shim.ERROR),
 		kycHash:    "kycHash",
@@ -80,7 +80,7 @@ func TestChangeMultisigPublicKeyEmpty(t *testing.T) {
 func TestChangeMultisigPublicKeyMoreThan44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieChangeMultisigPublicKey{
+	s := &seriesChangeMultisigPublicKey{
 		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
 		respStatus: int32(shim.ERROR),
 		kycHash:    "kycHash",
@@ -97,7 +97,7 @@ func TestChangeMultisigPublicKeyMoreThan44Symbols(t *testing.T) {
 func TestChangeMultisigPublicKeyLessThan43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieChangeMultisigPublicKey{
+	s := &seriesChangeMultisigPublicKey{
 		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
 		respStatus: int32(shim.ERROR),
 		kycHash:    "kycHash",
@@ -114,7 +114,7 @@ func TestChangeMultisigPublicKeyLessThan43Symbols(t *testing.T) {
 func TestChangeMultisigPublicKeyWrongNumericZero(t *testing.T) {
 	t.Parallel()
 
-	s := &serieChangeMultisigPublicKey{
+	s := &seriesChangeMultisigPublicKey{
 		newPubKey:  "00000000000000000000000000000000",
 		respStatus: int32(shim.ERROR),
 		kycHash:    "kycHash",
@@ -127,10 +127,10 @@ func TestChangeMultisigPublicKeyWrongNumericZero(t *testing.T) {
 	changeMultisigPublicKey(t, s)
 }
 
-func TestChangeMultisigPublicKeyWithSpesialSymbols(t *testing.T) {
+func TestChangeMultisigPublicKeyWithSpecialSymbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieChangeMultisigPublicKey{
+	s := &seriesChangeMultisigPublicKey{
 		newPubKey:  "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 		respStatus: int32(shim.ERROR),
 		kycHash:    "kycHash",
@@ -143,14 +143,14 @@ func TestChangeMultisigPublicKeyWithSpesialSymbols(t *testing.T) {
 	changeMultisigPublicKey(t, s)
 }
 
-func changeMultisigPublicKey(t *testing.T, ser *serieChangeMultisigPublicKey) {
+func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	stub := common.StubCreateAndInit(t)
 
 	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privKey := range common.MockValidatorKeys {
+	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
+	for pubKey, privateKey := range common.MockValidatorKeys {
 		pubKeys = append(pubKeys, pubKey)
-		privKeys = append(privKeys, privKey)
+		privateKeys = append(privateKeys, privateKey)
 	}
 
 	// add multisig members first
@@ -167,11 +167,11 @@ func changeMultisigPublicKey(t *testing.T, ser *serieChangeMultisigPublicKey) {
 
 	messageAddMultisig := sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisig, "3", nonce}, pubKeys...), "")))
 
-	signaturesAddMultisig := make([][]byte, 0, len(privKeys))
-	for _, privKey := range privKeys {
+	signaturesAddMultisig := make([][]byte, 0, len(privateKeys))
+	for _, privateKey := range privateKeys {
 		signaturesAddMultisig = append(
 			signaturesAddMultisig,
-			[]byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privKey), messageAddMultisig[:]))),
+			[]byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), messageAddMultisig[:]))),
 		)
 	}
 
@@ -183,16 +183,16 @@ func changeMultisigPublicKey(t *testing.T, ser *serieChangeMultisigPublicKey) {
 		pubKeysBytes...), signaturesAddMultisig...))
 	assert.Equal(t, int32(shim.OK), resp.Status)
 
-	// derive address from hash of sorted base58-(DE)coded pubkeys
-	pkeysString := strings.Join(pubKeys, "/")
-	keysArrSorted, err := helpers.DecodeAndSort(pkeysString)
+	// derive address from hash of sorted base58-(DE)coded pubKeys
+	pKeysString := strings.Join(pubKeys, "/")
+	keysArrSorted, err := helpers.DecodeAndSort(pKeysString)
 	assert.NoError(t, err)
 	hashedPksSortedOrder := sha3.Sum256(bytes.Join(keysArrSorted, []byte("")))
 	addrEncoded := base58.CheckEncode(hashedPksSortedOrder[1:], hashedPksSortedOrder[0])
 
 	valid := true
 	newKey := ser.newPubKey
-	// attempt to add a user if we use valid values in the serieCheckKeys structure in test
+	// attempt to add a user if we use valid values in the seriesCheckKeys structure in test
 	resp = stub.MockInvoke(
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(newKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
@@ -224,9 +224,9 @@ func changeMultisigPublicKey(t *testing.T, ser *serieChangeMultisigPublicKey) {
 	reasonID := "1"
 	message := sha3.Sum256([]byte(strings.Join(append([]string{"changeMultisigPublicKey", addrEncoded, oldKey, newSeparatedPubKeys, reason, reasonID, newNonce}, pubKeys...), "")))
 
-	signatures := make([][]byte, 0, len(privKeys))
-	for _, privkey := range privKeys {
-		signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privkey), message[:]))))
+	signatures := make([][]byte, 0, len(privateKeys))
+	for _, privateKey := range privateKeys {
+		signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), message[:]))))
 	}
 
 	// change key
@@ -261,8 +261,8 @@ func changeMultisigPublicKey(t *testing.T, ser *serieChangeMultisigPublicKey) {
 		signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
 
 		mockValidatorsPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
-		for pubkey := range common.MockValidatorKeys {
-			mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubkey)
+		for pubKey := range common.MockValidatorKeys {
+			mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
 		}
 		for i, vpk := range pksOfValidators {
 			assert.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk), "pk %s does not belong to any validator", vpk)

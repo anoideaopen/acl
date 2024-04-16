@@ -87,7 +87,7 @@ func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) peer.
 	return shim.Success(nil)
 }
 
-// changeListStatus updates the graylist or blacklist status of an address in the account information.
+// changeListStatus updates the grayList or blacklist status of an address in the account information.
 func updateListStatus(
 	stub shim.ChaincodeStubInterface,
 	base58Address string,

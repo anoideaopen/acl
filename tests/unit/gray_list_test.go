@@ -14,21 +14,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type serieGrayList struct {
+type seriesGrayList struct {
 	testAddress string
 	respStatus  int32
 	errorMsg    string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieGrayList) SetError(errMsg string) {
+// add dynamic errorMsg in series
+func (s *seriesGrayList) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
 func TestGrayListTrue(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGrayList{
+	s := &seriesGrayList{
 		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
 		errorMsg:    "",
@@ -42,7 +42,7 @@ func TestGrayListTrue(t *testing.T) {
 func TestGrayListEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGrayList{
+	s := &seriesGrayList{
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    errs.ErrEmptyAddress,
@@ -56,8 +56,8 @@ func TestGrayListEmptyAddress(t *testing.T) {
 func TestGrayListWrongAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGrayList{
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+	s := &seriesGrayList{
+		testAddress: common.TestWrongAddress,
 		respStatus:  int32(shim.ERROR),
 	}
 
@@ -72,7 +72,7 @@ func TestGrayListWrongAddress(t *testing.T) {
 func TestRemoveAddressFromGrayListTrue(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGrayList{
+	s := &seriesGrayList{
 		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
 		errorMsg:    "",
@@ -86,7 +86,7 @@ func TestRemoveAddressFromGrayListTrue(t *testing.T) {
 func TestRemoveAddressFromGrayListEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGrayList{
+	s := &seriesGrayList{
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    errs.ErrEmptyAddress,
@@ -100,8 +100,8 @@ func TestRemoveAddressFromGrayListEmptyAddress(t *testing.T) {
 func TestRemoveAddressFromGrayListWrongAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGrayList{
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+	s := &seriesGrayList{
+		testAddress: common.TestWrongAddress,
 		respStatus:  int32(shim.ERROR),
 	}
 
@@ -113,7 +113,7 @@ func TestRemoveAddressFromGrayListWrongAddress(t *testing.T) {
 	validationResultRemoveAddressFromGrayList(t, stub, resp, s)
 }
 
-func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *serieGrayList) peer.Response {
+func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *seriesGrayList) peer.Response {
 	resp := stub.MockInvoke(
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
@@ -125,7 +125,7 @@ func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *serieG
 	return respGrayList
 }
 
-func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *serieGrayList) {
+func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 
@@ -144,7 +144,7 @@ func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockS
 	assert.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
 }
 
-func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *serieGrayList) peer.Response {
+func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *seriesGrayList) peer.Response {
 	resp := stub.MockInvoke(
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
@@ -169,7 +169,7 @@ func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *serie
 	return respDelFromList
 }
 
-func validationResultRemoveAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *serieGrayList) {
+func validationResultRemoveAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 

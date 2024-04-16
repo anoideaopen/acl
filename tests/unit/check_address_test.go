@@ -14,21 +14,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type serieCheckAddress struct {
+type seriesCheckAddress struct {
 	testAddress string
 	respStatus  int32
 	errorMsg    string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieCheckAddress) SetError(errMsg string) {
+// add dynamic errorMsg in series
+func (s *seriesCheckAddress) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
 func TestCheckAddressTrue(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckAddress{
+	s := &seriesCheckAddress{
 		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
 		errorMsg:    "",
@@ -42,7 +42,7 @@ func TestCheckAddressTrue(t *testing.T) {
 func TestCheckAddressEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckAddress{
+	s := &seriesCheckAddress{
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    errs.ErrEmptyAddress,
@@ -56,8 +56,8 @@ func TestCheckAddressEmptyAddress(t *testing.T) {
 func TestCheckAddressWrongAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckAddress{
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+	s := &seriesCheckAddress{
+		testAddress: common.TestWrongAddress,
 		respStatus:  int32(shim.ERROR),
 	}
 
@@ -72,7 +72,7 @@ func TestCheckAddressWrongAddress(t *testing.T) {
 func TestCheckAddressWrongAddressSymbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckAddress{
+	s := &seriesCheckAddress{
 		testAddress: "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 		respStatus:  int32(shim.ERROR),
 	}
@@ -85,7 +85,7 @@ func TestCheckAddressWrongAddressSymbols(t *testing.T) {
 	validationResultCheckAddress(t, resp, s)
 }
 
-func checkAddress(t *testing.T, stub *shimtest.MockStub, ser *serieCheckAddress) peer.Response {
+func checkAddress(t *testing.T, stub *shimtest.MockStub, ser *seriesCheckAddress) peer.Response {
 	// add user first
 	resp := stub.MockInvoke(
 		"0",
@@ -98,7 +98,7 @@ func checkAddress(t *testing.T, stub *shimtest.MockStub, ser *serieCheckAddress)
 	return check
 }
 
-func validationResultCheckAddress(t *testing.T, resp peer.Response, ser *serieCheckAddress) {
+func validationResultCheckAddress(t *testing.T, resp peer.Response, ser *seriesCheckAddress) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 
