@@ -42,7 +42,7 @@ func TestAddUserPubKeyEqual43Symbols(t *testing.T) {
 
 	s := &seriesAddUser{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+		testAddress: common.TestWrongAddress,
 		kycHash:     kycHash,
 		testUserID:  testUserID,
 		respStatus:  int32(shim.OK),
@@ -275,9 +275,9 @@ func TestAddUserAddExistedUser(t *testing.T) {
 
 		// construct addr
 		hashed := sha3.Sum256(base58.Decode(common.PubKey))
-		pkeys := hex.EncodeToString(hashed[:])
+		pKeys := hex.EncodeToString(hashed[:])
 		addr := base58.CheckEncode(hashed[1:], hashed[0])
-		expectedError := fmt.Sprintf("The address %s associated with key %s already exists", addr, pkeys)
+		expectedError := fmt.Sprintf("The address %s associated with key %s already exists", addr, pKeys)
 
 		// check err msg
 		assert.Error(t, errors.New(resp.Message), expectedError)

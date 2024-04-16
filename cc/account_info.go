@@ -17,7 +17,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// SetAccountInfo sets account info (KYC hash, graylist and blacklist attributes) for address.
+// SetAccountInfo sets account info (KYC hash, grayList and blacklist attributes) for address.
 // arg[0] - address
 // arg[1] - KYC hash
 // arg[2] - is address gray listed? ("true" or "false")
@@ -32,23 +32,23 @@ func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 	if err != nil {
 		return shim.Error(fmt.Sprintf("invalid address, %s", err))
 	}
-	ckeyInfo, err := compositekey.AccountInfo(stub, addrEncoded)
+	cKeyInfo, err := compositekey.AccountInfo(stub, addrEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	_, err = checkIfAccountInfoExistsAndGetData(stub, ckeyInfo, addrEncoded)
+	_, err = checkIfAccountInfoExistsAndGetData(stub, cKeyInfo, addrEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
 	kycHash := args[1]
 
-	graylisted := args[2]
-	if len(graylisted) == 0 {
-		return shim.Error("graylist attribute is not set")
+	grayListed := args[2]
+	if len(grayListed) == 0 {
+		return shim.Error("grayList attribute is not set")
 	}
 
-	isGraylisted, err := strconv.ParseBool(graylisted)
+	isGrayListed, err := strconv.ParseBool(grayListed)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to parse graylist attribute, %s", err))
 	}
@@ -67,23 +67,23 @@ func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
-	infoMsg, err := proto.Marshal(&pb.AccountInfo{KycHash: kycHash, GrayListed: isGraylisted, BlackListed: isBlacklisted})
+	infoMsg, err := proto.Marshal(&pb.AccountInfo{KycHash: kycHash, GrayListed: isGrayListed, BlackListed: isBlacklisted})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	ckey, err := compositekey.AccountInfo(stub, addrEncoded)
+	cKey, err := compositekey.AccountInfo(stub, addrEncoded)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	if err = stub.PutState(ckey, infoMsg); err != nil {
+	if err = stub.PutState(cKey, infoMsg); err != nil {
 		return shim.Error(err.Error())
 	}
 
 	return shim.Success(nil)
 }
 
-// GetAccountInfo returns json-serialized account info (KYC hash, graylist and blacklist attributes) for address.
+// GetAccountInfo returns json-serialized account info (KYC hash, grayList and blacklist attributes) for address.
 // arg[0] - address
 func (c *ACL) GetAccountInfo(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	addrEncoded := args[0]
@@ -102,11 +102,11 @@ func (c *ACL) GetAccountInfo(stub shim.ChaincodeStubInterface, args []string) pe
 }
 
 func getAccountInfo(stub shim.ChaincodeStubInterface, address string) (*pb.AccountInfo, error) {
-	ckeyInfo, err := compositekey.AccountInfo(stub, address)
+	cKeyInfo, err := compositekey.AccountInfo(stub, address)
 	if err != nil {
 		return nil, err
 	}
-	infoData, err := checkIfAccountInfoExistsAndGetData(stub, ckeyInfo, address)
+	infoData, err := checkIfAccountInfoExistsAndGetData(stub, cKeyInfo, address)
 	if err != nil {
 		return nil, err
 	}
@@ -125,9 +125,9 @@ func checkBlocked(stub shim.ChaincodeStubInterface, encodedBase58PublicKey strin
 		return err
 	}
 	hashed := sha3.Sum256(decodedPublicKey)
-	pkeys := hex.EncodeToString(hashed[:])
+	pKeys := hex.EncodeToString(hashed[:])
 
-	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, pkeys)
+	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, pKeys)
 	if err != nil {
 		return err
 	}
@@ -175,12 +175,12 @@ func isAccountInfoInBlockedLists(accInfo *pb.AccountInfo) bool {
 func fetchAccountInfoFromPubKeys(stub shim.ChaincodeStubInterface, pubKeys []string) (*pb.AccountInfo, error) {
 	var info *pb.AccountInfo
 
-	pkeys, err := helpers.KeyStringToSortedHashedHex(pubKeys)
+	pKeys, err := helpers.KeyStringToSortedHashedHex(pubKeys)
 	if err != nil {
 		return nil, fmt.Errorf("converting keys '%s'to sorted hash failed, err: %w", pubKeys, err)
 	}
 
-	addr, err := getAddressByHashedKeys(stub, pkeys)
+	addr, err := getAddressByHashedKeys(stub, pKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +193,8 @@ func fetchAccountInfoFromPubKeys(stub shim.ChaincodeStubInterface, pubKeys []str
 	return info, nil
 }
 
-func checkIfAccountInfoExistsAndGetData(stub shim.ChaincodeStubInterface, ckeyInfo string, address string) ([]byte, error) {
-	infoData, err := stub.GetState(ckeyInfo)
+func checkIfAccountInfoExistsAndGetData(stub shim.ChaincodeStubInterface, cKeyInfo string, address string) ([]byte, error) {
+	infoData, err := stub.GetState(cKeyInfo)
 	if err != nil {
 		return nil, err
 	}

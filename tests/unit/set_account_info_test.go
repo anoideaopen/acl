@@ -2,6 +2,7 @@ package unit
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -18,8 +19,8 @@ import (
 type seriesSetAccountInfo struct {
 	testAddress   string
 	respStatus    int32
-	isGraylisted  string
-	isBlacklisted string
+	isGrayListed  string
+	isBlackListed string
 	errorMsg      string
 }
 
@@ -29,8 +30,8 @@ func TestSetAccountInfoTrueAddressFalseLists(t *testing.T) {
 	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
-		isGraylisted:  "false",
-		isBlacklisted: "false",
+		isGrayListed:  "false",
+		isBlackListed: "false",
 		errorMsg:      "",
 	}
 
@@ -45,8 +46,8 @@ func TestSetAccountInfoTrueAddressTrueGrayListFalseBlackLists(t *testing.T) {
 	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
-		isGraylisted:  "true",
-		isBlacklisted: "false",
+		isGrayListed:  "true",
+		isBlackListed: "false",
 		errorMsg:      "",
 	}
 
@@ -61,8 +62,8 @@ func TestSetAccountInfoTrueAddressFalseGrayListTrueBlackLists(t *testing.T) {
 	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
-		isGraylisted:  "false",
-		isBlacklisted: "true",
+		isGrayListed:  "false",
+		isBlackListed: "true",
 		errorMsg:      "",
 	}
 
@@ -77,8 +78,8 @@ func TestSetAccountInfoTrueAddressTrueLists(t *testing.T) {
 	s := &seriesSetAccountInfo{
 		testAddress:   common.TestAddr,
 		respStatus:    int32(shim.OK),
-		isGraylisted:  "true",
-		isBlacklisted: "true",
+		isGrayListed:  "true",
+		isBlackListed: "true",
 		errorMsg:      "",
 	}
 
@@ -93,8 +94,8 @@ func TestSetAccountInfoEmptyAddress(t *testing.T) {
 	s := &seriesSetAccountInfo{
 		testAddress:   "",
 		respStatus:    int32(shim.ERROR),
-		isGraylisted:  "false",
-		isBlacklisted: "false",
+		isGrayListed:  "false",
+		isBlackListed: "false",
 		errorMsg:      errs.ErrEmptyAddress,
 	}
 
@@ -107,11 +108,11 @@ func TestSetAccountInfoWrongAddress(t *testing.T) {
 	t.Parallel()
 
 	s := &seriesSetAccountInfo{
-		testAddress:   "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+		testAddress:   common.TestWrongAddress,
 		respStatus:    int32(shim.ERROR),
-		isGraylisted:  "false",
-		isBlacklisted: "false",
-		errorMsg:      "account info for address 2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt is empty",
+		isGrayListed:  "false",
+		isBlackListed: "false",
+		errorMsg:      fmt.Sprintf(errs.ErrAccountForAddressIsEmpty, common.TestWrongAddress),
 	}
 
 	stub := common.StubCreateAndInit(t)
@@ -125,8 +126,8 @@ func TestSetAccountInfoWrongAddressString(t *testing.T) {
 	s := &seriesSetAccountInfo{
 		testAddress:   "AbracadabraAbracadabraAbracadabraAbracadabra",
 		respStatus:    int32(shim.ERROR),
-		isGraylisted:  "false",
-		isBlacklisted: "false",
+		isGrayListed:  "false",
+		isBlackListed: "false",
 		errorMsg:      "invalid address, checksum error",
 	}
 
@@ -141,8 +142,8 @@ func TestSetAccountInfoWrongAddressNumeric(t *testing.T) {
 	s := &seriesSetAccountInfo{
 		testAddress:   "111111111111111111111111111111111111111",
 		respStatus:    int32(shim.ERROR),
-		isGraylisted:  "false",
-		isBlacklisted: "false",
+		isGrayListed:  "false",
+		isBlackListed: "false",
 		errorMsg:      "invalid address, checksum error",
 	}
 
@@ -161,7 +162,7 @@ func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *seriesSetAccount
 
 	check := stub.MockInvoke(
 		"0",
-		[][]byte{[]byte("setAccountInfo"), []byte(ser.testAddress), []byte("kycHash2"), []byte(ser.isGraylisted), []byte(ser.isBlacklisted)},
+		[][]byte{[]byte("setAccountInfo"), []byte(ser.testAddress), []byte("kycHash2"), []byte(ser.isGrayListed), []byte(ser.isBlackListed)},
 	)
 
 	return check
@@ -178,16 +179,16 @@ func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp 
 	check := stub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccInfoFn), []byte(ser.testAddress)})
 	assert.Equal(t, ser.respStatus, check.Status)
 
-	isGraylistedBool, err := strconv.ParseBool(ser.isGraylisted)
+	isGrayListedBool, err := strconv.ParseBool(ser.isGrayListed)
 	assert.NoError(t, err)
-	isBlacklistedBool, err := strconv.ParseBool(ser.isBlacklisted)
+	isBlackListedBool, err := strconv.ParseBool(ser.isBlackListed)
 	assert.NoError(t, err)
 
 	addrFromLedger := &pb.AccountInfo{}
 	assert.NoError(t, json.Unmarshal(check.Payload, addrFromLedger))
 	assert.Equal(t, "kycHash2", addrFromLedger.KycHash)
-	assert.Equal(t, isGraylistedBool, addrFromLedger.GrayListed)
-	assert.Equal(t, isBlacklistedBool, addrFromLedger.BlackListed)
+	assert.Equal(t, isGrayListedBool, addrFromLedger.GrayListed)
+	assert.Equal(t, isBlackListedBool, addrFromLedger.BlackListed)
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
@@ -197,6 +198,6 @@ func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp 
 	assert.NoError(t, proto.Unmarshal(result.Payload, response))
 	assert.NotNil(t, response.Address)
 	assert.NotNil(t, response.Account)
-	assert.Equal(t, isGraylistedBool, response.Account.GrayListed, "user is not graylisted")
-	assert.Equal(t, isBlacklistedBool, response.Account.BlackListed, "user is not blacklisted")
+	assert.Equal(t, isGrayListedBool, response.Account.GrayListed, "user is not grayListed")
+	assert.Equal(t, isBlackListedBool, response.Account.BlackListed, "user is not blackListed")
 }

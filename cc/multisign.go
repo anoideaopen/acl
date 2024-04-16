@@ -60,7 +60,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 	}
 	// N shouldn't be greater than number of public keys (M part of signature policy)
 	if N > pksNumber {
-		return shim.Error(fmt.Sprintf("N (%d) is greater then M (number of pubkeys, %d)", N, pksNumber))
+		return shim.Error(fmt.Sprintf(errs.ErrWrongNumberOfKeys, N, pksNumber))
 	}
 
 	message := sha3.Sum256([]byte(strings.Join(append([]string{"addMultisig", args[0], args[1]}, pks...), "")))
@@ -225,7 +225,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	encodedBase58NewPublicKey := args[2]
 	reason := args[3]
 	if len(reason) == 0 {
-		return shim.Error("reasonnot provided")
+		return shim.Error("reason not provided")
 	}
 	if len(args[4]) == 0 {
 		return shim.Error("reason ID not provided")
@@ -292,7 +292,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(err.Error())
 	}
 
-	// update pubkeys list
+	// update pubKeys list
 	var newKeys []string
 	for index, pk := range signedAddr.SignaturePolicy.PubKeys {
 		if base58.Encode(pk) == oldKey {

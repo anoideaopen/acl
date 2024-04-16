@@ -13,21 +13,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type serieGetAccountInfo struct {
+type seriesGetAccountInfo struct {
 	testAddress string
 	respStatus  int32
 	errorMsg    string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieGetAccountInfo) SetError(errMsg string) {
+// add dynamic errorMsg in series
+func (s *seriesGetAccountInfo) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
 func TestGetAccountInfoTrue(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGetAccountInfo{
+	s := &seriesGetAccountInfo{
 		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
 		errorMsg:    "",
@@ -41,7 +41,7 @@ func TestGetAccountInfoTrue(t *testing.T) {
 func TestGetAccountInfoEmptyAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGetAccountInfo{
+	s := &seriesGetAccountInfo{
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    errs.ErrEmptyAddress,
@@ -55,8 +55,8 @@ func TestGetAccountInfoEmptyAddress(t *testing.T) {
 func TestGetAccountInfoWrongAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &serieGetAccountInfo{
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+	s := &seriesGetAccountInfo{
+		testAddress: common.TestWrongAddress,
 		respStatus:  int32(shim.ERROR),
 	}
 
@@ -68,7 +68,7 @@ func TestGetAccountInfoWrongAddress(t *testing.T) {
 	validationResultGetAccountInfo(t, resp, s)
 }
 
-func getTestAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *serieGetAccountInfo) peer.Response {
+func getTestAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *seriesGetAccountInfo) peer.Response {
 	// add user first
 	resp := stub.MockInvoke(
 		"0",
@@ -81,7 +81,7 @@ func getTestAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *serieGetAcco
 	return resp
 }
 
-func validationResultGetAccountInfo(t *testing.T, resp peer.Response, ser *serieGetAccountInfo) {
+func validationResultGetAccountInfo(t *testing.T, resp peer.Response, ser *seriesGetAccountInfo) {
 	assert.Equal(t, ser.respStatus, resp.Status)
 	assert.Equal(t, ser.errorMsg, resp.Message)
 

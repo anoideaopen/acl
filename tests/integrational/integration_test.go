@@ -154,9 +154,9 @@ func TestMultisigEmitTransfer(t *testing.T) {
 
 	// signatures := make([][]byte, 0, len(owner.SecretKeys()))
 	signaturesString := make([]string, 0, len(owner.SecretKeys()))
-	for _, privkey := range owner.SecretKeys() {
-		// signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(privkey, message[:]))))
-		signaturesString = append(signaturesString, hex.EncodeToString(ed25519.Sign(privkey, message[:])))
+	for _, privateKey := range owner.SecretKeys() {
+		// signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(privateKey, message[:]))))
+		signaturesString = append(signaturesString, hex.EncodeToString(ed25519.Sign(privateKey, message[:])))
 	}
 
 	owner.Invoke("acl", common.FnAddMultisig, append(sourceMsg[1:], signaturesString...)...)
@@ -188,7 +188,7 @@ func TestMultisigEmitTransfer(t *testing.T) {
 	user1.BalanceShouldBe("fiat", 1000)
 }
 
-func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
+func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 	ledgerMock := mock.NewLedger(t)
 	aclCC := mstub.NewMockStub("acl", cc.New())
 	cert, err := common.GetCert(common.AdminCertPath)
@@ -225,9 +225,9 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 
 	// var signatures [][]byte
 	signaturesString := make([]string, 0, len(owner.SecretKeys()))
-	for _, privkey := range owner.SecretKeys() {
-		// signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(privkey, message[:]))))
-		signaturesString = append(signaturesString, hex.EncodeToString(ed25519.Sign(privkey, message[:])))
+	for _, privateKey := range owner.SecretKeys() {
+		// signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(privateKey, message[:]))))
+		signaturesString = append(signaturesString, hex.EncodeToString(ed25519.Sign(privateKey, message[:])))
 	}
 
 	owner.Invoke("acl", "addMultisig", append(sourceMsg[1:], signaturesString...)...)
@@ -263,17 +263,17 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	// get new public keys
 	validatorsPubKeys := make([]string, 0, len(common.MockValidatorKeys))
 	validatorsSecretKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubkey, privkey := range common.MockValidatorKeys {
-		validatorsPubKeys = append(validatorsPubKeys, pubkey)
-		validatorsSecretKeys = append(validatorsSecretKeys, privkey)
+	for pubKey, privateKey := range common.MockValidatorKeys {
+		validatorsPubKeys = append(validatorsPubKeys, pubKey)
+		validatorsSecretKeys = append(validatorsSecretKeys, privateKey)
 	}
 
 	newKeys := make([]string, 0, len(owner.PubKeys()))
-	for _, newpk := range owner.PubKeys() {
-		newKeys = append(newKeys, base58.Encode(newpk))
+	for _, newPk := range owner.PubKeys() {
+		newKeys = append(newKeys, base58.Encode(newPk))
 	}
 
-	// change pubkey in multisig
+	// change pubKey in multisig
 	newKeysString := strings.Join(newKeys, "/")
 	newNanoNonce := strconv.Itoa(int(time.Now().UnixNano()))
 	changeMsg := sha3.Sum256([]byte(strings.Join(
@@ -285,10 +285,10 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	)))
 
 	validatorsSignaturesString := make([]string, 0, len(validatorsSecretKeys))
-	for _, privkey := range validatorsSecretKeys {
+	for _, privateKey := range validatorsSecretKeys {
 		validatorsSignaturesString = append(
 			validatorsSignaturesString,
-			hex.EncodeToString(ed25519.Sign(base58.Decode(privkey), changeMsg[:])),
+			hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), changeMsg[:])),
 		)
 	}
 
@@ -309,9 +309,9 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	user1.BalanceShouldBe("fiat", 1000)
 
 	// check that ReplaceKeysSignedTx committed to token channel too
-	compkey, err := shim.CreateCompositeKey(replaceTxChangePrefix, []string{owner.Address()})
+	compKey, err := shim.CreateCompositeKey(replaceTxChangePrefix, []string{owner.Address()})
 	assert.NoError(t, err)
-	resp, err := ledgerMock.GetStub("fiat").GetState(compkey)
+	resp, err := ledgerMock.GetStub("fiat").GetState(compKey)
 	assert.NoError(t, err)
 	var msg []string
 	assert.NoError(t, json.Unmarshal(resp, &msg))
@@ -328,9 +328,9 @@ func TestChangePubkeyMultisigAndEmitTransfer(t *testing.T) {
 	}
 
 	// check that SignedTx committed to token channel too
-	compkeySignedTx, err := shim.CreateCompositeKey(signedTxChangePrefix, []string{owner.Address()})
+	compKeySignedTx, err := shim.CreateCompositeKey(signedTxChangePrefix, []string{owner.Address()})
 	assert.NoError(t, err)
-	respSignedTx, err := ledgerMock.GetStub("fiat").GetState(compkeySignedTx)
+	respSignedTx, err := ledgerMock.GetStub("fiat").GetState(compKeySignedTx)
 	assert.NoError(t, err)
 	var msgSignedTx []string
 	assert.NoError(t, json.Unmarshal(respSignedTx, &msgSignedTx))

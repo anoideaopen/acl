@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type serieCheckKeys struct {
+type seriesCheckKeys struct {
 	testPubKey  string
 	testAddress string
 	respStatus  int32
@@ -20,17 +20,17 @@ type serieCheckKeys struct {
 	errorMsg    string
 }
 
-// add dinamyc errorMsg in serie
-func (s *serieCheckKeys) SetError(errMsg string) {
+// add dynamic errorMsg in series
+func (s *seriesCheckKeys) SetError(errMsg string) {
 	s.errorMsg = errMsg
 }
 
 func TestCheckKeysPublicKeyEqual43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
-		testAddress: "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt",
+		testAddress: common.TestWrongAddress,
 		respStatus:  int32(shim.OK),
 		kycHash:     "kycHash",
 		testUserID:  "testUserID",
@@ -43,7 +43,7 @@ func TestCheckKeysPublicKeyEqual43Symbols(t *testing.T) {
 func TestCheckKeysPublicKeyEqual44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
 		testAddress: "FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N",
 		respStatus:  int32(shim.OK),
@@ -58,7 +58,7 @@ func TestCheckKeysPublicKeyEqual44Symbols(t *testing.T) {
 func TestCheckKeysPublicKeyEmpty(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "",
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
@@ -73,7 +73,7 @@ func TestCheckKeysPublicKeyEmpty(t *testing.T) {
 func TestCheckKeysPublicKeyMoreThan44Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
@@ -92,7 +92,7 @@ func TestCheckKeysPublicKeyMoreThan44Symbols(t *testing.T) {
 func TestCheckKeysPublicKeyLessThan43Symbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
@@ -111,7 +111,7 @@ func TestCheckKeysPublicKeyLessThan43Symbols(t *testing.T) {
 func TestCheckKeysWrongNumericZero(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "00000000000000000000000000000000",
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
@@ -126,10 +126,10 @@ func TestCheckKeysWrongNumericZero(t *testing.T) {
 	checkKeys(t, s)
 }
 
-func TestCheckKeysWithSpesialSymbols(t *testing.T) {
+func TestCheckKeysWithSpecialSymbols(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
@@ -144,10 +144,10 @@ func TestCheckKeysWithSpesialSymbols(t *testing.T) {
 	checkKeys(t, s)
 }
 
-func TestCheckKeysWithSpesialSymbol(t *testing.T) {
+func TestCheckKeysWithSpecialSymbol(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  "/",
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
@@ -165,7 +165,7 @@ func TestCheckKeysWithSpesialSymbol(t *testing.T) {
 func TestCheckKeysDuplicateKeys(t *testing.T) {
 	t.Parallel()
 
-	s := &serieCheckKeys{
+	s := &seriesCheckKeys{
 		testPubKey:  common.PubKey + "/" + common.PubKey,
 		testAddress: "",
 		respStatus:  int32(shim.ERROR),
@@ -180,12 +180,12 @@ func TestCheckKeysDuplicateKeys(t *testing.T) {
 	checkKeys(t, s)
 }
 
-func checkKeys(t *testing.T, ser *serieCheckKeys) {
+func checkKeys(t *testing.T, ser *seriesCheckKeys) {
 	// add user first
 	stub := common.StubCreateAndInit(t)
 
 	valid := true
-	// attempt to add a user if we use valid values in the serieCheckKeys structure in test
+	// attempt to add a user if we use valid values in the seriesCheckKeys structure in test
 	resp := stub.MockInvoke(
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},

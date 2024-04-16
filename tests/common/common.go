@@ -75,6 +75,10 @@ var (
 	UserCert  = "-----BEGIN CERTIFICATE-----\nMIICSDCCAe+gAwIBAgIQAO3rcbDmH/0f1DWQgKhYZTAKBggqhkjOPQQDAjCBhzEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xIzAhBgNVBAoTGmF0b215emUudWF0LmRsdC5hdG9teXplLmNoMSYw\nJAYDVQQDEx1jYS5hdG9teXplLnVhdC5kbHQuYXRvbXl6ZS5jaDAeFw0yMDEwMTMw\nODU2MDBaFw0zMDEwMTEwODU2MDBaMHYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpD\nYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMQ8wDQYDVQQLEwZjbGll\nbnQxKTAnBgNVBAMMIFVzZXIyQGF0b215emUudWF0LmRsdC5hdG9teXplLmNoMFkw\nEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEch+6dRC3SDIZhCSYNNAYE2T7eONz3m/i\n0oEM+/7VbHUJE+IkwZBmV8aCxC177t4OIcOBZuO4fLijnbgipf1cW6NNMEswDgYD\nVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0jBCQwIoAgUr9LnmWgd6lr\nvwMDrWzo2i3evMKAKgJJXyioX7tdCvgwCgYIKoZIzj0EAwIDRwAwRAIgV71buT7/\n2j+dznSFP1es5KJd1c5IANDzjR9cP5qd/kICIGTjJO5rcOv322nPWaTWr5XUtR3R\n/K0Elk9CQQBTzfqY\n-----END CERTIFICATE-----"
 )
 
+const (
+	TestWrongAddress = "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt"
+)
+
 // MockValidatorKeys stores pubkey -> secret key mapping
 var MockValidatorKeys = map[string]string{
 	"A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4": "3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr",
@@ -91,8 +95,8 @@ var DuplicateMockValidatorsSecretKeys = []string{
 
 // MarshalIdentity marshals creator identities
 func MarshalIdentity(creatorMSP string, creatorCert []byte) ([]byte, error) {
-	pemblock := &pem.Block{Type: "CERTIFICATE", Bytes: creatorCert}
-	pemBytes := pem.EncodeToMemory(pemblock)
+	pemBlock := &pem.Block{Type: "CERTIFICATE", Bytes: creatorCert}
+	pemBytes := pem.EncodeToMemory(pemBlock)
 	if pemBytes == nil {
 		return nil, errors.New("encoding of identity failed")
 	}
@@ -154,8 +158,8 @@ func GetCert(certPath string) (*x509.Certificate, error) {
 		return nil, fmt.Errorf("unsupported cert path, %s", certPath)
 	}
 
-	pcert, _ := pem.Decode(certData)
-	parsed, err := x509.ParseCertificate(pcert.Bytes)
+	pCert, _ := pem.Decode(certData)
+	parsed, err := x509.ParseCertificate(pCert.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("parsing cert data failed, err: %w", err)
 	}
@@ -164,15 +168,15 @@ func GetCert(certPath string) (*x509.Certificate, error) {
 }
 
 // GenerateTestValidatorSignatures returns test validator signatures
-func GenerateTestValidatorSignatures(pKeys []string, digest []byte) (vPkeys [][]byte, vSignatures [][]byte) {
-	for i, pubkey := range pKeys {
-		skey, ok := MockValidatorKeys[pubkey]
+func GenerateTestValidatorSignatures(pKeys []string, digest []byte) (vpKeys [][]byte, vSignatures [][]byte) {
+	for i, pubKey := range pKeys {
+		sKey, ok := MockValidatorKeys[pubKey]
 		if !ok {
-			skey = DuplicateMockValidatorsSecretKeys[i]
-			fmt.Println(skey)
+			sKey = DuplicateMockValidatorsSecretKeys[i]
+			fmt.Println(sKey)
 		}
-		vPkeys = append(vPkeys, []byte(pubkey))
-		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(skey), digest))))
+		vpKeys = append(vpKeys, []byte(pubKey))
+		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(sKey), digest))))
 	}
 	return
 }

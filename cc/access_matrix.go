@@ -13,8 +13,8 @@ import (
 
 // matrix keys
 const (
-	operKey    = "acl_access_matrix_operation"
-	addressKey = "acl_access_matrix_address"
+	operationKey = "acl_access_matrix_operation"
+	addressKey   = "acl_access_matrix_address"
 )
 
 // AddRights adds rights to the access matrix
@@ -64,12 +64,12 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	}
 
 	// adding operation right
-	operCompositeKey, err := stub.CreateCompositeKey(operKey, []string{channelName, chaincodeName, roleName, operationName})
+	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	rawAddresses, err := stub.GetState(operCompositeKey)
+	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -95,7 +95,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		err = stub.PutState(operCompositeKey, rawAddresses)
+		err = stub.PutState(operationCompositeKey, rawAddresses)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -188,12 +188,12 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 	}
 
 	// removing operation right
-	operCompositeKey, err := stub.CreateCompositeKey(operKey, []string{channelName, chaincodeName, roleName, operationName})
+	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	rawAddresses, err := stub.GetState(operCompositeKey)
+	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -212,7 +212,7 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 			if err != nil {
 				return shim.Error(err.Error())
 			}
-			err = stub.PutState(operCompositeKey, rawAddresses)
+			err = stub.PutState(operationCompositeKey, rawAddresses)
 			if err != nil {
 				return shim.Error(err.Error())
 			}
@@ -312,12 +312,12 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 		return shim.Error(err.Error())
 	}
 
-	operCompositeKey, err := stub.CreateCompositeKey(operKey, []string{channelName, chaincodeName, roleName, operationName})
+	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	rawAddresses, err := stub.GetState(operCompositeKey)
+	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -425,12 +425,12 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 		return shim.Error(errs.ErrEmptyRoleName)
 	}
 
-	operCompositeKey, err := stub.CreateCompositeKey(operKey, []string{channelName, chaincodeName, roleName, operationName})
+	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	rawAddresses, err := stub.GetState(operCompositeKey)
+	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
