@@ -812,7 +812,7 @@ func checkNonce(stub shim.ChaincodeStubInterface, sender, nonceStr string) error
 }
 
 func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, signatures []string) error {
-	var countValidatorsSigned int64
+	var countValidatorsSigned int
 	if err := helpers.CheckDuplicates(signatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -837,14 +837,14 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		}
 	}
 
-	if countValidatorsSigned < c.validatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.validatorsCount)
+	if countValidatorsSigned < len(c.config.Validators) {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.Validators))
 	}
 	return nil
 }
 
 func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorSignatures []string) error {
-	var countValidatorsSigned int64
+	var countValidatorsSigned int
 	if err := helpers.CheckDuplicates(validatorSignatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -874,8 +874,8 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		}
 	}
 
-	if countValidatorsSigned < c.validatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.validatorsCount)
+	if countValidatorsSigned < len(c.config.Validators) {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.Validators))
 	}
 	return nil
 }

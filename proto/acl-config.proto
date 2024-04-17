@@ -8,8 +8,10 @@ option go_package = "github.com/anoideaopen/acl/proto";
 
 // Config stores ACL configuration parameters.
 message ACLConfig {
+  // ccName - should be empty, field will be filled while Init transaction, filler will be ignored
+  string ccName = 1;
   // adminSKIEncoded - ACL admin public key SKI in hex format
-  string adminSKIEncoded = 1 [(validate.rules).string.pattern = "^[0-9a-f]+$"];
+  string adminSKIEncoded = 2 [(validate.rules).string.pattern = "^[0-9a-f]+$"];
   // validators - set of validators public keys
-  repeated string validators = 2;
+  repeated string validators = 3;
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -22,10 +23,9 @@ const (
 	indexValidators
 )
 
-var ErrCfgBytesEmpty = errors.New("config bytes is empty")
-
-// positional args specific errors
 var (
+	ErrCfgBytesEmpty = errors.New("config bytes is empty")
+
 	ErrAdminSKIEmpty          = "'adminSKI' is empty"
 	ErrInvalidAdminSKI        = "'adminSKI' (index of args 0) is invalid - format found '%s' but expected hex encoded string"
 	ErrValidatorsCountEmpty   = "'validatorsCount' is empty"
@@ -59,6 +59,13 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 		}
 	}
 
+	ccName, err := helpers.ParseCCName(stub)
+	if err != nil {
+		return fmt.Errorf("error parsing chaincode name: %w", err)
+	}
+
+	// This field should be filled automatically to compare while other chaincode invokes ACL
+	cfg.CcName = ccName
 	cfgBytes, err = protojson.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshalling config: %w", err)

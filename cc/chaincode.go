@@ -16,10 +16,8 @@ import (
 
 type (
 	ACL struct {
-		ccName          string
-		adminSKI        []byte
-		validatorsCount int64
-		config          *proto.ACLConfig
+		adminSKI []byte
+		config   *proto.ACLConfig
 	}
 	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
@@ -67,15 +65,6 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 
 		c.adminSKI = adminSKI
-
-		ccName, err := helpers.ParseCCName(stub)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-
-		c.ccName = ccName
-
-		c.validatorsCount = c.countValidators()
 	}
 	methods := make(map[string]ccFunc)
 	t := reflect.TypeOf(c)
