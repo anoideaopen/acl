@@ -439,7 +439,7 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		_ = iterator.Close()
 	}()
 
-	var addrs []string
+	var addresses []string
 	for iterator.HasNext() {
 		kv, err := iterator.Next()
 		if err != nil {
@@ -449,11 +449,11 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		addrs = append(addrs, extractedAddr[0])
+		addresses = append(addresses, extractedAddr[0])
 	}
 
 	serialized, err := json.Marshal(AddrsWithPagination{
-		Addrs:    addrs,
+		Addrs:    addresses,
 		Bookmark: result.Bookmark,
 	})
 	if err != nil {
@@ -686,7 +686,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	if err = helpers.CheckKeysArr(strKeys); err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
-	newkey, err := helpers.KeyStringToSortedHashedHex(strKeys)
+	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[3]))
 	}
@@ -763,7 +763,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newkey)
+	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -781,7 +781,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	// set new address -> key mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(newkey)); err != nil {
+	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
 		return shim.Error(err.Error())
 	}
 

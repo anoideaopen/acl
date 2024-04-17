@@ -42,7 +42,7 @@ func TestAclInitWrongAdminSkiFormat(t *testing.T) {
 func TestAclInitWrongValidatorCountFormat(t *testing.T) {
 	aclCC := common.StubCreate(t)
 
-	response := aclCC.MockInit("0", [][]byte{[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"), []byte("a")})
+	response := aclCC.MockInit("0", [][]byte{common.TestAdminSKI, []byte("a")})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
 	assert.Equal(t, "invalid validator count (index of args 1) format found 'a' but expected value with type int", response.Message)
@@ -60,11 +60,10 @@ func TestAclInitZeroArgs(t *testing.T) {
 func TestAclInitTwoArgs(t *testing.T) {
 	aclCC := common.StubCreate(t)
 
-	adminSkiArg := "dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"
-	decodeString, err := hex.DecodeString(adminSkiArg)
+	decodeString, err := hex.DecodeString(string(common.TestAdminSKI))
 	assert.NoError(t, err)
 	testValidatorCount := "0"
-	response := aclCC.MockInit("0", [][]byte{[]byte(adminSkiArg), []byte(testValidatorCount)})
+	response := aclCC.MockInit("0", [][]byte{common.TestAdminSKI, []byte(testValidatorCount)})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
@@ -199,7 +198,7 @@ func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 	aclCC.MockInit(
 		"0",
 		[][]byte{
-			[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"),
+			common.TestAdminSKI,
 			[]byte("3"),
 			[]byte("A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4"),
 			[]byte("5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5"),

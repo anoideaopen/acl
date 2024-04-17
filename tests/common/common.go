@@ -19,6 +19,8 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+var TestAdminSKI = []byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99")
+
 var TestValidators = [][]byte{
 	[]byte("A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4"),
 	[]byte("5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5"),
@@ -27,7 +29,7 @@ var TestValidators = [][]byte{
 
 var TestInitArgs = append(
 	[][]byte{
-		[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"),
+		TestAdminSKI,
 		[]byte(strconv.Itoa(len(TestValidators))),
 	},
 	TestValidators...)

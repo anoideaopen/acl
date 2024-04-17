@@ -68,7 +68,7 @@ func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithB
 	assert.NoError(t, err)
 
 	initArgs := [][]byte{
-		[]byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"),
+		common.TestAdminSKI,
 		[]byte(strconv.Itoa(len(ss.pKeys()))),
 	}
 	var invokeArgs [][]byte
