@@ -937,13 +937,3 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	}
 	return nil
 }
-
-// countValidators counts validators in config
-func (c *ACL) countValidators() int64 {
-	var validatorsQty int64
-	for range c.config.Validators {
-		validatorsQty++
-	}
-
-	return validatorsQty
-}
