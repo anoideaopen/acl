@@ -71,9 +71,7 @@ func TestAclInitTwoArgs(t *testing.T) {
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	cfgBytes, err := config.LoadRawConfig(aclCC)
-	assert.NoError(t, err)
-	cfg, err := config.FromBytes(cfgBytes)
+	cfg, err := config.GetConfig(aclCC)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(cfg.Validators))
 	// assert.Equal(t, decodeString, .AdminSKI)
@@ -89,9 +87,7 @@ func TestAclInitArgs(t *testing.T) {
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	cfgBytes, err := config.LoadRawConfig(aclCC)
-	assert.NoError(t, err)
-	cfg, err := config.FromBytes(cfgBytes)
+	cfg, err := config.GetConfig(aclCC)
 	assert.NoError(t, err)
 	assert.Equal(t, len(common.TestValidators), len(cfg.Validators))
 }
@@ -110,9 +106,7 @@ func TestAclInitConfig(t *testing.T) {
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	cfgBytes, err := config.LoadRawConfig(aclCC)
-	assert.NoError(t, err)
-	cfg, err := config.FromBytes(cfgBytes)
+	cfg, err := config.GetConfig(aclCC)
 	assert.NoError(t, err)
 	assert.Equal(t, len(common.TestValidators), len(cfg.Validators))
 }

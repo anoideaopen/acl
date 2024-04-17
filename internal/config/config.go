@@ -36,7 +36,7 @@ var (
 	ErrArgsLessThanMin        = "minimum required args length is '%d', passed %d"
 )
 
-func SetConfig(stub shim.ChaincodeStubInterface) (*proto.ACLConfig, error) {
+func SetConfig(stub shim.ChaincodeStubInterface) error {
 	args := stub.GetStringArgs()
 
 	var (
@@ -46,29 +46,29 @@ func SetConfig(stub shim.ChaincodeStubInterface) (*proto.ACLConfig, error) {
 	)
 	if IsJSONConfig(args) {
 		cfgBytes = []byte(args[0])
-		cfg, err = FromBytes(cfgBytes)
+		cfg, err = fromBytes(cfgBytes)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		// handle args as position parameters and fill config structure.
 		// TODO: remove this code when all users moved to json-config initialization.
 		cfg, err = ParseArgsArr(args)
 		if err != nil {
-			return nil, fmt.Errorf(ErrParsingArgsOld, err)
+			return fmt.Errorf(ErrParsingArgsOld, err)
 		}
 	}
 
 	cfgBytes, err = protojson.Marshal(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("marshalling config: %w", err)
+		return fmt.Errorf("marshalling config: %w", err)
 	}
 
 	if err = SaveConfig(stub, cfgBytes); err != nil {
-		return nil, fmt.Errorf(ErrSavingConfig, err)
+		return fmt.Errorf(ErrSavingConfig, err)
 	}
 
-	return cfg, nil
+	return nil
 }
 
 type State interface {
@@ -108,7 +108,7 @@ func SaveConfig(state State, cfgBytes []byte) error {
 	return nil
 }
 
-// LoadRawConfig retrieves and returns the raw configuration data from the state
+// loadRawConfig retrieves and returns the raw configuration data from the state
 // using the provided State interface.
 //
 // The function returns the configuration data as a byte slice and nil error if successful.
@@ -117,7 +117,7 @@ func SaveConfig(state State, cfgBytes []byte) error {
 // an error is returned with additional information about the error.
 //
 // If the retrieved configuration data is empty, the function returns an ErrCfgBytesEmpty error.
-func LoadRawConfig(state State) ([]byte, error) {
+func loadRawConfig(state State) ([]byte, error) {
 	cfgBytes, err := state.GetState(keyConfig)
 	if err != nil {
 		return nil, fmt.Errorf("loading raw config: %w", err)
@@ -129,18 +129,33 @@ func LoadRawConfig(state State) ([]byte, error) {
 	return cfgBytes, nil
 }
 
-// FromBytes parses the provided byte slice containing JSON-encoded contract configuration
+// fromBytes parses the provided byte slice containing JSON-encoded contract configuration
 // and returns a pointer to a proto.ContractConfig struct.
 //
 // The function uses protojson.Unmarshal to deserialize the JSON-encoded data into the *proto.ContractConfig struct.
 // If the unmarshalling process fails, an error is returned with additional information about the failure.
-func FromBytes(cfgBytes []byte) (*proto.ACLConfig, error) {
+func fromBytes(cfgBytes []byte) (*proto.ACLConfig, error) {
 	var cfg proto.ACLConfig
 	if err := protojson.Unmarshal(cfgBytes, &cfg); err != nil {
 		return nil, fmt.Errorf("unmarshalling failed: %w", err)
 	}
 
 	return &cfg, nil
+}
+
+// GetConfig returns config from state
+func GetConfig(state State) (*proto.ACLConfig, error) {
+	cfgBytes, err := loadRawConfig(state)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := fromBytes(cfgBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }
 
 // IsJSONConfig checks if the provided arguments represent a valid JSON configuration.

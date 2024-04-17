@@ -32,12 +32,10 @@ func New() *ACL {
 // Init - method for initialize chaincode
 // args: adminSKI, validatorsCount, validatorBase58Ed25519PublicKey1, ..., validatorBase58Ed25519PublicKeyN
 func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	cfg, err := config.SetConfig(stub)
+	err := config.SetConfig(stub)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-
-	c.config = cfg
 
 	return shim.Success(nil)
 }
@@ -54,13 +52,8 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}()
 	fn, args := stub.GetFunctionAndParameters()
-	if c.config == nil || c.validatorsCount == 0 {
-		cfgBytes, err := config.LoadRawConfig(stub)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-
-		cfg, err := config.FromBytes(cfgBytes)
+	if c.config == nil {
+		cfg, err := config.GetConfig(stub)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
