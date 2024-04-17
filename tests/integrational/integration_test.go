@@ -4,12 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/tests/common"
 	"github.com/anoideaopen/foundation/mock"
 	mstub "github.com/anoideaopen/foundation/mock/stub"
@@ -36,7 +38,7 @@ func TestAclInitWrongAdminSkiFormat(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{[]byte("a"), []byte("0")})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, "invalid admin SKI (index of args 0) format found 'a' but expected hex encoded string", response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrInvalidAdminSKI, "a")), response.Message)
 }
 
 func TestAclInitWrongValidatorCountFormat(t *testing.T) {
@@ -45,7 +47,7 @@ func TestAclInitWrongValidatorCountFormat(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{common.TestAdminSKI, []byte("a")})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, "invalid validator count (index of args 1) format found 'a' but expected value with type int", response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrInvalidValidatorsCount, "a")), response.Message)
 }
 
 func TestAclInitZeroArgs(t *testing.T) {
@@ -54,25 +56,23 @@ func TestAclInitZeroArgs(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, "arguments should be at least 2", response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrArgsLessThanMin, 0, 2)), response.Message)
 }
 
 func TestAclInitTwoArgs(t *testing.T) {
 	aclCC := common.StubCreate(t)
 
-	decodeString, err := hex.DecodeString(string(common.TestAdminSKI))
-	assert.NoError(t, err)
 	testValidatorCount := "0"
 	response := aclCC.MockInit("0", [][]byte{common.TestAdminSKI, []byte(testValidatorCount)})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	stateInitArgs, err := cc.GetInitArgsFromState(aclCC)
+	cfg, err := config.GetConfig(aclCC)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(stateInitArgs.Validators))
-	assert.Equal(t, decodeString, stateInitArgs.AdminSKI)
-	assert.Equal(t, int64(0), stateInitArgs.ValidatorsCount)
+	assert.Equal(t, 0, len(cfg.Validators))
+	assert.Equal(t, string(common.TestAdminSKI), cfg.AdminSKIEncoded)
+	assert.Equal(t, int64(0), int64(len(cfg.Validators)))
 }
 
 func TestAclInitArgs(t *testing.T) {
@@ -83,9 +83,28 @@ func TestAclInitArgs(t *testing.T) {
 	assert.Equal(t, int32(200), response.Status)
 	assert.Empty(t, response.Message)
 
-	stateInitArgs, err := cc.GetInitArgsFromState(aclCC)
+	cfg, err := config.GetConfig(aclCC)
 	assert.NoError(t, err)
-	assert.Equal(t, len(common.TestValidators), len(stateInitArgs.Validators))
+	assert.Equal(t, len(common.TestValidators), len(cfg.Validators))
+}
+
+func TestAclInitConfig(t *testing.T) {
+	aclCC := common.StubCreate(t)
+
+	cfgInitBytes, err := protojson.Marshal(common.TestInitConfig)
+	assert.NoError(t, err)
+
+	var args [][]byte
+	args = append(args, cfgInitBytes)
+
+	response := aclCC.MockInit("0", args)
+	assert.NotNil(t, response)
+	assert.Equal(t, int32(200), response.Status)
+	assert.Empty(t, response.Message)
+
+	cfg, err := config.GetConfig(aclCC)
+	assert.NoError(t, err)
+	assert.Equal(t, len(common.TestValidators), len(cfg.Validators))
 }
 
 func TestEmitTransfer(t *testing.T) {

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package proto;
+
+import "validate/validate.proto";
+
+option go_package = "github.com/anoideaopen/acl/proto";
+
+// Config stores ACL configuration parameters.
+message ACLConfig {
+  // adminSKIEncoded - ACL admin public key SKI in hex format
+  string adminSKIEncoded = 1 [(validate.rules).string.pattern = "^[0-9a-f]+$"];
+  // validators - set of validators public keys
+  repeated string validators = 2;
+}
