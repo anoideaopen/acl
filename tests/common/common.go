@@ -44,7 +44,6 @@ var TestInitArgs = append(
 
 var TestInitConfig = &proto.ACLConfig{
 	AdminSKIEncoded: string(TestAdminSKI),
-	ValidatorsCount: int64(len(TestValidators)),
 	Validators:      TestValidators,
 }
 

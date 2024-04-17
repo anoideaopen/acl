@@ -837,8 +837,8 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		}
 	}
 
-	if countValidatorsSigned < c.config.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.config.ValidatorsCount)
+	if countValidatorsSigned < c.validatorsCount {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.validatorsCount)
 	}
 	return nil
 }
@@ -874,8 +874,8 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		}
 	}
 
-	if countValidatorsSigned < c.config.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.config.ValidatorsCount)
+	if countValidatorsSigned < c.validatorsCount {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.validatorsCount)
 	}
 	return nil
 }
@@ -931,9 +931,18 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	// hash.Write(ecdhPk.Bytes())
 	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 	hashed := sha3.Sum256(cert)
-	if !bytes.Equal(hashed[:], c.config.AdminSKI) &&
-		!bytes.Equal(hash.Sum(nil), c.config.AdminSKI) {
+	if !bytes.Equal(hashed[:], c.adminSKI) &&
+		!bytes.Equal(hash.Sum(nil), c.adminSKI) {
 		return errors.New(errs.ErrCallerNotAdmin)
 	}
 	return nil
+}
+
+func (c *ACL) countValidators() int64 {
+	var validatorsQty int64
+	for range c.config.Validators {
+		validatorsQty++
+	}
+
+	return validatorsQty
 }

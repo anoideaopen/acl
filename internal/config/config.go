@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -37,7 +36,7 @@ var (
 	ErrArgsLessThanMin        = "minimum required args length is '%d', passed %d"
 )
 
-func InitConfig(stub shim.ChaincodeStubInterface) (*proto.ACLConfig, error) {
+func SetConfig(stub shim.ChaincodeStubInterface) (*proto.ACLConfig, error) {
 	args := stub.GetStringArgs()
 
 	var (
@@ -58,22 +57,6 @@ func InitConfig(stub shim.ChaincodeStubInterface) (*proto.ACLConfig, error) {
 		if err != nil {
 			return nil, fmt.Errorf(ErrParsingArgsOld, err)
 		}
-	}
-
-	adminSKI, err := hex.DecodeString(cfg.AdminSKIEncoded)
-	if err != nil {
-		return nil, fmt.Errorf(ErrInvalidAdminSKI, cfg.AdminSKIEncoded)
-	}
-
-	cfg.AdminSKI = adminSKI
-
-	if cfg.CCName == "" {
-		ccName, err := helpers.ParseCCName(stub)
-		if err != nil {
-			return nil, err
-		}
-
-		cfg.CCName = ccName
 	}
 
 	cfgBytes, err = protojson.Marshal(cfg)
@@ -184,7 +167,11 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 	if args[indexAdminSKI] == "" {
 		return nil, fmt.Errorf(ErrAdminSKIEmpty)
 	}
-	adminSKI := args[indexAdminSKI]
+	adminSKIEncoded := args[indexAdminSKI]
+	_, err := hex.DecodeString(adminSKIEncoded)
+	if err != nil {
+		return nil, fmt.Errorf(ErrInvalidAdminSKI, adminSKIEncoded)
+	}
 
 	if args[indexValidatorsCount] == "" {
 		return nil, fmt.Errorf(ErrValidatorsCountEmpty)
@@ -204,8 +191,7 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 	}
 
 	return &proto.ACLConfig{
-		AdminSKIEncoded: adminSKI,
-		ValidatorsCount: validatorsCount,
+		AdminSKIEncoded: adminSKIEncoded,
 		Validators:      validators,
 	}, nil
 }

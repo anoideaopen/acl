@@ -13,6 +13,8 @@ const (
 
 // Errors
 const (
+	ErrInvalidAdminSKI = "'adminSKI' (index of args 0) is invalid - format found '%s' but expected hex encoded string"
+
 	ErrUnauthorizedMsg          = "unauthorized: %s"
 	ErrCallerNotAdmin           = "caller is not an acl admin"
 	ErrDuplicateSignatures      = "duplicate validators signatures are not allowed: %w"

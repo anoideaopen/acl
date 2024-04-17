@@ -1,11 +1,13 @@
 package cc
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"reflect"
 	"runtime/debug"
 
+	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/proto"
@@ -15,7 +17,10 @@ import (
 
 type (
 	ACL struct {
-		config *proto.ACLConfig
+		ccName          string
+		adminSKI        []byte
+		validatorsCount int64
+		config          *proto.ACLConfig
 	}
 	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
@@ -27,7 +32,7 @@ func New() *ACL {
 // Init - method for initialize chaincode
 // args: adminSKI, validatorsCount, validatorBase58Ed25519PublicKey1, ..., validatorBase58Ed25519PublicKeyN
 func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	cfg, err := config.InitConfig(stub)
+	cfg, err := config.SetConfig(stub)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -49,12 +54,34 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}()
 	fn, args := stub.GetFunctionAndParameters()
-	if c.config == nil {
-		cfg, err := config.InitConfig(stub)
+	if c.config == nil || c.validatorsCount == 0 {
+		cfgBytes, err := config.LoadRawConfig(stub)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
+
+		cfg, err := config.FromBytes(cfgBytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
 		c.config = cfg
+
+		adminSKI, err := hex.DecodeString(cfg.AdminSKIEncoded)
+		if err != nil {
+			return shim.Error(fmt.Sprintf(errs.ErrInvalidAdminSKI, cfg.AdminSKIEncoded))
+		}
+
+		c.adminSKI = adminSKI
+
+		ccName, err := helpers.ParseCCName(stub)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		c.ccName = ccName
+
+		c.validatorsCount = c.countValidators()
 	}
 	methods := make(map[string]ccFunc)
 	t := reflect.TypeOf(c)

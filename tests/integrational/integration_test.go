@@ -38,7 +38,7 @@ func TestAclInitWrongAdminSkiFormat(t *testing.T) {
 	response := aclCC.MockInit("0", [][]byte{[]byte("a"), []byte("0")})
 	assert.NotNil(t, response)
 	assert.Equal(t, int32(500), response.Status)
-	assert.Equal(t, fmt.Sprintf(config.ErrInvalidAdminSKI, "a"), response.Message)
+	assert.Equal(t, fmt.Sprintf(config.ErrParsingArgsOld, fmt.Sprintf(config.ErrInvalidAdminSKI, "a")), response.Message)
 }
 
 func TestAclInitWrongValidatorCountFormat(t *testing.T) {
@@ -63,8 +63,8 @@ func TestAclInitTwoArgs(t *testing.T) {
 	aclCC := common.StubCreate(t)
 
 	adminSkiArg := "dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99"
-	decodeString, err := hex.DecodeString(adminSkiArg)
-	assert.NoError(t, err)
+	// decodeString, err := hex.DecodeString(adminSkiArg)
+	// assert.NoError(t, err)
 	testValidatorCount := "0"
 	response := aclCC.MockInit("0", [][]byte{[]byte(adminSkiArg), []byte(testValidatorCount)})
 	assert.NotNil(t, response)
@@ -76,8 +76,9 @@ func TestAclInitTwoArgs(t *testing.T) {
 	cfg, err := config.FromBytes(cfgBytes)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(cfg.Validators))
-	assert.Equal(t, decodeString, cfg.AdminSKI)
-	assert.Equal(t, int64(0), cfg.ValidatorsCount)
+	// assert.Equal(t, decodeString, .AdminSKI)
+	assert.Equal(t, adminSkiArg, cfg.AdminSKIEncoded)
+	assert.Equal(t, int64(0), int64(len(cfg.Validators)))
 }
 
 func TestAclInitArgs(t *testing.T) {
