@@ -1,12 +1,14 @@
 package cc
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"reflect"
 	"runtime/debug"
 
 	"github.com/anoideaopen/acl/helpers"
+	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -14,7 +16,8 @@ import (
 
 type (
 	ACL struct {
-		init *proto.Args
+		adminSKI []byte
+		config   *proto.ACLConfig
 	}
 	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
@@ -26,13 +29,7 @@ func New() *ACL {
 // Init - method for initialize chaincode
 // args: adminSKI, validatorsCount, validatorBase58Ed25519PublicKey1, ..., validatorBase58Ed25519PublicKeyN
 func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	newInitArgs, err := getNewInitArgsByChaincodeArgs(stub)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	err = putInitArgsToState(stub, newInitArgs)
-	if err != nil {
+	if err := config.SetConfig(stub); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -51,15 +48,23 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}()
 	fn, args := stub.GetFunctionAndParameters()
-	if c.init == nil {
-		init, err := GetInitArgsFromState(stub)
+	if c.config == nil {
+		cfg, err := config.GetConfig(stub)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		if init == nil {
+		if cfg == nil {
 			return shim.Error("ACL chaincode not initialized, please invoke Init with init args first")
 		}
-		c.init = init
+
+		c.config = cfg
+
+		adminSKI, err := hex.DecodeString(cfg.AdminSKIEncoded)
+		if err != nil {
+			return shim.Error(fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.AdminSKIEncoded))
+		}
+
+		c.adminSKI = adminSKI
 	}
 	methods := make(map[string]ccFunc)
 	t := reflect.TypeOf(c)

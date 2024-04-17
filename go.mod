@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/anoideaopen/foundation v0.0.0-20240411055802-53b67be060ea
 	github.com/btcsuite/btcutil v1.0.2
+	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/golang/protobuf v1.5.3
 	github.com/hyperledger/fabric-chaincode-go v0.0.0-20230228194215-b84622ba6a7a
 	github.com/hyperledger/fabric-protos-go v0.3.0
@@ -18,7 +19,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ddulesov/gogost v1.0.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v0.10.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect

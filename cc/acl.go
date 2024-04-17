@@ -812,7 +812,7 @@ func checkNonce(stub shim.ChaincodeStubInterface, sender, nonceStr string) error
 }
 
 func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, signatures []string) error {
-	var countValidatorsSigned int64
+	var countValidatorsSigned int
 	if err := helpers.CheckDuplicates(signatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -821,7 +821,7 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 	}
 
 	for i, encodedBase58PublicKey := range pks {
-		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -837,14 +837,14 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		}
 	}
 
-	if countValidatorsSigned < c.init.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.init.ValidatorsCount)
+	if countValidatorsSigned < len(c.config.Validators) {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.Validators))
 	}
 	return nil
 }
 
 func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorSignatures []string) error {
-	var countValidatorsSigned int64
+	var countValidatorsSigned int
 	if err := helpers.CheckDuplicates(validatorSignatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -853,7 +853,7 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 	}
 
 	for i, encodedBase58PublicKey := range validatorKeys {
-		if !helpers.IsValidator(c.init.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -874,8 +874,8 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		}
 	}
 
-	if countValidatorsSigned < c.init.ValidatorsCount {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, c.init.ValidatorsCount)
+	if countValidatorsSigned < len(c.config.Validators) {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.Validators))
 	}
 	return nil
 }
@@ -931,8 +931,8 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	// hash.Write(ecdhPk.Bytes())
 	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
 	hashed := sha3.Sum256(cert)
-	if !bytes.Equal(hashed[:], c.init.AdminSKI) &&
-		!bytes.Equal(hash.Sum(nil), c.init.AdminSKI) {
+	if !bytes.Equal(hashed[:], c.adminSKI) &&
+		!bytes.Equal(hash.Sum(nil), c.adminSKI) {
 		return errors.New(errs.ErrCallerNotAdmin)
 	}
 	return nil
