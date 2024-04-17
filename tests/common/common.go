@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var TestAdminSKI = []byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99")
@@ -42,8 +43,7 @@ var TestInitArgs = append(
 	TestValidatorsBytes...)
 
 var TestInitConfig = &proto.ACLConfig{
-	CCName:          "acl",
-	AdminSKI:        TestAdminSKI,
+	AdminSKIEncoded: string(TestAdminSKI),
 	ValidatorsCount: int64(len(TestValidators)),
 	Validators:      TestValidators,
 }
@@ -152,7 +152,12 @@ func StubCreate(t *testing.T) *shimtest.MockStub {
 // StubCreateAndInit creates mock stub and initializes it with TestIniArgs
 func StubCreateAndInit(t *testing.T) *shimtest.MockStub {
 	stub := StubCreate(t)
-	rsp := stub.MockInit("0", TestInitArgs)
+	cfgBytes, err := protojson.Marshal(TestInitConfig)
+	assert.NoError(t, err)
+	var args [][]byte
+	args = append(args, cfgBytes)
+	rsp := stub.MockInit("0", args)
+
 	assert.Equal(t, shim.OK, int(rsp.Status))
 
 	return stub

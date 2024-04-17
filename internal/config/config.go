@@ -37,29 +37,55 @@ var (
 	ErrArgsLessThanMin        = "minimum required args length is '%d', passed %d"
 )
 
-func InitConfig(stub shim.ChaincodeStubInterface) ([]byte, error) {
+func InitConfig(stub shim.ChaincodeStubInterface) (*proto.ACLConfig, error) {
 	args := stub.GetStringArgs()
 
 	var (
 		cfgBytes []byte
+		cfg      *proto.ACLConfig
 		err      error
 	)
 	if IsJSONConfig(args) {
 		cfgBytes = []byte(args[0])
+		cfg, err = FromBytes(cfgBytes)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		// handle args as position parameters and fill config structure.
 		// TODO: remove this code when all users moved to json-config initialization.
-		cfgBytes, err = ParseArgsArr(stub, args)
+		cfg, err = ParseArgsArr(args)
 		if err != nil {
 			return nil, fmt.Errorf(ErrParsingArgsOld, err)
 		}
+	}
+
+	adminSKI, err := hex.DecodeString(cfg.AdminSKIEncoded)
+	if err != nil {
+		return nil, fmt.Errorf(ErrInvalidAdminSKI, cfg.AdminSKIEncoded)
+	}
+
+	cfg.AdminSKI = adminSKI
+
+	if cfg.CCName == "" {
+		ccName, err := helpers.ParseCCName(stub)
+		if err != nil {
+			return nil, err
+		}
+
+		cfg.CCName = ccName
+	}
+
+	cfgBytes, err = protojson.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling config: %w", err)
 	}
 
 	if err = SaveConfig(stub, cfgBytes); err != nil {
 		return nil, fmt.Errorf(ErrSavingConfig, err)
 	}
 
-	return cfgBytes, nil
+	return cfg, nil
 }
 
 type State interface {
@@ -147,7 +173,7 @@ func IsJSONConfig(args []string) bool {
 // Only needed to maintain backward compatibility.
 // Marked for deletion after all deploy tools will be switched to JSON-config initialization of chaincodes.
 // ToDo - need to be deleted after switching to json-config initialization
-func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 	const minArgsCount = 2
 	argsCount := len(args)
 	if argsCount < minArgsCount {
@@ -158,10 +184,7 @@ func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, erro
 	if args[indexAdminSKI] == "" {
 		return nil, fmt.Errorf(ErrAdminSKIEmpty)
 	}
-	adminSKI, err := hex.DecodeString(args[indexAdminSKI])
-	if err != nil {
-		return nil, fmt.Errorf(ErrInvalidAdminSKI, args[indexAdminSKI])
-	}
+	adminSKI := args[indexAdminSKI]
 
 	if args[indexValidatorsCount] == "" {
 		return nil, fmt.Errorf(ErrValidatorsCountEmpty)
@@ -180,22 +203,9 @@ func ParseArgsArr(stub shim.ChaincodeStubInterface, args []string) ([]byte, erro
 		}
 	}
 
-	ccName, err := helpers.ParseCCName(stub)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := &proto.ACLConfig{
-		CCName:          ccName,
-		AdminSKI:        adminSKI,
+	return &proto.ACLConfig{
+		AdminSKIEncoded: adminSKI,
 		ValidatorsCount: validatorsCount,
 		Validators:      validators,
-	}
-
-	cfgBytes, err := protojson.Marshal(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling config: %w", err)
-	}
-
-	return cfgBytes, nil
+	}, nil
 }

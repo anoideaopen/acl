@@ -10,10 +10,12 @@ option go_package = "./;proto";
 message ACLConfig {
   // CCName - ACL chaincode name
   string CCName = 1 [(validate.rules).string.pattern = "^[A-Z]+[A-Z0-9]+(-[A-Z0-9]+)?$"];
-  // adminSKI - ACL admin public key SKI in hex format
-  bytes adminSKI = 2 [(validate.rules).string.pattern = "^[0-9a-f]+$"];
+  // adminSKIEncoded - ACL admin public key SKI in hex format
+  string adminSKIEncoded = 2 [(validate.rules).string.pattern = "^[0-9a-f]+$"];
+  // adminSKI - ACL admin public key SKI decoded from hex
+  bytes adminSKI = 3;
   // validatorsCount - set of validators public keys length
-  int64 validatorsCount = 3;
+  int64 validatorsCount = 4;
   // validators - set of validators public keys
-  repeated string validators = 4;
+  repeated string validators = 5;
 }
