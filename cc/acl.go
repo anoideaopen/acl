@@ -439,7 +439,7 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		_ = iterator.Close()
 	}()
 
-	var addrs []string
+	var addresses []string
 	for iterator.HasNext() {
 		kv, err := iterator.Next()
 		if err != nil {
@@ -449,11 +449,11 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		addrs = append(addrs, extractedAddr[0])
+		addresses = append(addresses, extractedAddr[0])
 	}
 
 	serialized, err := json.Marshal(AddrsWithPagination{
-		Addrs:    addrs,
+		Addrs:    addresses,
 		Bookmark: result.Bookmark,
 	})
 	if err != nil {
