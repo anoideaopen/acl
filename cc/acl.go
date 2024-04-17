@@ -332,12 +332,12 @@ func (c *ACL) updateSignedAddress(
 	return stub.PutState(signedAddressCompositeKey, marshaledSignedAddress)
 }
 
-// Setkyc updates KYC for address
+// SetKyc updates KYC for address
 // arg[0] - address
 // arg[1] - KYC hash
 // arg[2] - nonce
 // arg[3:] - public keys and signatures of validators
-func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) SetKyc(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	argsNum := len(args)
 	const minArgsCount = 5
 	if argsNum < minArgsCount {
