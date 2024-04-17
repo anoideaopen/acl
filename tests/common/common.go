@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"strconv"
 	"testing"
 
@@ -20,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var TestAdminSKI = []byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99")
