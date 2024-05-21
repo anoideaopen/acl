@@ -11,7 +11,7 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type seriesGrayList struct {
@@ -118,7 +118,7 @@ func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *series
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
 	)
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(ser.testAddress), []byte(cc.GrayList)})
 
@@ -126,8 +126,8 @@ func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *series
 }
 
 func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
@@ -135,13 +135,13 @@ func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockS
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
 }
 
 func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *seriesGrayList) peer.Response {
@@ -149,20 +149,20 @@ func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *serie
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
 	)
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(common.TestAddr), []byte(cc.GrayList)})
-	assert.Equal(t, int32(shim.OK), respGrayList.Status)
+	require.Equal(t, int32(shim.OK), respGrayList.Status)
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
 
 	respDelFromList := stub.MockInvoke("0", [][]byte{[]byte(common.FnDelFromList), []byte(ser.testAddress), []byte(cc.GrayList)})
 
@@ -170,8 +170,8 @@ func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *serie
 }
 
 func validationResultRemoveAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
@@ -179,11 +179,11 @@ func validationResultRemoveAddressFromGrayList(t *testing.T, stub *shimtest.Mock
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, false, response.Account.GrayListed, "user is gray listed")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, false, response.Account.GrayListed, "user is gray listed")
 }

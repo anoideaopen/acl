@@ -274,9 +274,9 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 	}
 
 	// Deleting a user's public key.
-	additionalKeys := make([]*pb.AdditionalKey, 0, len(signedAddress.AdditionalKeys))
-	for _, additionalKey := range signedAddress.AdditionalKeys {
-		if additionalKey.PublicKeyBase58 == additionalPublicKey {
+	additionalKeys := make([]*pb.AdditionalKey, 0, len(signedAddress.GetAdditionalKeys()))
+	for _, additionalKey := range signedAddress.GetAdditionalKeys() {
+		if additionalKey.GetPublicKeyBase58() == additionalPublicKey {
 			continue
 		}
 		additionalKeys = append(additionalKeys, additionalKey)
@@ -340,7 +340,7 @@ func (c *ACL) tryCheckAdditionalKey(
 		return errF("get parent signed address for %s: %s", parentAddress, err), true
 	}
 
-	accountInfo, err := getAccountInfo(stub, signedAddress.Address.AddrString())
+	accountInfo, err := getAccountInfo(stub, signedAddress.GetAddress().AddrString())
 	if err != nil {
 		return errF("get account info for %s: %s", parentAddress, err), true
 	}

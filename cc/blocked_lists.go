@@ -33,7 +33,7 @@ func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf("unauthorized: %s", err.Error()))
+		return shim.Error("unauthorized: " + err.Error())
 	}
 
 	if len(args[0]) == 0 {
@@ -66,7 +66,7 @@ func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) peer.
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf("unauthorized: %s", err.Error()))
+		return shim.Error("unauthorized: " + err.Error())
 	}
 
 	if len(args[0]) == 0 {
@@ -135,7 +135,7 @@ func verifyAddressNotGrayListed(stub shim.ChaincodeStubInterface, base58EncodedA
 		return err
 	}
 
-	if accountInfo.GrayListed {
+	if accountInfo.GetGrayListed() {
 		return fmt.Errorf("address %s is graylisted", base58EncodedAddress)
 	}
 	return nil

@@ -2,6 +2,7 @@ package unit
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -12,8 +13,7 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -246,22 +246,22 @@ func TestAddUserAddExistedUser(t *testing.T) {
 			"0",
 			[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
 		)
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		require.Equal(t, int32(shim.OK), resp.Status)
 
 		// check
 		result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-		assert.Equal(t, int32(shim.OK), result.Status)
+		require.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AclResponse{}
-		assert.NoError(t, proto.Unmarshal(result.Payload, response))
-		assert.NotNil(t, response.Address)
-		assert.NotNil(t, response.Account)
-		assert.Equal(t, common.TestAddr, response.Address.Address.AddrString(), "invalid address")
-		assert.Equal(t, kycHash, response.Account.KycHash)
-		assert.False(t, response.Account.GrayListed)
-		assert.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
-		assert.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
-		assert.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NotNil(t, response.Address)
+		require.NotNil(t, response.Account)
+		require.Equal(t, common.TestAddr, response.Address.Address.AddrString(), "invalid address")
+		require.Equal(t, kycHash, response.Account.KycHash)
+		require.False(t, response.Account.GrayListed)
+		require.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
+		require.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
+		require.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
 	})
 
 	t.Run("Add already existed user (wrong case)", func(t *testing.T) {
@@ -271,7 +271,7 @@ func TestAddUserAddExistedUser(t *testing.T) {
 			[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
 		// check err status
-		assert.Equal(t, int32(shim.ERROR), resp.Status)
+		require.Equal(t, int32(shim.ERROR), resp.Status)
 
 		// construct addr
 		hashed := sha3.Sum256(base58.Decode(common.PubKey))
@@ -280,7 +280,7 @@ func TestAddUserAddExistedUser(t *testing.T) {
 		expectedError := fmt.Sprintf("The address %s associated with key %s already exists", addr, pKeys)
 
 		// check err msg
-		assert.Error(t, errors.New(resp.Message), expectedError)
+		require.Error(t, errors.New(resp.Message), expectedError)
 	})
 }
 
@@ -293,24 +293,24 @@ func addUser(stub *shimtest.MockStub, ser *seriesAddUser) peer.Response {
 }
 
 func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesAddUser) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
 	}
 
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.testPubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, ser.testAddress, response.Address.Address.AddrString(), "invalid address")
-	assert.Equal(t, ser.kycHash, response.Account.KycHash)
-	assert.False(t, response.Account.GrayListed)
-	assert.Equal(t, ser.testUserID, response.Address.Address.UserID, "invalid userID")
-	assert.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
-	assert.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, ser.testAddress, response.Address.Address.AddrString(), "invalid address")
+	require.Equal(t, ser.kycHash, response.Account.KycHash)
+	require.False(t, response.Account.GrayListed)
+	require.Equal(t, ser.testUserID, response.Address.Address.UserID, "invalid userID")
+	require.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
+	require.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
 }

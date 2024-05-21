@@ -11,7 +11,7 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type seriesCheckAddress struct {
@@ -91,7 +91,7 @@ func checkAddress(t *testing.T, stub *shimtest.MockStub, ser *seriesCheckAddress
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	check := stub.MockInvoke("0", [][]byte{[]byte("checkAddress"), []byte(ser.testAddress)})
 
@@ -99,17 +99,17 @@ func checkAddress(t *testing.T, stub *shimtest.MockStub, ser *seriesCheckAddress
 }
 
 func validationResultCheckAddress(t *testing.T, resp peer.Response, ser *seriesCheckAddress) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
 	}
 
 	addrFromLedger := &pb.Address{}
-	assert.NoError(t, proto.Unmarshal(resp.Payload, addrFromLedger))
-	assert.Equal(t, ser.testAddress, base58.CheckEncode(addrFromLedger.Address[1:], addrFromLedger.Address[0]), "invalid address")
-	assert.Equal(t, testUserID, addrFromLedger.UserID, "invalid userID")
-	assert.Equal(t, true, addrFromLedger.IsIndustrial, "invalid isIndustrial field")
-	assert.Equal(t, false, addrFromLedger.IsMultisig, "invalid IsMultisig field")
+	require.NoError(t, proto.Unmarshal(resp.Payload, addrFromLedger))
+	require.Equal(t, ser.testAddress, base58.CheckEncode(addrFromLedger.Address[1:], addrFromLedger.Address[0]), "invalid address")
+	require.Equal(t, testUserID, addrFromLedger.UserID, "invalid userID")
+	require.Equal(t, true, addrFromLedger.IsIndustrial, "invalid isIndustrial field")
+	require.Equal(t, false, addrFromLedger.IsMultisig, "invalid IsMultisig field")
 }

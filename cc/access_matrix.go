@@ -82,7 +82,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	}
 
 	addressFound := false
-	for _, existedAddr := range addresses.Addresses {
+	for _, existedAddr := range addresses.GetAddresses() {
 		if existedAddr.AddrString() == address.AddrString() {
 			addressFound = true
 			break
@@ -124,12 +124,12 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	}
 
 	rightFound := false
-	for _, rightExists := range accountRights.Rights {
-		if rightExists.ChannelName == channelName &&
-			rightExists.ChaincodeName == chaincodeName &&
-			rightExists.RoleName == roleName &&
-			rightExists.OperationName == operationName &&
-			rightExists.Address.AddrString() == address.AddrString() {
+	for _, rightExists := range accountRights.GetRights() {
+		if rightExists.GetChannelName() == channelName &&
+			rightExists.GetChaincodeName() == chaincodeName &&
+			rightExists.GetRoleName() == roleName &&
+			rightExists.GetOperationName() == operationName &&
+			rightExists.GetAddress().AddrString() == address.AddrString() {
 			rightFound = true
 			break
 		}
@@ -205,9 +205,9 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 		}
 	}
 
-	for i, existedAddr := range addresses.Addresses {
+	for i, existedAddr := range addresses.GetAddresses() {
 		if existedAddr.AddrString() == address.AddrString() {
-			addresses.Addresses = append(addresses.Addresses[:i], addresses.Addresses[i+1:]...)
+			addresses.Addresses = append(addresses.Addresses[:i], addresses.GetAddresses()[i+1:]...)
 			rawAddresses, err = proto.Marshal(addresses)
 			if err != nil {
 				return shim.Error(err.Error())
@@ -242,11 +242,11 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 		}
 	}
 
-	for i, rightExists := range accountRights.Rights {
-		if rightExists.ChannelName == channelName && rightExists.ChaincodeName == chaincodeName &&
-			rightExists.RoleName == roleName && rightExists.OperationName == operationName &&
-			rightExists.Address.String() == address.String() {
-			accountRights.Rights = append(accountRights.Rights[:i], accountRights.Rights[i+1:]...)
+	for i, rightExists := range accountRights.GetRights() {
+		if rightExists.GetChannelName() == channelName && rightExists.GetChaincodeName() == chaincodeName &&
+			rightExists.GetRoleName() == roleName && rightExists.GetOperationName() == operationName &&
+			rightExists.GetAddress().String() == address.String() {
+			accountRights.Rights = append(accountRights.Rights[:i], accountRights.GetRights()[i+1:]...)
 			rawAccountRights, err = proto.Marshal(accountRights)
 			if err != nil {
 				return shim.Error(err.Error())
@@ -331,7 +331,7 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 
 	result := &pb.HaveRight{HaveRight: false}
 
-	for _, existedAddr := range addresses.Addresses {
+	for _, existedAddr := range addresses.GetAddresses() {
 		if existedAddr.AddrString() == address.AddrString() {
 			result.HaveRight = true
 			break
@@ -442,8 +442,8 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 		}
 	}
 
-	rights := make([]*pb.Right, 0, len(addresses.Addresses))
-	for _, existedAddr := range addresses.Addresses {
+	rights := make([]*pb.Right, 0, len(addresses.GetAddresses()))
+	for _, existedAddr := range addresses.GetAddresses() {
 		rights = append(rights, &pb.Right{
 			ChannelName:   channelName,
 			ChaincodeName: chaincodeName,
@@ -464,7 +464,7 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 
 // isCalledFromChaincodeOrAdmin checks that function called from another chaincode or by acl admin
 func (c *ACL) isCalledFromChaincodeOrAdmin(stub shim.ChaincodeStubInterface) (bool, error) {
-	ccIsSet, err := calledFromChaincode(stub, c.config.CcName)
+	ccIsSet, err := calledFromChaincode(stub, c.config.GetCcName())
 	if err != nil {
 		return false, err
 	}

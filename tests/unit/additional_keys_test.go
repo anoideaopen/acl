@@ -11,7 +11,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -35,7 +35,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 			[]byte("true"),
 		},
 	)
-	assert.Equal(t, int32(shim.OK), response.Status)
+	require.Equal(t, int32(shim.OK), response.Status)
 
 	// User Key Verification.
 	response = stub.MockInvoke(
@@ -45,11 +45,11 @@ func TestAdditionalKeyManagement(t *testing.T) {
 			[]byte(common.PubKey),
 		},
 	)
-	assert.Equal(t, int32(shim.OK), response.Status)
+	require.Equal(t, int32(shim.OK), response.Status)
 
 	// Getting the user's address.
 	var userInfo pb.AclResponse
-	assert.NoError(t, proto.Unmarshal(response.Payload, &userInfo))
+	require.NoError(t, proto.Unmarshal(response.Payload, &userInfo))
 
 	userAddress := userInfo.Address.Address.AddrString()
 
@@ -89,7 +89,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	args = append(args, validatorSignatures...)
 
 	response = stub.MockInvoke("0", args)
-	assert.Equal(t, int32(shim.OK), response.Status)
+	require.Equal(t, int32(shim.OK), response.Status)
 
 	// Re-add an additional user key.
 	response = stub.MockInvoke(
@@ -101,7 +101,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 			[]byte(tags),
 		},
 	)
-	assert.Equal(t, int32(shim.ERROR), response.Status)
+	require.Equal(t, int32(shim.ERROR), response.Status)
 
 	// Checking for the presence of an additional user key.
 	response = stub.MockInvoke(
@@ -111,10 +111,10 @@ func TestAdditionalKeyManagement(t *testing.T) {
 			[]byte(additionalPublicKey),
 		},
 	)
-	assert.NoError(t, proto.Unmarshal(response.Payload, &userInfo))
-	assert.Equal(t, userAddress, userInfo.Address.Address.AddrString())
-	assert.Equal(t, additionalPublicKey, userInfo.Address.AdditionalKeys[0].PublicKeyBase58)
-	assert.Len(t, userInfo.Address.AdditionalKeys[0].Labels, 3)
+	require.NoError(t, proto.Unmarshal(response.Payload, &userInfo))
+	require.Equal(t, userAddress, userInfo.Address.Address.AddrString())
+	require.Equal(t, additionalPublicKey, userInfo.Address.AdditionalKeys[0].PublicKeyBase58)
+	require.Len(t, userInfo.Address.AdditionalKeys[0].Labels, 3)
 
 	// Obtaining account information at.
 	response = stub.MockInvoke(
@@ -126,11 +126,11 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	)
 
 	var signedAddress pb.SignedAddress
-	assert.Equal(t, int32(shim.OK), response.Status)
-	assert.NoError(t, proto.Unmarshal(response.Payload, &signedAddress))
-	assert.Equal(t, userAddress, signedAddress.Address.AddrString())
-	assert.Equal(t, additionalPublicKey, signedAddress.AdditionalKeys[0].PublicKeyBase58)
-	assert.Len(t, signedAddress.AdditionalKeys[0].Labels, 3)
+	require.Equal(t, int32(shim.OK), response.Status)
+	require.NoError(t, proto.Unmarshal(response.Payload, &signedAddress))
+	require.Equal(t, userAddress, signedAddress.Address.AddrString())
+	require.Equal(t, additionalPublicKey, signedAddress.AdditionalKeys[0].PublicKeyBase58)
+	require.Len(t, signedAddress.AdditionalKeys[0].Labels, 3)
 
 	now++
 	nonce = strconv.Itoa(now)
@@ -162,7 +162,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 	args = append(args, validatorSignatures...)
 
 	response = stub.MockInvoke("0", args)
-	assert.Equal(t, int32(shim.OK), response.Status)
+	require.Equal(t, int32(shim.OK), response.Status)
 
 	response = stub.MockInvoke(
 		"0",
@@ -171,7 +171,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 			[]byte(additionalPublicKey),
 		},
 	)
-	assert.Equal(t, int32(shim.ERROR), response.Status)
+	require.Equal(t, int32(shim.ERROR), response.Status)
 
 	// Verification of the primary key.
 	response = stub.MockInvoke(
@@ -181,7 +181,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 			[]byte(common.PubKey),
 		},
 	)
-	assert.Equal(t, int32(shim.OK), response.Status)
+	require.Equal(t, int32(shim.OK), response.Status)
 
 	// Obtaining account information at.
 	response = stub.MockInvoke(
@@ -192,7 +192,7 @@ func TestAdditionalKeyManagement(t *testing.T) {
 		},
 	)
 
-	assert.Equal(t, int32(shim.OK), response.Status)
-	assert.NoError(t, proto.Unmarshal(response.Payload, &signedAddress))
-	assert.Nil(t, signedAddress.AdditionalKeys)
+	require.Equal(t, int32(shim.OK), response.Status)
+	require.NoError(t, proto.Unmarshal(response.Payload, &signedAddress))
+	require.Nil(t, signedAddress.AdditionalKeys)
 }
