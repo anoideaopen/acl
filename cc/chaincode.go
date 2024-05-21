@@ -60,9 +60,9 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}
 	c.config = cfg
 
-	adminSKI, err := hex.DecodeString(cfg.AdminSKIEncoded)
+	adminSKI, err := hex.DecodeString(cfg.GetAdminSKIEncoded())
 	if err != nil {
-		return shim.Error(fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.AdminSKIEncoded))
+		return shim.Error(fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.GetAdminSKIEncoded()))
 	}
 	c.adminSKI = adminSKI
 	// init config end

@@ -3,6 +3,7 @@ package cc
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -137,7 +138,7 @@ func checkBlocked(stub shim.ChaincodeStubInterface, encodedBase58PublicKey strin
 		return err
 	}
 	if len(keyData) == 0 {
-		return fmt.Errorf(errs.ErrRecordsNotFound)
+		return errors.New(errs.ErrRecordsNotFound)
 	}
 	var a pb.SignedAddress
 	if err = proto.Unmarshal(keyData, &a); err != nil {
@@ -145,16 +146,16 @@ func checkBlocked(stub shim.ChaincodeStubInterface, encodedBase58PublicKey strin
 	}
 
 	var info *pb.AccountInfo
-	info, err = getAccountInfo(stub, a.Address.AddrString())
+	info, err = getAccountInfo(stub, a.GetAddress().AddrString())
 	if err != nil {
 		return err
 	}
 
-	if info.BlackListed {
-		return fmt.Errorf("address %s is blacklisted", a.Address.AddrString())
+	if info.GetBlackListed() {
+		return fmt.Errorf("address %s is blacklisted", a.GetAddress().AddrString())
 	}
-	if info.GrayListed {
-		return fmt.Errorf("address %s is graylisted", a.Address.AddrString())
+	if info.GetGrayListed() {
+		return fmt.Errorf("address %s is graylisted", a.GetAddress().AddrString())
 	}
 
 	return nil
@@ -165,7 +166,7 @@ func isAccountInfoInBlockedLists(accInfo *pb.AccountInfo) bool {
 		return false
 	}
 
-	if accInfo.GrayListed || accInfo.BlackListed {
+	if accInfo.GetGrayListed() || accInfo.GetBlackListed() {
 		return true
 	}
 
@@ -185,7 +186,7 @@ func fetchAccountInfoFromPubKeys(stub shim.ChaincodeStubInterface, pubKeys []str
 		return nil, err
 	}
 
-	info, err = getAccountInfo(stub, addr.Address.AddrString())
+	info, err = getAccountInfo(stub, addr.GetAddress().AddrString())
 	if err != nil {
 		return nil, err
 	}

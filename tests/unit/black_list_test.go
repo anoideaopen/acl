@@ -1,16 +1,17 @@
 package unit
 
 import (
+	"testing"
+
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/common"
-	"testing"
+	"github.com/stretchr/testify/require"
 
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/stretchr/testify/assert"
 )
 
 type seriesBlackList struct {
@@ -96,11 +97,11 @@ func TestBlackListLessArgs(t *testing.T) {
 	resp := stub.MockInvoke("0", [][]byte{
 		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue),
 	})
-	assert.Equal(t, int32(shim.OK), resp.Status, resp.Message)
+	require.Equal(t, int32(shim.OK), resp.Status, resp.Message)
 
 	respBlackList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(common.TestAddr)})
-	assert.Equal(t, int32(shim.ERROR), respBlackList.Status)
-	assert.Contains(t, respBlackList.Message, "incorrect number of arguments")
+	require.Equal(t, int32(shim.ERROR), respBlackList.Status)
+	require.Contains(t, respBlackList.Message, "incorrect number of arguments")
 }
 
 func TestRemoveAddressFromBlackListTrue(t *testing.T) {
@@ -154,7 +155,7 @@ func addAddressToBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBla
 	resp := stub.MockInvoke("0", [][]byte{
 		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue),
 	})
-	assert.Equal(t, int32(shim.OK), resp.Status, resp.Message)
+	require.Equal(t, int32(shim.OK), resp.Status, resp.Message)
 
 	respBlackList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(ser.testAddress), []byte(ser.list)})
 
@@ -162,8 +163,8 @@ func addAddressToBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBla
 }
 
 func validationResultAddAddressToBlackList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesBlackList) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
@@ -171,31 +172,31 @@ func validationResultAddAddressToBlackList(t *testing.T, stub *shimtest.MockStub
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, true, response.Account.BlackListed, "user is not blacklisted")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, true, response.Account.BlackListed, "user is not blacklisted")
 }
 
 func removeAddressFromBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBlackList) peer.Response {
 	resp := stub.MockInvoke("0", [][]byte{
 		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true"),
 	})
-	assert.Equal(t, int32(shim.OK), resp.Status, resp.Message)
+	require.Equal(t, int32(shim.OK), resp.Status, resp.Message)
 
 	respBlackList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(common.TestAddr), []byte(ser.list)})
-	assert.Equal(t, int32(shim.OK), respBlackList.Status)
+	require.Equal(t, int32(shim.OK), respBlackList.Status)
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, true, response.Account.BlackListed, "user is not blacklisted")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, true, response.Account.BlackListed, "user is not blacklisted")
 
 	respDelFromList := stub.MockInvoke("0", [][]byte{[]byte(common.FnDelFromList), []byte(ser.testAddress), []byte("black")})
 
@@ -208,19 +209,19 @@ func validationResultRemoveAddressFromBlackList(
 	resp peer.Response,
 	ser *seriesBlackList,
 ) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
 	}
 
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, false, response.Account.BlackListed, "user is blacklisted")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, false, response.Account.BlackListed, "user is blacklisted")
 }

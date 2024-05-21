@@ -2,7 +2,6 @@ package common
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/anoideaopen/foundation/core/acl"
 	"github.com/anoideaopen/foundation/core/types"
@@ -39,7 +38,7 @@ func (mt *FiatToken) TxEmit(sender *types.Sender, address *types.Address, amount
 func (mt *FiatToken) QueryGetRight(channel, chaincode, role, operation, address string) (bool, error) {
 	stub := mt.GetStub()
 	if stub == nil {
-		return false, fmt.Errorf("getting stub failed, stub is nil")
+		return false, errors.New("getting stub failed, stub is nil")
 	}
 
 	params := []string{channel, chaincode, role, operation, address}
@@ -47,7 +46,7 @@ func (mt *FiatToken) QueryGetRight(channel, chaincode, role, operation, address 
 	if err != nil {
 		return false, err
 	}
-	if haveRight.HaveRight {
+	if haveRight.GetHaveRight() {
 		return true, nil
 	}
 

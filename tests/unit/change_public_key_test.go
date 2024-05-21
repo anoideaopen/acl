@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
@@ -193,7 +193,7 @@ func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *seriesChangePub
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
 	pKeys := make([]string, 0, len(common.MockValidatorKeys))
@@ -236,8 +236,8 @@ func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *seriesChangePub
 }
 
 func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesChangePublicKey) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
@@ -245,18 +245,18 @@ func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp
 
 	// check pb.Address
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.newPubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.Equal(t, common.TestAddr, response.Address.Address.AddrString(),
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.Equal(t, common.TestAddr, response.Address.Address.AddrString(),
 		"failed to find address %s by new key %s", common.TestAddr, newPubKey)
-	assert.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
-	assert.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
-	assert.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
-	assert.Equal(t, common.DefaultReason, response.Address.Reason)
-	assert.Equal(t, int32(1), response.Address.ReasonId)
+	require.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
+	require.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
+	require.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+	require.Equal(t, common.DefaultReason, response.Address.Reason)
+	require.Equal(t, int32(1), response.Address.ReasonId)
 
 	// check signature
 	srcArgs := response.Address.SignedTx[0:6]
@@ -270,11 +270,11 @@ func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp
 		mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
 	}
 	for i, vpk := range pksOfValidators {
-		assert.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk),
+		require.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk),
 			"pk %s does not belong to any validator", vpk)
 		decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
-		assert.NoError(t, err)
-		assert.True(t, ed25519.Verify(base58.Decode(vpk), decodedMessage[:], decodedSignature),
+		require.NoError(t, err)
+		require.True(t, ed25519.Verify(base58.Decode(vpk), decodedMessage[:], decodedSignature),
 			"the signature %s does not match the public key %s", signaturesOfValidators[i], vpk)
 	}
 }
@@ -287,7 +287,7 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
 	pKeys := make([]string, 0, len(common.MockValidatorKeys))
@@ -329,8 +329,8 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 			duplicateSignatures...)
 
 		respNewKey := stub.MockInvoke("0", invokeArgs)
-		assert.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		assert.True(t, strings.Contains(respNewKey.Message, "duplicate validators signatures are not allowed"))
+		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
+		require.True(t, strings.Contains(respNewKey.Message, "duplicate validators signatures are not allowed"))
 	})
 
 	t.Run("NEGATIVE. Number of pub keys does not match number of signatures", func(t *testing.T) {
@@ -352,8 +352,8 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 			vSignatures[:len(vSignatures)-1]...,
 		)
 		respNewKey := stub.MockInvoke("0", invokeArgs)
-		assert.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		assert.Equal(t, "uneven number of public keys and signatures provided: 5",
+		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
+		require.Equal(t, "uneven number of public keys and signatures provided: 5",
 			respNewKey.Message)
 	})
 
@@ -376,7 +376,7 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 			vSignatures...,
 		)
 		respNewKey := stub.MockInvoke("0", invokeArgs)
-		assert.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		assert.Equal(t, "failed base58 decoding of key blabla, input: 'blabla'", respNewKey.Message)
+		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
+		require.Equal(t, "failed base58 decoding of key blabla, input: 'blabla'", respNewKey.Message)
 	})
 }

@@ -168,7 +168,7 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 	}
 
 	if args[indexAdminSKI] == "" {
-		return nil, fmt.Errorf(ErrAdminSKIEmpty)
+		return nil, errors.New(ErrAdminSKIEmpty)
 	}
 	adminSKIEncoded := args[indexAdminSKI]
 	_, err := hex.DecodeString(adminSKIEncoded)
@@ -177,7 +177,7 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 	}
 
 	if args[indexValidatorsCount] == "" {
-		return nil, fmt.Errorf(ErrValidatorsCountEmpty)
+		return nil, errors.New(ErrValidatorsCountEmpty)
 	}
 	validatorsCount, err := strconv.ParseInt(args[indexValidatorsCount], 10, 64)
 	if err != nil {

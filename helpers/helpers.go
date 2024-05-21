@@ -49,10 +49,10 @@ func CheckKeysArr(keysArr []string) error {
 	uniqPks := make(map[string]struct{})
 	for _, p := range keysArr {
 		if p == "" {
-			return fmt.Errorf("empty public key detected")
+			return errors.New("empty public key detected")
 		}
 		if _, ok := uniqPks[p]; ok {
-			return fmt.Errorf("duplicated public keys")
+			return errors.New("duplicated public keys")
 		}
 		uniqPks[p] = struct{}{}
 	}
@@ -136,34 +136,34 @@ func ParseCCName(stub shim.ChaincodeStubInterface) (string, error) {
 	}
 
 	if signedProp == nil {
-		return "", fmt.Errorf("failed to get signedProposal, it is nil")
+		return "", errors.New("failed to get signedProposal, it is nil")
 	}
 
 	prop := &peer.Proposal{}
-	if err = proto.Unmarshal(signedProp.ProposalBytes, prop); err != nil {
+	if err = proto.Unmarshal(signedProp.GetProposalBytes(), prop); err != nil {
 		return "", err
 	}
 
 	cpp := &peer.ChaincodeProposalPayload{}
-	if err = proto.Unmarshal(prop.Payload, cpp); err != nil {
+	if err = proto.Unmarshal(prop.GetPayload(), cpp); err != nil {
 		return "", err
 	}
 
 	cis := &peer.ChaincodeInvocationSpec{}
-	if err = proto.Unmarshal(cpp.Input, cis); err != nil {
+	if err = proto.Unmarshal(cpp.GetInput(), cis); err != nil {
 		return "", err
 	}
 
 	// chaincode spec is not set
-	if cis.ChaincodeSpec == nil {
+	if cis.GetChaincodeSpec() == nil {
 		return "", nil
 	}
 
-	if cis.ChaincodeSpec.ChaincodeId == nil {
-		return "", fmt.Errorf("chaincode ID is not set")
+	if cis.GetChaincodeSpec().GetChaincodeId() == nil {
+		return "", errors.New("chaincode ID is not set")
 	}
 
-	return cis.ChaincodeSpec.ChaincodeId.Name, nil
+	return cis.GetChaincodeSpec().GetChaincodeId().GetName(), nil
 }
 
 // CheckPublicKey verifies public key in the address variable
