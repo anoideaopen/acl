@@ -8,13 +8,13 @@ import (
 
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -373,22 +373,18 @@ func (c *ACL) retrieveParentAddress(
 	return string(rawParentAddress), parentCompositeKey, nil
 }
 
-// validateKeyFormat decode public key from base58 to ed25519 byte array
+// validateKeyFormat decode public key from base58 to byte array
 func validateKeyFormat(encodedBase58PublicKey string) error {
-	const publicKeySizeGOST = 64
-
 	if len(encodedBase58PublicKey) == 0 {
 		return errors.New("encoded base 58 public key is empty")
 	}
 
 	decode := base58.Decode(encodedBase58PublicKey)
-	if len(decode) != publicKeySizeGOST && len(decode) != ed25519.PublicKeySize {
+	if !helpers.ValidateKeyLength(decode) {
 		return fmt.Errorf(
 			"incorrect decoded from base58 public key len '%s'. "+
-				"decoded public key len is %d but expected %d or %d",
+				"decoded public key len is %d",
 			encodedBase58PublicKey, len(decode),
-			publicKeySizeGOST,
-			ed25519.PublicKeySize,
 		)
 	}
 

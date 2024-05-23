@@ -1,6 +1,7 @@
 package unit
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc/errs"
@@ -81,9 +82,12 @@ func TestCheckKeysPublicKeyMoreThan44Symbols(t *testing.T) {
 		testUserID:  "testUserID",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 33 but expected 32, input: '" +
-		s.testPubKey + "'"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		s.testPubKey,
+		33,
+		s.testPubKey,
+	)
 	s.SetError(errorMsg)
 
 	checkKeys(t, s)
@@ -100,9 +104,12 @@ func TestCheckKeysPublicKeyLessThan43Symbols(t *testing.T) {
 		testUserID:  "testUserID",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 31 but expected 32, input: '" +
-		s.testPubKey + "'"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		s.testPubKey,
+		31,
+		s.testPubKey,
+	)
 	s.SetError(errorMsg)
 
 	checkKeys(t, s)

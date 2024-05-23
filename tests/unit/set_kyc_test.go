@@ -1,7 +1,6 @@
 package unit
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -16,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -106,7 +104,7 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *seriesSetKyc) peer.Respo
 	for _, pubKey := range pKeys {
 		sKey := common.MockValidatorKeys[pubKey]
 		vPKeys = append(vPKeys, []byte(pubKey))
-		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(sKey), message[:]))))
+		vSignatures = append(vSignatures, common.HexEncodedSignature(base58.Decode(sKey), message[:]))
 	}
 
 	invokeArgs := append(

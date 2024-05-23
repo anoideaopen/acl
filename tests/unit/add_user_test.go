@@ -99,8 +99,11 @@ func TestAddUserPubkeyMoreThan44Symbols(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 33 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		33,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -119,8 +122,11 @@ func TestAddUserPubKeyLessThan43Symbols(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 31 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		31,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -231,6 +237,23 @@ func TestAddUserEmptyUserID(t *testing.T) {
 		testUserID:  "",
 		respStatus:  int32(shim.ERROR),
 		errorMsg:    "empty userID",
+	}
+
+	stub := common.StubCreateAndInit(t)
+	resp := addUser(stub, s)
+	validationResultAddUser(t, stub, resp, s)
+}
+
+func TestAddUserECDSAPublicKey(t *testing.T) {
+	t.Parallel()
+
+	s := &seriesAddUser{
+		testPubKey:  "3VeCgHy4GFyMGW26sfc797eUUPHBtmngT4t4E2tx87d627JMmrBcsUgKnaDBtozuRp4Hvr1VUc7E8niMFfDdU9JG",
+		testAddress: "2gNhUTgbNJEqnwFfrWLpdtQeGj2hxVz7d3VgzNJBHjpPpDhMVo",
+		kycHash:     kycHash,
+		testUserID:  testUserID,
+		respStatus:  int32(shim.OK),
+		errorMsg:    "",
 	}
 
 	stub := common.StubCreateAndInit(t)

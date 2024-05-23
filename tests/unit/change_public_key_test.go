@@ -2,6 +2,7 @@ package unit
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -17,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -82,8 +82,12 @@ func TestChangePublicKeyMoreThan44Symbols(t *testing.T) {
 		respStatus: int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.newPubKey + "'. decoded public key len is 33 but expected 32, input: '" + s.newPubKey + "'"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		s.newPubKey,
+		33,
+		s.newPubKey,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -99,8 +103,12 @@ func TestChangePublicKeyLessThan43Symbols(t *testing.T) {
 		respStatus: int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.newPubKey + "'. decoded public key len is 31 but expected 32, input: '" + s.newPubKey + "'"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		s.newPubKey,
+		31,
+		s.newPubKey,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -274,7 +282,7 @@ func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp
 			"pk %s does not belong to any validator", vpk)
 		decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
 		assert.NoError(t, err)
-		assert.True(t, ed25519.Verify(base58.Decode(vpk), decodedMessage[:], decodedSignature),
+		assert.True(t, common.VerifySignature(base58.Decode(vpk), decodedMessage[:], decodedSignature),
 			"the signature %s does not match the public key %s", signaturesOfValidators[i], vpk)
 	}
 }

@@ -1,14 +1,19 @@
 package common
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"strconv"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/btcsuite/btcutil/base58"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -21,12 +26,40 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+type TestSigner struct {
+	PublicKey  string
+	PrivateKey string
+}
+
+var TestSigners = []TestSigner{
+	{
+		// ed25519 key
+		PublicKey:  "A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4",
+		PrivateKey: "3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr",
+	},
+	{
+		// ed25519 key
+		PublicKey:  "5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
+		PrivateKey: "5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
+	},
+	{
+		// ecdsa key
+		PublicKey:  "3VeCgHy4GFyMGW26sfc797eUUPHBtmngT4t4E2tx87d627JMmrBcsUgKnaDBtozuRp4Hvr1VUc7E8niMFfDdU9JG",
+		PrivateKey: "FkBBwcDTqv3JKScX98a8iMZRBs2GbinNWLey47kfY2C4",
+	},
+	{
+		// ed25519 key
+		PublicKey:  "6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4",
+		PrivateKey: "3sK2wHWxU58kzAeFtShDMsPm5Qh74NAWgfwCmdKyzvp4npivEDDEp14WgQpg7KGaVNF7qWyyMvkKPzGddVkxagNN",
+	},
+}
+
 var TestAdminSKI = []byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99")
 
 var TestValidators = []string{
-	"A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4",
-	"5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
-	"6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4",
+	TestSigners[0].PublicKey,
+	TestSigners[1].PublicKey,
+	TestSigners[2].PublicKey,
 }
 
 var TestValidatorsBytes = [][]byte{
@@ -96,16 +129,16 @@ const (
 
 // MockValidatorKeys stores pubkey -> secret key mapping
 var MockValidatorKeys = map[string]string{
-	"A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4": "3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr",
-	"5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5": "5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
-	"6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4": "3sK2wHWxU58kzAeFtShDMsPm5Qh74NAWgfwCmdKyzvp4npivEDDEp14WgQpg7KGaVNF7qWyyMvkKPzGddVkxagNN",
+	TestSigners[0].PublicKey: TestSigners[0].PrivateKey,
+	TestSigners[1].PublicKey: TestSigners[1].PrivateKey,
+	TestSigners[2].PublicKey: TestSigners[2].PrivateKey,
 }
 
 var DuplicateMockValidatorsSecretKeys = []string{
-	"3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr",
-	"5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
-	"5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
-	"5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
+	TestSigners[0].PrivateKey,
+	TestSigners[1].PrivateKey,
+	TestSigners[1].PrivateKey,
+	TestSigners[1].PrivateKey,
 }
 
 // MarshalIdentity marshals creator identities
@@ -195,7 +228,85 @@ func GenerateTestValidatorSignatures(pKeys []string, digest []byte) (vpKeys [][]
 			fmt.Println(sKey)
 		}
 		vpKeys = append(vpKeys, []byte(pubKey))
-		vSignatures = append(vSignatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(sKey), digest))))
+		vSignatures = append(vSignatures, HexEncodedSignature(base58.Decode(sKey), digest))
 	}
 	return
+}
+
+func Base58EncodedSignature(privateKey []byte, message []byte) []byte {
+	return []byte(base58.Encode(sign(privateKey, message)))
+}
+
+func HexEncodedSignature(privateKey []byte, message []byte) []byte {
+	return []byte(hex.EncodeToString(sign(privateKey, message)))
+}
+
+func sign(privateKey []byte, message []byte) []byte {
+	if len(privateKey) == ed25519.PrivateKeySize {
+		return ed25519.Sign(privateKey, message)
+	}
+	ecdsaKey := &ecdsa.PrivateKey{
+		PublicKey: ecdsa.PublicKey{
+			Curve: elliptic.P256(),
+		},
+		D: new(big.Int).SetBytes(privateKey),
+	}
+	ecdsaKey.PublicKey.X, ecdsaKey.PublicKey.Y = elliptic.P256().ScalarBaseMult(privateKey)
+
+	signature, err := ecdsa.SignASN1(rand.Reader, ecdsaKey, message)
+	if err != nil {
+		return nil
+	}
+
+	return signature
+}
+
+func VerifySignature(
+	publicKey []byte,
+	message []byte,
+	signature []byte,
+) bool {
+	if verifyEd25519Signature(publicKey, message, signature) {
+		return true
+	}
+
+	if verifyECDSASignature(publicKey, message, signature) {
+		return true
+	}
+
+	return false
+}
+
+func verifyEd25519Signature(
+	publicKey []byte,
+	message []byte,
+	signature []byte,
+) bool {
+	return len(publicKey) == ed25519.PublicKeySize && ed25519.Verify(publicKey, message, signature)
+}
+
+func verifyECDSASignature(
+	publicKey []byte,
+	message []byte,
+	signature []byte,
+) bool {
+	if len(publicKey) != helpers.KeyLengthECDSA {
+		return false
+	}
+	ecdsaKey := ecdsaPublicKeyFromBytes(publicKey)
+	if ecdsaKey == nil {
+		return false
+	}
+	return ecdsa.VerifyASN1(ecdsaKey, message, signature)
+}
+
+func ecdsaPublicKeyFromBytes(bytes []byte) *ecdsa.PublicKey {
+	if len(bytes) != helpers.KeyLengthECDSA {
+		return nil
+	}
+	return &ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     new(big.Int).SetBytes(bytes[:helpers.KeyLengthECDSA/2]),
+		Y:     new(big.Int).SetBytes(bytes[helpers.KeyLengthECDSA/2:]),
+	}
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -206,7 +205,7 @@ func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatu
 	for i, pk := range pks {
 		// check signature
 		decodedSignature := base58.Decode(signatures[i])
-		if !ed25519.Verify(pk, message, decodedSignature) {
+		if !verifySignature(pk, message, decodedSignature) {
 			return errors.Errorf("the signature %s does not match the public key %s", signatures[i], base58.Encode(pk))
 		}
 		countSigned++

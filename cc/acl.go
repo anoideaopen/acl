@@ -25,7 +25,6 @@ import (
 	"github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -499,10 +498,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	}
 
 	forAddrOrig := args[3]
-	if len(forAddrOrig) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
-	}
-	err := helpers.CheckPublicKey(forAddrOrig)
+	err := helpers.CheckAddress(forAddrOrig)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("the user's address is not valid: %s", err.Error()))
 	}
@@ -832,8 +828,13 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		if err != nil {
 			return err
 		}
-		if !ed25519.Verify(decodedPublicKey, message, decodedSignature) {
-			return errors.Errorf("the signature %s does not match the public key %s", signatures[i], encodedBase58PublicKey)
+
+		if !verifySignature(decodedPublicKey, message, decodedSignature) {
+			return fmt.Errorf(
+				"the signature %s does not match the public key %s",
+				signatures[i],
+				encodedBase58PublicKey,
+			)
 		}
 	}
 
@@ -867,7 +868,8 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		if err != nil {
 			return err
 		}
-		if !ed25519.Verify(decodedPublicKey, digest, decodedSignature) {
+
+		if !verifySignature(decodedPublicKey, digest, decodedSignature) {
 			// TODO why signature in error in base58 format?
 			// in this method args signatures in hex
 			return errors.Errorf("the signature %s does not match the public key %s", base58.Encode(decodedSignature), encodedBase58PublicKey)
