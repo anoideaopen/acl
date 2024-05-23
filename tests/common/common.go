@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -20,8 +21,7 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ed25519"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -170,13 +170,13 @@ func SetCreator(stub *shimtest.MockStub, creatorMSP string, creatorCert []byte) 
 func StubCreate(t *testing.T) *shimtest.MockStub {
 	stub := shimtest.NewMockStub("mockStub", cc.New())
 	stub.ChannelID = "acl"
-	assert.NotNil(t, stub)
+	require.NotNil(t, stub)
 
 	cert, err := GetCert(AdminCertPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = SetCreator(stub, TestCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return stub
 }
@@ -185,11 +185,11 @@ func StubCreate(t *testing.T) *shimtest.MockStub {
 func StubCreateAndInit(t *testing.T) *shimtest.MockStub {
 	stub := StubCreate(t)
 	cfgBytes, err := protojson.Marshal(TestInitConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	var args [][]byte
 	args = append(args, cfgBytes)
 	rsp := stub.MockInit("0", args)
-	assert.Equal(t, shim.OK, int(rsp.Status))
+	require.Equal(t, shim.OK, int(rsp.GetStatus()))
 
 	return stub
 }
@@ -197,7 +197,7 @@ func StubCreateAndInit(t *testing.T) *shimtest.MockStub {
 // GetCert returns certificate located at path
 func GetCert(certPath string) (*x509.Certificate, error) {
 	if len(certPath) == 0 {
-		return nil, fmt.Errorf("cert path is empty")
+		return nil, errors.New("cert path is empty")
 	}
 
 	var certData []byte

@@ -55,7 +55,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 
 	N, err := strconv.Atoi(args[3])
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to parse N, error: %s", err.Error()))
+		return shim.Error("failed to parse N, error: " + err.Error())
 	}
 	err = helpers.ValidateMinSignatures(N)
 	if err != nil {
@@ -141,7 +141,7 @@ func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, a
 		return shim.Error(err.Error())
 	}
 	if len(addrAlreadyInLedgerBytes) != 0 {
-		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.Address.AddrString(), hashedHexKeys))
+		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.GetAddress().AddrString(), hashedHexKeys))
 	}
 
 	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)

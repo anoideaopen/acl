@@ -16,7 +16,8 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -162,7 +163,7 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	// add multisig members first
 	for _, memberPk := range pubKeys {
 		resp := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)})
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		require.Equal(t, int32(shim.OK), resp.Status)
 	}
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
@@ -187,12 +188,12 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 			[]byte("3"),
 			[]byte(nonce)),
 		pubKeysBytes...), signaturesAddMultisig...))
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// derive address from hash of sorted base58-(DE)coded pubKeys
 	pKeysString := strings.Join(pubKeys, "/")
 	keysArrSorted, err := helpers.DecodeAndSort(pKeysString)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	hashedPksSortedOrder := sha3.Sum256(bytes.Join(keysArrSorted, []byte("")))
 	addrEncoded := base58.CheckEncode(hashedPksSortedOrder[1:], hashedPksSortedOrder[0])
 
@@ -212,7 +213,7 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 		)
 	}
 	// then check that the user has been added
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	oldKey := pubKeys[0]
 	var newPubKeys []string
@@ -238,26 +239,26 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	// change key
 	changeResponse := stub.MockInvoke("0", append(
 		append([][]byte{[]byte("changeMultisigPublicKey"), []byte(addrEncoded), []byte(oldKey), []byte(newKey), []byte(reason), []byte(reasonID), []byte(newNonce)}, pubKeysBytes...), signatures...))
-	assert.Equal(t, ser.respStatus, changeResponse.Status)
+	require.Equal(t, ser.respStatus, changeResponse.Status)
 
 	if !valid {
-		assert.Equal(t, ser.errorMsg, changeResponse.Message)
+		require.Equal(t, ser.errorMsg, changeResponse.Message)
 	}
 
 	if valid {
 		// check pb.SignedAddress
 		result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(newSeparatedPubKeys)})
-		assert.Equal(t, int32(shim.OK), result.Status)
+		require.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AclResponse{}
-		assert.NoError(t, proto.Unmarshal(result.Payload, response))
-		assert.NotNil(t, response.Address)
-		assert.Equal(t, addrEncoded, response.Address.Address.AddrString(),
+		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NotNil(t, response.Address)
+		require.Equal(t, addrEncoded, response.Address.Address.AddrString(),
 			"failed to find address %s by new key %s", addrEncoded, base58.Encode(hashedPksSortedOrder[:]))
-		assert.Equal(t, false, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
-		assert.Equal(t, true, response.Address.Address.IsMultisig, "invalid IsMultisig field")
-		assert.Equal(t, reason, response.Address.Reason)
-		assert.Equal(t, int32(1), response.Address.ReasonId)
+		require.Equal(t, false, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
+		require.Equal(t, true, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+		require.Equal(t, reason, response.Address.Reason)
+		require.Equal(t, int32(1), response.Address.ReasonId)
 
 		// check signatures of validators
 		srcArgs := response.Address.SignaturePolicy.ReplaceKeysSignedTx[0:7]
@@ -271,14 +272,14 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 			mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
 		}
 		for i, vpk := range pksOfValidators {
-			assert.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk), "pk %s does not belong to any validator", vpk)
+			require.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk), "pk %s does not belong to any validator", vpk)
 			decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
-			assert.NoError(t, err)
-			assert.True(t, common.VerifySignature(base58.Decode(vpk), decodedMessage[:], decodedSignature),
+			require.NoError(t, err)
+			require.True(t, common.VerifySignature(base58.Decode(vpk), decodedMessage[:], decodedSignature),
 				"the signature %s does not match the public key %s", signaturesOfValidators[i], vpk)
 		}
 
 		// check key replaced in pb.SignaturePolicy.PubKeys
-		assert.Equal(t, newKey, base58.Encode(response.Address.SignaturePolicy.PubKeys[0]), "pk is not replaced")
+		require.Equal(t, newKey, base58.Encode(response.Address.SignaturePolicy.PubKeys[0]), "pk is not replaced")
 	}
 }

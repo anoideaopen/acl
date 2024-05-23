@@ -14,7 +14,7 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -51,21 +51,21 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 
 func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithBase58Signature, validatorCount int) {
 	stub := shimtest.NewMockStub("mockStub", cc.New())
-	assert.NotNil(t, stub)
+	require.NotNil(t, stub)
 	cert, err := common.GetCert(common.AdminCertPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = common.SetCreator(stub, common.TestCreatorMSP, cert.Raw)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ss, err := newSecrets(validatorCount)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	reasonID := "1"
 	mArgs := []string{"changePublicKeyWithBase58Signature", "", "acl", "", common.TestAddr, common.DefaultReason, reasonID, ser.newPubKey, nonce}
 	message := sha3.Sum256([]byte(strings.Join(append(mArgs, ss.pKeys()...), "")))
 	err = ss.signs(message[:])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	initArgs := [][]byte{
 		common.TestAdminSKI,
@@ -90,10 +90,10 @@ func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithB
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	respNewKey := stub.MockInvoke("0", invokeArgs)
-	assert.Equal(t, ser.respStatus, respNewKey.Status)
+	require.Equal(t, ser.respStatus, respNewKey.Status)
 }
 
 type artifact struct {

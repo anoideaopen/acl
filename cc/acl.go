@@ -85,7 +85,7 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Resp
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.Address.AddrString(), pKeys))
+		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.GetAddress().AddrString(), pKeys))
 	}
 
 	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)
@@ -261,7 +261,7 @@ func (c *ACL) retrieveAndVerifySignedAddress(
 		return nil, err
 	}
 
-	return result.Address, err
+	return result.GetAddress(), err
 }
 
 // retrieveSignedAddress retrieves the SignedAddress associated with a base58-encoded address.
@@ -300,7 +300,7 @@ func (c *ACL) retrieveSignedAddress(
 		return nil, "", err
 	}
 	if len(signedAddressBytes) == 0 {
-		return nil, "", fmt.Errorf("no such address in the ledger")
+		return nil, "", errors.New("no such address in the ledger")
 	}
 
 	signedAddress = &pb.SignedAddress{}
@@ -444,7 +444,7 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		_, extractedAddr, err := stub.SplitCompositeKey(kv.Key)
+		_, extractedAddr, err := stub.SplitCompositeKey(kv.GetKey())
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -453,7 +453,7 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 
 	serialized, err := json.Marshal(AddrsWithPagination{
 		Addrs:    addresses,
-		Bookmark: result.Bookmark,
+		Bookmark: result.GetBookmark(),
 	})
 	if err != nil {
 		return shim.Error(err.Error())
@@ -500,7 +500,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	forAddrOrig := args[3]
 	err := helpers.CheckAddress(forAddrOrig)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("the user's address is not valid: %s", err.Error()))
+		return shim.Error("the user's address is not valid: " + err.Error())
 	}
 
 	reason := args[4]
@@ -513,7 +513,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	}
 	reasonID, err := strconv.ParseInt(args[5], 10, 32)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to convert reason ID to int, err: %s", err.Error()))
+		return shim.Error("failed to convert reason ID to int, err: " + err.Error())
 	}
 
 	if len(args[6]) == 0 {
@@ -572,7 +572,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 		return shim.Error(err.Error())
 	}
 	if len(keys) == 0 {
-		return shim.Error(fmt.Sprintf("no public keys for address %s", forAddrOrig))
+		return shim.Error("no public keys for address " + forAddrOrig)
 	}
 	if bytes.Equal(keys, []byte(newKey)) {
 		return shim.Error("the new key is equivalent to an existing one")
@@ -589,7 +589,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 		return shim.Error(err.Error())
 	}
 	if len(signedAddrBytes) == 0 {
-		return shim.Error(fmt.Sprintf("no SignedAddress msg for address %s", forAddrOrig))
+		return shim.Error("no SignedAddress msg for address " + forAddrOrig)
 	}
 	signedAddr := &pb.SignedAddress{}
 	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
@@ -675,7 +675,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 	reason := args[1]
 	reasonID, err := strconv.ParseInt(args[2], 10, 32)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to convert reason ID to int, err: %s", err.Error()))
+		return shim.Error("failed to convert reason ID to int, err: " + err.Error())
 	}
 
 	strKeys := strings.Split(args[3], "/")
@@ -725,7 +725,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 		return shim.Error(err.Error())
 	}
 	if len(keys) == 0 {
-		return shim.Error(fmt.Sprintf("no public keys for address %s", forAddrOrig))
+		return shim.Error("no public keys for address " + forAddrOrig)
 	}
 
 	// del old pub key -> pb.Address mapping
@@ -739,7 +739,7 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) p
 		return shim.Error(err.Error())
 	}
 	if len(signedAddrBytes) == 0 {
-		return shim.Error(fmt.Sprintf("no SignedAddress msg for address %s", forAddrOrig))
+		return shim.Error("no SignedAddress msg for address " + forAddrOrig)
 	}
 	signedAddr := &pb.SignedAddress{}
 	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
@@ -817,7 +817,7 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 	}
 
 	for i, encodedBase58PublicKey := range pks {
-		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.GetValidators(), encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -838,8 +838,8 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		}
 	}
 
-	if countValidatorsSigned < len(c.config.Validators) {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.Validators))
+	if countValidatorsSigned < len(c.config.GetValidators()) {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.GetValidators()))
 	}
 	return nil
 }
@@ -854,7 +854,7 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 	}
 
 	for i, encodedBase58PublicKey := range validatorKeys {
-		if !helpers.IsValidator(c.config.Validators, encodedBase58PublicKey) {
+		if !helpers.IsValidator(c.config.GetValidators(), encodedBase58PublicKey) {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
 		countValidatorsSigned++
@@ -876,8 +876,8 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		}
 	}
 
-	if countValidatorsSigned < len(c.config.Validators) {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.Validators))
+	if countValidatorsSigned < len(c.config.GetValidators()) {
+		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.GetValidators()))
 	}
 	return nil
 }
@@ -911,7 +911,7 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 	if err = proto.Unmarshal(cert, sID); err != nil {
 		return fmt.Errorf("could not deserialize a SerializedIdentity, err: %w", err)
 	}
-	b, _ := pem.Decode(sID.IdBytes)
+	b, _ := pem.Decode(sID.GetIdBytes())
 	parsed, err := x509.ParseCertificate(b.Bytes)
 	if err != nil {
 		return err
@@ -919,7 +919,7 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 
 	pk, ok := parsed.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
-		return fmt.Errorf("bad public key, type conversion of parsed public key failed")
+		return errors.New("bad public key, type conversion of parsed public key failed")
 	}
 
 	hash := sha256.New()

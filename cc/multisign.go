@@ -38,7 +38,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 
 	N, err := strconv.Atoi(args[0])
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to parse N, error: %s", err.Error()))
+		return shim.Error("failed to parse N, error: " + err.Error())
 	}
 	nonce := args[1]
 	PksAndSignatures := args[2:]
@@ -120,7 +120,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 		return shim.Error(err.Error())
 	}
 	if len(addrAlreadyInLedgerBytes) != 0 {
-		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.Address.AddrString(), hashedHexKeys))
+		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.GetAddress().AddrString(), hashedHexKeys))
 	}
 
 	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)
@@ -231,7 +231,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	}
 	reasonID, err := strconv.ParseInt(args[4], 10, 32)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to convert reason ID to int, err: %s", err.Error()))
+		return shim.Error("failed to convert reason ID to int, err: " + err.Error())
 	}
 
 	nonce := args[5]
@@ -270,7 +270,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(err.Error())
 	}
 	if len(keys) == 0 {
-		return shim.Error(fmt.Sprintf("no public keys for address %s", multisigAddr))
+		return shim.Error("no public keys for address " + multisigAddr)
 	}
 
 	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(keys))
@@ -284,7 +284,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(err.Error())
 	}
 	if len(signedAddrBytes) == 0 {
-		return shim.Error(fmt.Sprintf("no SignedAddress msg for address %s", multisigAddr))
+		return shim.Error("no SignedAddress msg for address " + multisigAddr)
 	}
 	signedAddr := &pb.SignedAddress{}
 	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
@@ -293,7 +293,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 
 	// update pubKeys list
 	var newKeys []string
-	for index, pk := range signedAddr.SignaturePolicy.PubKeys {
+	for index, pk := range signedAddr.GetSignaturePolicy().GetPubKeys() {
 		if base58.Encode(pk) == oldKey {
 			decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58NewPublicKey)
 			if err != nil {
@@ -302,7 +302,7 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 			signedAddr.SignaturePolicy.PubKeys[index] = decodedPublicKey
 			newKeys = append(newKeys, encodedBase58NewPublicKey)
 		} else {
-			newKeys = append(newKeys, base58.Encode(signedAddr.SignaturePolicy.PubKeys[index]))
+			newKeys = append(newKeys, base58.Encode(signedAddr.GetSignaturePolicy().GetPubKeys()[index]))
 		}
 	}
 

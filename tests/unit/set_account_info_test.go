@@ -13,7 +13,7 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type seriesSetAccountInfo struct {
@@ -158,7 +158,7 @@ func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *seriesSetAccount
 		"0",
 		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 	)
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	check := stub.MockInvoke(
 		"0",
@@ -169,35 +169,35 @@ func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *seriesSetAccount
 }
 
 func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesSetAccountInfo) {
-	assert.Equal(t, ser.respStatus, resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, ser.respStatus, resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 
 	if resp.Status != int32(shim.OK) {
 		return
 	}
 
 	check := stub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccInfoFn), []byte(ser.testAddress)})
-	assert.Equal(t, ser.respStatus, check.Status)
+	require.Equal(t, ser.respStatus, check.Status)
 
 	isGrayListedBool, err := strconv.ParseBool(ser.isGrayListed)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	isBlackListedBool, err := strconv.ParseBool(ser.isBlackListed)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	addrFromLedger := &pb.AccountInfo{}
-	assert.NoError(t, json.Unmarshal(check.Payload, addrFromLedger))
-	assert.Equal(t, "kycHash2", addrFromLedger.KycHash)
-	assert.Equal(t, isGrayListedBool, addrFromLedger.GrayListed)
-	assert.Equal(t, isBlackListedBool, addrFromLedger.BlackListed)
+	require.NoError(t, json.Unmarshal(check.Payload, addrFromLedger))
+	require.Equal(t, "kycHash2", addrFromLedger.KycHash)
+	require.Equal(t, isGrayListedBool, addrFromLedger.GrayListed)
+	require.Equal(t, isBlackListedBool, addrFromLedger.BlackListed)
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	assert.Equal(t, int32(shim.OK), result.Status)
+	require.Equal(t, int32(shim.OK), result.Status)
 
 	response := &pb.AclResponse{}
-	assert.NoError(t, proto.Unmarshal(result.Payload, response))
-	assert.NotNil(t, response.Address)
-	assert.NotNil(t, response.Account)
-	assert.Equal(t, isGrayListedBool, response.Account.GrayListed, "user is not grayListed")
-	assert.Equal(t, isBlackListedBool, response.Account.BlackListed, "user is not blackListed")
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, isGrayListedBool, response.Account.GrayListed, "user is not grayListed")
+	require.Equal(t, isBlackListedBool, response.Account.BlackListed, "user is not blackListed")
 }

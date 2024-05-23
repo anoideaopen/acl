@@ -9,7 +9,7 @@ import (
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type seriesCheckKeys struct {
@@ -206,25 +206,25 @@ func checkKeys(t *testing.T, ser *seriesCheckKeys) {
 		)
 	}
 	// then check that the user has been added
-	assert.Equal(t, int32(shim.OK), resp.Status)
+	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.testPubKey)})
-	assert.Equal(t, ser.respStatus, result.Status)
+	require.Equal(t, ser.respStatus, result.Status)
 
-	assert.Equal(t, ser.errorMsg, result.Message)
+	require.Equal(t, ser.errorMsg, result.Message)
 
 	// add field validation only for valid structures
 	if valid {
 		response := &pb.AclResponse{}
-		assert.NoError(t, proto.Unmarshal(result.Payload, response))
-		assert.NotNil(t, response.Address)
-		assert.NotNil(t, response.Account)
-		assert.Equal(t, ser.testAddress, response.Address.Address.AddrString(), "invalid address")
-		assert.Equal(t, kycHash, response.Account.KycHash)
-		assert.False(t, response.Account.GrayListed)
-		assert.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
-		assert.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
-		assert.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NotNil(t, response.Address)
+		require.NotNil(t, response.Account)
+		require.Equal(t, ser.testAddress, response.Address.Address.AddrString(), "invalid address")
+		require.Equal(t, kycHash, response.Account.KycHash)
+		require.False(t, response.Account.GrayListed)
+		require.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
+		require.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
+		require.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
 	}
 }

@@ -16,7 +16,8 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -136,7 +137,7 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 			"0",
 			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		require.Equal(t, int32(shim.OK), resp.Status)
 	}
 
 	pubKeys[1] = ser.testPubKey
@@ -191,8 +192,8 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 			pubKeysBytes...,
 		), signatures...),
 	)
-	assert.Equal(t, int32(shim.ERROR), resp.Status)
-	assert.Equal(t, ser.errorMsg, resp.Message)
+	require.Equal(t, int32(shim.ERROR), resp.Status)
+	require.Equal(t, ser.errorMsg, resp.Message)
 }
 
 func TestAddMultisig(t *testing.T) {
@@ -211,7 +212,7 @@ func TestAddMultisig(t *testing.T) {
 			"0",
 			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		require.Equal(t, int32(shim.OK), resp.Status)
 	}
 
 	pubKeysBytes := make([][]byte, 0, len(pubKeys))
@@ -265,26 +266,26 @@ func TestAddMultisig(t *testing.T) {
 				pubKeysBytes...,
 			), signatures...),
 		)
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		require.Equal(t, int32(shim.OK), resp.Status)
 
 		// derive address from hash of sorted base58-(DE)coded pubKeys
 		pKeysString := strings.Join(pubKeys, "/")
 		keysArrSorted, err := helpers.DecodeAndSort(pKeysString)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		hashedPksSortedOrder := sha3.Sum256(bytes.Join(keysArrSorted, []byte("")))
 		addrEncoded := base58.CheckEncode(hashedPksSortedOrder[1:], hashedPksSortedOrder[0])
 
 		// check pb.Address
 		result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(pKeysString)})
-		assert.Equal(t, int32(shim.OK), result.Status)
+		require.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AclResponse{}
-		assert.NoError(t, proto.Unmarshal(result.Payload, response))
-		assert.NotNil(t, response.Address)
-		assert.Equal(t, hashedPksSortedOrder[:], response.Address.Address.Address, "failed to find address %s", addrEncoded)
-		assert.Equal(t, true, response.Address.Address.IsMultisig)
-		assert.Equal(t, false, response.Address.Address.IsIndustrial)
-		assert.Equal(t, "", response.Address.Address.UserID, "UserID should be empty string for multisig")
+		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NotNil(t, response.Address)
+		require.Equal(t, hashedPksSortedOrder[:], response.Address.Address.Address, "failed to find address %s", addrEncoded)
+		require.Equal(t, true, response.Address.Address.IsMultisig)
+		require.Equal(t, false, response.Address.Address.IsIndustrial)
+		require.Equal(t, "", response.Address.Address.UserID, "UserID should be empty string for multisig")
 		// check signatures confirming the agreement of all participants with the signature policy
 		srcArgs := response.Address.SignedTx[0:3]
 		pksAndSignatures := response.Address.SignedTx[3:]
@@ -294,8 +295,8 @@ func TestAddMultisig(t *testing.T) {
 
 		for i, pk := range pksOfMultisigWallet {
 			decodedSignature, err := hex.DecodeString(signaturesOfMembers[i])
-			assert.NoError(t, err)
-			assert.True(t, common.VerifySignature(base58.Decode(pk), decodedMessage[:], decodedSignature), "the signature %s does not match the public key %s", signaturesOfMembers[i], pk)
+			require.NoError(t, err)
+			require.True(t, common.VerifySignature(base58.Decode(pk), decodedMessage[:], decodedSignature), "the signature %s does not match the public key %s", signaturesOfMembers[i], pk)
 		}
 	})
 
@@ -308,8 +309,8 @@ func TestAddMultisig(t *testing.T) {
 				duplicatePubKeysBytes...,
 			), duplicateSignaturesBytes...),
 		)
-		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.True(t, strings.Contains(resp.Message, "duplicated public keys"))
+		require.Equal(t, int32(shim.ERROR), resp.Status)
+		require.True(t, strings.Contains(resp.Message, "duplicated public keys"))
 	})
 
 	t.Run("not all members signed (wrong case)", func(t *testing.T) {
@@ -319,8 +320,8 @@ func TestAddMultisig(t *testing.T) {
 				[]byte("3"),
 				[]byte(nonce)),
 			pubKeysBytes...), signatures[1:]...))
-		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.Equal(t, "the number of signatures (3) does not match the number of public keys (2)", resp.Message)
+		require.Equal(t, int32(shim.ERROR), resp.Status)
+		require.Equal(t, "the number of signatures (3) does not match the number of public keys (2)", resp.Message)
 	})
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {
@@ -352,8 +353,8 @@ func TestAddMultisig(t *testing.T) {
 				signatures...,
 			),
 		)
-		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.Equal(t, fmt.Sprintf("the signature %s does not match the public key %s",
+		require.Equal(t, int32(shim.ERROR), resp.Status)
+		require.Equal(t, fmt.Sprintf("the signature %s does not match the public key %s",
 			string(signatures[2]), hex.EncodeToString(base58.Decode(pubKeys[2]))), resp.Message)
 	})
 
@@ -366,8 +367,8 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(nStr),
 				[]byte(nonce)),
 			pubKeysBytes...), signatures...))
-		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.Equal(t, fmt.Sprintf(errs.ErrWrongNumberOfKeys, n, len(pubKeys)), resp.Message)
+		require.Equal(t, int32(shim.ERROR), resp.Status)
+		require.Equal(t, fmt.Sprintf(errs.ErrWrongNumberOfKeys, n, len(pubKeys)), resp.Message)
 	})
 
 	t.Run("wrong number of parameters", func(t *testing.T) {
@@ -378,8 +379,8 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(common.FnAddMultisig),
 				[]byte(nonce)),
 			p...), s...))
-		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.Equal(t, "incorrect number of arguments: 1, but this method expects: address, N (signatures required), nonce, public keys, signatures", resp.Message)
+		require.Equal(t, int32(shim.ERROR), resp.Status)
+		require.Equal(t, "incorrect number of arguments: 1, but this method expects: address, N (signatures required), nonce, public keys, signatures", resp.Message)
 	})
 }
 
@@ -399,7 +400,7 @@ func TestNonce(t *testing.T) {
 			"0",
 			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
 		)
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		require.Equal(t, int32(shim.OK), resp.Status)
 	}
 
 	pubKeysBytes := make([][]byte, 0, len(pubKeys))
@@ -426,7 +427,7 @@ func TestNonce(t *testing.T) {
 				pubKeysBytes...,
 			), signatures...),
 		)
-		assert.Equal(t, int32(shim.OK), resp.Status)
+		require.Equal(t, int32(shim.OK), resp.Status)
 
 		resp2 := stub.MockInvoke(
 			"0",
@@ -438,8 +439,8 @@ func TestNonce(t *testing.T) {
 				pubKeysBytes...,
 			), signatures...),
 		)
-		assert.Equal(t, int32(shim.ERROR), resp2.Status)
-		assert.Contains(t, resp2.Message, "incorrect nonce")
+		require.Equal(t, int32(shim.ERROR), resp2.Status)
+		require.Contains(t, resp2.Message, "incorrect nonce")
 	})
 
 	t.Run("nonce less than exists", func(t *testing.T) {
@@ -454,7 +455,7 @@ func TestNonce(t *testing.T) {
 				pubKeysBytes...,
 			), signatures...),
 		)
-		assert.Equal(t, int32(shim.ERROR), resp.Status)
-		assert.Contains(t, resp.Message, "less than exists")
+		require.Equal(t, int32(shim.ERROR), resp.Status)
+		require.Contains(t, resp.Message, "less than exists")
 	})
 }
