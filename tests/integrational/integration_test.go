@@ -218,9 +218,9 @@ func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 		[][]byte{
 			common.TestAdminSKI,
 			[]byte("3"),
-			[]byte("A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4"),
-			[]byte("5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5"),
-			[]byte("6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4"),
+			[]byte(common.TestValidators[0]),
+			[]byte(common.TestValidators[1]),
+			[]byte(common.TestValidators[2]),
 		},
 	)
 	ledgerMock.SetACL(aclCC)
@@ -305,7 +305,7 @@ func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 	for _, privateKey := range validatorsSecretKeys {
 		validatorsSignaturesString = append(
 			validatorsSignaturesString,
-			hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), changeMsg[:])),
+			string(common.HexEncodedSignature(base58.Decode(privateKey), changeMsg[:])),
 		)
 	}
 
