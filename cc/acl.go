@@ -39,89 +39,18 @@ type AddrsWithPagination struct {
 // args[1] - Know Your Client (KYC) hash
 // args[2] - user identifier
 // args[3] - user can do industrial operation or not (boolean)
+// args[4] - key type: ed25519, ecdsa, gost (optional)
 func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	argsNum := len(args)
-	const requiredArgsCount = 4
-	if argsNum != requiredArgsCount {
-		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: public key, "+
-			"KYC hash, user ID, industrial attribute ('true' or 'false')", argsNum))
-	}
-
 	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
-	encodedBase58PublicKey := args[0]
-	kycHash := args[1]
-	userID := args[2]
-	isIndustrial := args[3] == "true"
-
-	decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(kycHash) == 0 {
-		return shim.Error("empty kyc hash")
-	}
-	if len(userID) == 0 {
-		return shim.Error("empty userID")
-	}
-
-	hashed := sha3.Sum256(decodedPublicKey)
-	pKeys := hex.EncodeToString(hashed[:])
-	addr := base58.CheckEncode(hashed[1:], hashed[0])
-	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, pKeys)
+	request, err := addUserRequestFromArguments(args)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	addrAlreadyInLedgerBytes, err := stub.GetState(pkToAddrCompositeKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(addrAlreadyInLedgerBytes) != 0 {
-		addrAlreadyInLedger := &pb.SignedAddress{}
-		err = proto.Unmarshal(addrAlreadyInLedgerBytes, addrAlreadyInLedger)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.GetAddress().AddrString(), pKeys))
-	}
-
-	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	addrMsg, err := proto.Marshal(&pb.SignedAddress{Address: &pb.Address{
-		UserID:       userID,
-		Address:      hashed[:],
-		IsIndustrial: isIndustrial,
-		IsMultisig:   false,
-	}})
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	if err = stub.PutState(pkToAddrCompositeKey, addrMsg); err != nil {
-		return shim.Error(err.Error())
-	}
-
-	// save address -> pubKey hash mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(pKeys)); err != nil {
-		return shim.Error(err.Error())
-	}
-
-	infoMsg, err := proto.Marshal(&pb.AccountInfo{KycHash: kycHash})
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	cKey, err := compositekey.AccountInfo(stub, addr)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if err = stub.PutState(cKey, infoMsg); err != nil {
+	if err = addUser(stub, request); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -434,6 +363,11 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 	if err != nil {
 		return shim.Error(err.Error())
 	}
+
+	if iterator == nil {
+		return shim.Error("empty address iterator")
+	}
+
 	defer func() {
 		_ = iterator.Close()
 	}()
@@ -912,6 +846,9 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 		return fmt.Errorf("could not deserialize a SerializedIdentity, err: %w", err)
 	}
 	b, _ := pem.Decode(sID.GetIdBytes())
+	if b == nil {
+		return errors.New("no bytes in serialized identity")
+	}
 	parsed, err := x509.ParseCertificate(b.Bytes)
 	if err != nil {
 		return err

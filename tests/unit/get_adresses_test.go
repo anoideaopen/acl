@@ -21,7 +21,8 @@ func TestGetAddresses(t *testing.T) {
 
 	respGetAddr := stub.MockInvoke("0", [][]byte{[]byte("getAddresses"), []byte("1"), []byte(common.TestAddr)})
 	// require.Equal(t, int32(shim.OK), respGetAddr.Status)
-	require.Equal(t, int32(0), respGetAddr.Status)
+	require.Equal(t, int32(shim.ERROR), respGetAddr.Status)
+	require.Contains(t, respGetAddr.GetMessage(), "empty address iterator")
 
 	// check
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})

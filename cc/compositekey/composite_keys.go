@@ -8,6 +8,7 @@ const (
 	AccountInfoPrefix         = "accountinfo"
 	NoncePrefix               = "nonce"
 	AdditionalKeyParentPrefix = "additional_key_parent"
+	PublicKeyTypePrefix       = "pk_type"
 )
 
 func PublicKey(stub shim.ChaincodeStubInterface, addressBase58Check string) (string, error) {
@@ -42,5 +43,12 @@ func AdditionalKeyParent(stub shim.ChaincodeStubInterface, publicKeyBase58 strin
 	return stub.CreateCompositeKey(
 		AdditionalKeyParentPrefix,
 		[]string{publicKeyBase58},
+	)
+}
+
+func PublicKeyType(stub shim.ChaincodeStubInterface, publicKeysHashHex string) (string, error) {
+	return stub.CreateCompositeKey(
+		PublicKeyTypePrefix,
+		[]string{publicKeysHashHex},
 	)
 }

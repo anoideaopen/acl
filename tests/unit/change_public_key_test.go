@@ -338,7 +338,7 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 
 		respNewKey := stub.MockInvoke("0", invokeArgs)
 		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		require.True(t, strings.Contains(respNewKey.Message, "duplicate validators signatures are not allowed"))
+		require.Contains(t, respNewKey.Message, "duplicate validators signatures are not allowed")
 	})
 
 	t.Run("NEGATIVE. Number of pub keys does not match number of signatures", func(t *testing.T) {

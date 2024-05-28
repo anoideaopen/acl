@@ -13,13 +13,13 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
 const (
-	KeyLengthECDSA = 64
-	KeyLengthGOST  = 64
+	KeyLengthEd25519 = 32
+	KeyLengthECDSA   = 64
+	KeyLengthGOST    = 64
 )
 
 // DecodeBase58PublicKey decode public key from base58 to a byte array
@@ -30,14 +30,6 @@ func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 	decode := base58.Decode(encodedBase58PublicKey)
 	if len(decode) == 0 {
 		return nil, fmt.Errorf("failed base58 decoding of key %s", encodedBase58PublicKey)
-	}
-	if !ValidateKeyLength(decode) {
-		return nil,
-			fmt.Errorf(
-				"incorrect len of decoded from base58 public key '%s': '%d'",
-				encodedBase58PublicKey,
-				len(decode),
-			)
 	}
 	return decode, nil
 }
@@ -211,7 +203,7 @@ func ValidateMinSignatures(n int) error {
 }
 
 func ValidateKeyLength(key []byte) bool {
-	if len(key) == ed25519.PublicKeySize {
+	if len(key) == KeyLengthEd25519 {
 		return true
 	}
 	if len(key) == KeyLengthECDSA {
@@ -221,4 +213,9 @@ func ValidateKeyLength(key []byte) bool {
 		return true
 	}
 	return false
+}
+
+func ParseBool(text string) bool {
+	const True = "true"
+	return text == True
 }
