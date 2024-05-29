@@ -9,11 +9,6 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
 
-const (
-	failIfExists = false
-	//RewriteIfExists = true
-)
-
 func saveSignedAddress(
 	stub shim.ChaincodeStubInterface,
 	address *pb.SignedAddress,

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
@@ -94,7 +95,7 @@ var (
 	TestInitArgs = append(
 		[][]byte{
 			TestAdminSKI,
-			[]byte(fmt.Sprintf("%d", len(TestValidatorsPublicKeysArgs))),
+			[]byte(strconv.Itoa(len(TestValidatorsPublicKeysArgs))),
 		},
 		TestValidatorsPublicKeysArgs...,
 	)

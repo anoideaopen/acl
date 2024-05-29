@@ -17,6 +17,10 @@ type AddUserRequest struct {
 }
 
 func addUser(stub shim.ChaincodeStubInterface, request AddUserRequest) error {
+	const (
+		failIfExists = false
+	)
+
 	if err := saveSignedAddress(
 		stub,
 		&pb.SignedAddress{

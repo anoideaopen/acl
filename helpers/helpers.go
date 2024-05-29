@@ -47,7 +47,7 @@ func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 func IsValidator(validators []*aclproto.ACLValidator, pk string) bool {
 	// check it was a validator
 	for _, validator := range validators {
-		if validator.PublicKey == pk {
+		if validator.GetPublicKey() == pk {
 			return true
 		}
 	}
