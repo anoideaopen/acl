@@ -6,10 +6,12 @@ import (
 	"math/big"
 
 	"github.com/anoideaopen/acl/helpers"
+	aclproto "github.com/anoideaopen/acl/proto"
+	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ed25519"
 )
 
-func verifySignature(
+func verifySignatureWithPublicKey(
 	publicKey []byte,
 	message []byte,
 	signature []byte,
@@ -23,6 +25,34 @@ func verifySignature(
 	}
 
 	return false
+}
+
+func verifySignatureWithPublicKeyWithType(
+	publicKey []byte,
+	keyType KeyType,
+	message []byte,
+	signature []byte,
+) bool {
+	switch keyType {
+	case KeyTypeECDSA:
+		return verifyECDSASignature(publicKey, message, signature)
+	default:
+		return verifyEd25519Signature(publicKey, message, signature)
+	}
+}
+
+func verifySignatureWithValidator(
+	validator *aclproto.ACLValidator,
+	message []byte,
+	signature []byte,
+) bool {
+	decodedKey := base58.Decode(validator.PublicKey)
+	switch validator.KeyType {
+	case KeyTypeTextECDSA:
+		return verifyECDSASignature(decodedKey, message, signature)
+	default:
+		return verifyEd25519Signature(decodedKey, message, signature)
+	}
 }
 
 func verifyEd25519Signature(

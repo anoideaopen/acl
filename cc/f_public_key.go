@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	KeyTypeEd25519 KeyType = iota
+	KeyTypeUnknown KeyType = iota - 1
+	KeyTypeEd25519
 	KeyTypeECDSA
 	KeyTypeGOST
 )

@@ -18,6 +18,7 @@ import (
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/helpers"
+	aclproto "github.com/anoideaopen/acl/proto"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -742,7 +743,10 @@ func checkNonce(stub shim.ChaincodeStubInterface, sender, nonceStr string) error
 }
 
 func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, signatures []string) error {
-	var countValidatorsSigned int
+	if len(signatures) < len(c.config.GetValidators()) {
+		return errors.Errorf("%d of %d signed", len(signatures), len(c.config.GetValidators()))
+	}
+
 	if err := helpers.CheckDuplicates(signatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -750,20 +754,21 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
+	validators := make(map[string]*aclproto.ACLValidator)
+	for _, validator := range c.config.GetValidators() {
+		validators[validator.PublicKey] = validator
+	}
+
 	for i, encodedBase58PublicKey := range pks {
-		if !helpers.IsValidator(c.config.GetValidators(), encodedBase58PublicKey) {
+		validator, isValidator := validators[encodedBase58PublicKey]
+		if !isValidator {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
-		countValidatorsSigned++
 
 		// check signature
 		decodedSignature := base58.Decode(signatures[i])
-		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
-		if err != nil {
-			return err
-		}
 
-		if !verifySignature(decodedPublicKey, message, decodedSignature) {
+		if !verifySignatureWithValidator(validator, message, decodedSignature) {
 			return fmt.Errorf(
 				"the signature %s does not match the public key %s",
 				signatures[i],
@@ -771,15 +776,14 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 			)
 		}
 	}
-
-	if countValidatorsSigned < len(c.config.GetValidators()) {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.GetValidators()))
-	}
 	return nil
 }
 
 func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorSignatures []string) error {
-	var countValidatorsSigned int
+	if len(validatorSignatures) < len(c.config.GetValidators()) {
+		return errors.Errorf("%d of %d signed", len(validatorSignatures), len(c.config.GetValidators()))
+	}
+
 	if err := helpers.CheckDuplicates(validatorSignatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -787,31 +791,31 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
+	validators := make(map[string]*aclproto.ACLValidator)
+	for _, validator := range c.config.GetValidators() {
+		validators[validator.PublicKey] = validator
+	}
+
 	for i, encodedBase58PublicKey := range validatorKeys {
-		if !helpers.IsValidator(c.config.GetValidators(), encodedBase58PublicKey) {
+		validator, isValidator := validators[encodedBase58PublicKey]
+		if !isValidator {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
-		countValidatorsSigned++
 
 		// check signature
 		decodedSignature, err := hex.DecodeString(validatorSignatures[i])
 		if err != nil {
 			return err
 		}
-		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
-		if err != nil {
-			return err
-		}
 
-		if !verifySignature(decodedPublicKey, digest, decodedSignature) {
-			// TODO why signature in error in base58 format?
+		if !verifySignatureWithValidator(validator, digest, decodedSignature) {
 			// in this method args signatures in hex
-			return errors.Errorf("the signature %s does not match the public key %s", base58.Encode(decodedSignature), encodedBase58PublicKey)
+			return errors.Errorf(
+				"the signature %s does not match the public key %s",
+				validatorSignatures[i],
+				encodedBase58PublicKey,
+			)
 		}
-	}
-
-	if countValidatorsSigned < len(c.config.GetValidators()) {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.GetValidators()))
 	}
 	return nil
 }

@@ -205,7 +205,7 @@ func checkNOutMSigneBase58Signature(n int, message []byte, pks [][]byte, signatu
 	for i, pk := range pks {
 		// check signature
 		decodedSignature := base58.Decode(signatures[i])
-		if !verifySignature(pk, message, decodedSignature) {
+		if !verifySignatureWithPublicKey(pk, message, decodedSignature) {
 			return errors.Errorf("the signature %s does not match the public key %s", signatures[i], base58.Encode(pk))
 		}
 		countSigned++

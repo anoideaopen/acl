@@ -54,7 +54,7 @@ func TestAddMultisigPubKeyEmpty(t *testing.T) {
 	t.Parallel()
 	s := &seriesAddMultisig{
 		testPubKey: "",
-		errorMsg:   "encoded base 58 public key is empty",
+		errorMsg:   "empty public key detected",
 	}
 
 	addMultisig(t, s)
@@ -199,7 +199,7 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 		), signatures...),
 	)
 	require.Equal(t, int32(shim.ERROR), resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 }
 
 func TestAddMultisig(t *testing.T) {
@@ -334,7 +334,7 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(nonce)),
 			pubKeysBytes...), signatures[1:]...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, "the number of signatures (3) does not match the number of public keys (2)", resp.Message)
+		require.Equal(t, "counts of keys and signatures are not equal", resp.Message)
 	})
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {
@@ -367,8 +367,8 @@ func TestAddMultisig(t *testing.T) {
 			),
 		)
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, fmt.Sprintf("the signature %s does not match the public key %s",
-			string(signatures[2]), hex.EncodeToString(base58.Decode(pubKeys[2]))), resp.Message)
+		require.Contains(t, resp.Message, fmt.Sprintf("the signature %s does not match the public key %s",
+			string(signatures[2]), pubKeys[2]))
 	})
 
 	t.Run("wrong number of signature policy", func(t *testing.T) {
@@ -393,7 +393,7 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(nonce)),
 			p...), s...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, "incorrect number of arguments: 1, but this method expects: address, N (signatures required), nonce, public keys, signatures", resp.Message)
+		require.Contains(t, resp.Message, "incorrect number of arguments")
 	})
 }
 

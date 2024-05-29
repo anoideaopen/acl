@@ -2,11 +2,16 @@ package cc
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
+)
+
+const (
+	failIfExists = false
 )
 
 func saveSignedAddress(
@@ -50,6 +55,23 @@ func saveSignedAddress(
 	return nil
 }
 
+func saveMultisigPublicKey(
+	stub shim.ChaincodeStubInterface,
+	address string,
+	keyInHex string,
+) error {
+	addrToPkCompositeKey, err := compositekey.PublicKey(stub, address)
+	if err != nil {
+		return fmt.Errorf("failed creating public key composite key: %w", err)
+	}
+
+	if err = stub.PutState(addrToPkCompositeKey, []byte(keyInHex)); err != nil {
+		return fmt.Errorf("failed putting address into the state: %w", err)
+	}
+
+	return nil
+}
+
 func savePublicKey(
 	stub shim.ChaincodeStubInterface,
 	key PublicKey,
@@ -73,6 +95,35 @@ func savePublicKey(
 	}
 
 	return nil
+}
+
+func readPublicKeyType(
+	stub shim.ChaincodeStubInterface,
+	keyHashInHex string,
+) (KeyType, error) {
+	typeKey, err := compositekey.PublicKeyType(stub, keyHashInHex)
+	if err != nil {
+		return KeyTypeUnknown,
+			fmt.Errorf("failed creating public key type composite key: %w", err)
+	}
+
+	keyTypeBytes, err := stub.GetState(typeKey)
+	if err != nil {
+		return KeyTypeUnknown,
+			fmt.Errorf("failed reading public key type from the state: %w", err)
+	}
+
+	if len(keyTypeBytes) == 0 {
+		return KeyTypeEd25519, nil
+	}
+
+	typeOfKey, err := strconv.Atoi(string(keyTypeBytes))
+	if err != nil {
+		return KeyTypeUnknown,
+			fmt.Errorf("failed converting value to a public key type: %w", err)
+	}
+
+	return KeyType(typeOfKey), nil
 }
 
 func saveAccountInfo(
