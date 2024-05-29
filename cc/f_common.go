@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	FailIfExists    = false
-	RewriteIfExists = true
+	failIfExists = false
+	//RewriteIfExists = true
 )
 
 func saveSignedAddress(
@@ -30,7 +30,7 @@ func saveSignedAddress(
 		return fmt.Errorf("failed checking if address already exists: %w", err)
 	}
 
-	if rewriteIfExists == FailIfExists && len(addrAlreadyInLedgerBytes) != 0 {
+	if !rewriteIfExists && len(addrAlreadyInLedgerBytes) != 0 {
 		addrAlreadyInLedger := &pb.SignedAddress{}
 		err = proto.Unmarshal(addrAlreadyInLedgerBytes, addrAlreadyInLedger)
 		if err != nil {

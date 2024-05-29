@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
@@ -25,60 +24,6 @@ import (
 	"golang.org/x/crypto/ed25519"
 	"google.golang.org/protobuf/encoding/protojson"
 )
-
-type TestSigner struct {
-	PublicKey  string
-	PrivateKey string
-}
-
-var TestSigners = []TestSigner{
-	{
-		// ed25519 key
-		PublicKey:  "A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4",
-		PrivateKey: "3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr",
-	},
-	{
-		// ed25519 key
-		PublicKey:  "5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
-		PrivateKey: "5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
-	},
-	{
-		// ecdsa key
-		PublicKey:  "3VeCgHy4GFyMGW26sfc797eUUPHBtmngT4t4E2tx87d627JMmrBcsUgKnaDBtozuRp4Hvr1VUc7E8niMFfDdU9JG",
-		PrivateKey: "FkBBwcDTqv3JKScX98a8iMZRBs2GbinNWLey47kfY2C4",
-	},
-	{
-		// ed25519 key
-		PublicKey:  "6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4",
-		PrivateKey: "3sK2wHWxU58kzAeFtShDMsPm5Qh74NAWgfwCmdKyzvp4npivEDDEp14WgQpg7KGaVNF7qWyyMvkKPzGddVkxagNN",
-	},
-}
-
-var TestAdminSKI = []byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99")
-
-var TestValidators = []string{
-	TestSigners[0].PublicKey,
-	TestSigners[1].PublicKey,
-	TestSigners[2].PublicKey,
-}
-
-var TestValidatorsBytes = [][]byte{
-	[]byte(TestValidators[0]),
-	[]byte(TestValidators[1]),
-	[]byte(TestValidators[2]),
-}
-
-var TestInitArgs = append(
-	[][]byte{
-		TestAdminSKI,
-		[]byte(strconv.Itoa(len(TestValidators))),
-	},
-	TestValidatorsBytes...)
-
-var TestInitConfig = &proto.ACLConfig{
-	AdminSKIEncoded: string(TestAdminSKI),
-	Validators:      TestValidators,
-}
 
 // ACL API Functions
 const (
@@ -106,9 +51,10 @@ const (
 )
 
 const (
-	PubKey         = "aGGiDES6PZsZYz2ncsEXz8mXPxZRhVzMbgJFNAA7EA8"
-	TestAddr       = "2datxk5TmB1spSNn9enVo11dcpgmUoSBSqCx5cCGoWq8qTbZog"
-	TestCreatorMSP = "platformMSP"
+	PubKey           = "aGGiDES6PZsZYz2ncsEXz8mXPxZRhVzMbgJFNAA7EA8"
+	TestAddr         = "2datxk5TmB1spSNn9enVo11dcpgmUoSBSqCx5cCGoWq8qTbZog"
+	TestWrongAddress = "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt"
+	TestCreatorMSP   = "platformMSP"
 )
 
 const (
@@ -116,30 +62,87 @@ const (
 )
 
 var (
+	TestSigners = []TestSigner{
+		{
+			// ed25519 key
+			PublicKey:  "A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4",
+			PrivateKey: "3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr",
+			KeyType:    "ed25519",
+		},
+		{
+			// ed25519 key
+			PublicKey:  "5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
+			PrivateKey: "5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
+			KeyType:    "ed25519",
+		},
+		{
+			// ecdsa key
+			PublicKey:  "3VeCgHy4GFyMGW26sfc797eUUPHBtmngT4t4E2tx87d627JMmrBcsUgKnaDBtozuRp4Hvr1VUc7E8niMFfDdU9JG",
+			PrivateKey: "FkBBwcDTqv3JKScX98a8iMZRBs2GbinNWLey47kfY2C4",
+			KeyType:    "ecdsa",
+		},
+	}
+
+	TestAdminSKI = []byte("dc752d6afb51c33327b7873fdb08adb91de15ee7c88f4f9949445aeeb8ea4e99")
+
+	TestValidatorsPublicKeysArgs = [][]byte{
+		[]byte("A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4"),
+		[]byte("5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5"),
+		[]byte("6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4"),
+	}
+
+	TestInitArgs = append(
+		[][]byte{
+			TestAdminSKI,
+			[]byte(fmt.Sprintf("%d", len(TestValidatorsPublicKeysArgs))),
+		},
+		TestValidatorsPublicKeysArgs...,
+	)
+
+	TestValidatorsPrivateKeysArgs = [][]byte{
+		[]byte("3aDebSkgXq37VPrzThboaV8oMMbYXrRAt7hnGrod4PNMnGfXjh14TY7cQs8eVT46C4RK4ZyNKLrBmyD5CYZiFmkr"),
+		[]byte("5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D"),
+		[]byte("3sK2wHWxU58kzAeFtShDMsPm5Qh74NAWgfwCmdKyzvp4npivEDDEp14WgQpg7KGaVNF7qWyyMvkKPzGddVkxagNN"),
+	}
+
+	TestInitConfig = &proto.ACLConfig{
+		AdminSKIEncoded: string(TestAdminSKI),
+		Validators: []*proto.ACLValidator{
+			{
+				PublicKey: TestSigners[0].PublicKey,
+				KeyType:   TestSigners[0].KeyType,
+			},
+			{
+				PublicKey: TestSigners[1].PublicKey,
+				KeyType:   TestSigners[1].KeyType,
+			},
+			{
+				PublicKey: TestSigners[2].PublicKey,
+				KeyType:   TestSigners[2].KeyType,
+			},
+		},
+	}
+
 	AdminCertPath = "admin_cert.pem"
 	UserCertPath  = "user_cert.pem"
 
 	AdminCert = "-----BEGIN CERTIFICATE-----\nMIICSDCCAe6gAwIBAgIQAJwYy5PJAYSC1i0UgVN5bjAKBggqhkjOPQQDAjCBhzEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xIzAhBgNVBAoTGmF0b215emUudWF0LmRsdC5hdG9teXplLmNoMSYw\nJAYDVQQDEx1jYS5hdG9teXplLnVhdC5kbHQuYXRvbXl6ZS5jaDAeFw0yMDEwMTMw\nODU2MDBaFw0zMDEwMTEwODU2MDBaMHUxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpD\nYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMQ4wDAYDVQQLEwVhZG1p\nbjEpMCcGA1UEAwwgQWRtaW5AYXRvbXl6ZS51YXQuZGx0LmF0b215emUuY2gwWTAT\nBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQGQX9IhgjCtd3mYZ9DUszmUgvubepVMPD5\nFlwjCglB2SiWuE2rT/T5tHJsU/Y9ZXFtOOpy/g9tQ/0wxDWwpkbro00wSzAOBgNV\nHQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADArBgNVHSMEJDAigCBSv0ueZaB3qWu/\nAwOtbOjaLd68woAqAklfKKhfu10K+DAKBggqhkjOPQQDAgNIADBFAiEAoKRQLe4U\nFfAAwQs3RCWpevOPq+J8T4KEsYvswKjzfJYCIAs2kOmN/AsVUF63unXJY0k9ktfD\nfAaqNRaboY1Yg1iQ\n-----END CERTIFICATE-----"
 	UserCert  = "-----BEGIN CERTIFICATE-----\nMIICSDCCAe+gAwIBAgIQAO3rcbDmH/0f1DWQgKhYZTAKBggqhkjOPQQDAjCBhzEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xIzAhBgNVBAoTGmF0b215emUudWF0LmRsdC5hdG9teXplLmNoMSYw\nJAYDVQQDEx1jYS5hdG9teXplLnVhdC5kbHQuYXRvbXl6ZS5jaDAeFw0yMDEwMTMw\nODU2MDBaFw0zMDEwMTEwODU2MDBaMHYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpD\nYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMQ8wDQYDVQQLEwZjbGll\nbnQxKTAnBgNVBAMMIFVzZXIyQGF0b215emUudWF0LmRsdC5hdG9teXplLmNoMFkw\nEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEch+6dRC3SDIZhCSYNNAYE2T7eONz3m/i\n0oEM+/7VbHUJE+IkwZBmV8aCxC177t4OIcOBZuO4fLijnbgipf1cW6NNMEswDgYD\nVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0jBCQwIoAgUr9LnmWgd6lr\nvwMDrWzo2i3evMKAKgJJXyioX7tdCvgwCgYIKoZIzj0EAwIDRwAwRAIgV71buT7/\n2j+dznSFP1es5KJd1c5IANDzjR9cP5qd/kICIGTjJO5rcOv322nPWaTWr5XUtR3R\n/K0Elk9CQQBTzfqY\n-----END CERTIFICATE-----"
+
+	// MockValidatorKeys stores pubkey -> secret key mapping
+	MockValidatorKeys = map[string]string{
+		TestSigners[0].PublicKey: TestSigners[0].PrivateKey,
+		TestSigners[1].PublicKey: TestSigners[1].PrivateKey,
+		TestSigners[2].PublicKey: TestSigners[2].PrivateKey,
+	}
+
+	DuplicateMockValidatorsSecretKeys = []string{
+		TestSigners[0].PrivateKey,
+		TestSigners[1].PrivateKey,
+		TestSigners[1].PrivateKey,
+		TestSigners[1].PrivateKey,
+	}
 )
-
-const (
-	TestWrongAddress = "2ErXpMHdKbAVhVYZ28F9eSoZ1WYEYLhodeJNUxXyGyDeL9xKqt"
-)
-
-// MockValidatorKeys stores pubkey -> secret key mapping
-var MockValidatorKeys = map[string]string{
-	TestSigners[0].PublicKey: TestSigners[0].PrivateKey,
-	TestSigners[1].PublicKey: TestSigners[1].PrivateKey,
-	TestSigners[2].PublicKey: TestSigners[2].PrivateKey,
-}
-
-var DuplicateMockValidatorsSecretKeys = []string{
-	TestSigners[0].PrivateKey,
-	TestSigners[1].PrivateKey,
-	TestSigners[1].PrivateKey,
-	TestSigners[1].PrivateKey,
-}
 
 // MarshalIdentity marshals creator identities
 func MarshalIdentity(creatorMSP string, creatorCert []byte) ([]byte, error) {

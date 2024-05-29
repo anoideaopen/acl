@@ -13,5 +13,10 @@ message ACLConfig {
   // adminSKIEncoded - ACL admin public key SKI in hex format
   string adminSKIEncoded = 2 [(validate.rules).string.pattern = "^[0-9a-f]+$"];
   // validators - set of validators public keys
-  repeated string validators = 3;
+  repeated ACLValidator validators = 3;
+}
+
+message ACLValidator {
+  string publicKey = 1;
+  string keyType = 2;
 }

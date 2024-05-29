@@ -84,7 +84,7 @@ func TestAclInitArgs(t *testing.T) {
 
 	cfg, err := config.GetConfig(aclCC)
 	require.NoError(t, err)
-	require.Equal(t, len(common.TestValidators), len(cfg.Validators))
+	require.Equal(t, len(common.TestValidatorsPublicKeysArgs), len(cfg.Validators))
 }
 
 func TestAclInitConfig(t *testing.T) {
@@ -103,7 +103,7 @@ func TestAclInitConfig(t *testing.T) {
 
 	cfg, err := config.GetConfig(aclCC)
 	require.NoError(t, err)
-	require.Equal(t, len(common.TestValidators), len(cfg.Validators))
+	require.Equal(t, len(common.TestInitConfig.Validators), len(cfg.Validators))
 }
 
 func TestEmitTransfer(t *testing.T) {
@@ -213,16 +213,7 @@ func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 	creator, err := common.MarshalIdentity(common.TestCreatorMSP, cert.Raw)
 	require.NoError(t, err)
 	aclCC.SetCreator(creator)
-	aclCC.MockInit(
-		"0",
-		[][]byte{
-			common.TestAdminSKI,
-			[]byte("3"),
-			[]byte(common.TestValidators[0]),
-			[]byte(common.TestValidators[1]),
-			[]byte(common.TestValidators[2]),
-		},
-	)
+	aclCC.MockInit("0", common.TestInitArgs)
 	ledgerMock.SetACL(aclCC)
 
 	owner := ledgerMock.NewMultisigWallet(3)
@@ -237,7 +228,7 @@ func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 
 	// add multisig
 	nanoNonce := strconv.Itoa(int(time.Now().UnixNano()))
-	sourceMsg := append([]string{"addMultisig", "3", nanoNonce}, pubKeysEncodedString...)
+	sourceMsg := append([]string{common.FnAddMultisig, "3", nanoNonce}, pubKeysEncodedString...)
 	message := sha3.Sum256([]byte(strings.Join(sourceMsg, "")))
 
 	// var signatures [][]byte
@@ -247,7 +238,7 @@ func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 		signaturesString = append(signaturesString, hex.EncodeToString(ed25519.Sign(privateKey, message[:])))
 	}
 
-	owner.Invoke("acl", "addMultisig", append(sourceMsg[1:], signaturesString...)...)
+	owner.Invoke("acl", common.FnAddMultisig, append(sourceMsg[1:], signaturesString...)...)
 
 	cfg := &pb.Config{
 		Contract: &pb.ContractConfig{
@@ -276,13 +267,13 @@ func TestChangePubKeyMultisigAndEmitTransfer(t *testing.T) {
 	require.NoError(t, err)
 
 	// now owner.PubKeys()[0] is another key (after owner.ChangeKeysFor() invoke)
-	owner.Invoke("acl", "addUser", base58.Encode(owner.PubKeys()[0]), "kychash", "testUserID", "true")
+	owner.Invoke("acl", common.FnAddUser, base58.Encode(owner.PubKeys()[0]), "kychash", "testUserID", "true")
 	// get new public keys
-	validatorsPubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	validatorsSecretKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
-		validatorsPubKeys = append(validatorsPubKeys, pubKey)
-		validatorsSecretKeys = append(validatorsSecretKeys, privateKey)
+	validatorsPubKeys := make([]string, len(common.TestValidatorsPublicKeysArgs))
+	validatorsSecretKeys := make([]string, len(common.TestValidatorsPrivateKeysArgs))
+	for i := range common.TestValidatorsPublicKeysArgs {
+		validatorsPubKeys[i] = string(common.TestValidatorsPublicKeysArgs[i])
+		validatorsSecretKeys[i] = string(common.TestValidatorsPrivateKeysArgs[i])
 	}
 
 	newKeys := make([]string, 0, len(owner.PubKeys()))

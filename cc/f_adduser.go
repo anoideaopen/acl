@@ -28,7 +28,7 @@ func addUser(stub shim.ChaincodeStubInterface, request AddUserRequest) error {
 			},
 		},
 		request.PublicKey.HashInHex,
-		FailIfExists,
+		failIfExists,
 	); err != nil {
 		return fmt.Errorf("failed saving signed address: %w", err)
 	}
@@ -52,15 +52,15 @@ func addUser(stub shim.ChaincodeStubInterface, request AddUserRequest) error {
 
 func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
 	const (
-		publicKeyPosition = iota
-		kycHashPosition
-		userIDPosition
-		isIndustrialPosition
-		publicKeyTypePosition
+		indexPublicKey = iota
+		indexKYCHash
+		indexUserID
+		indexIsIndustrial
+		indexPublicKeyType
 	)
 
 	const (
-		requiredArgumentsCount = iota + publicKeyTypePosition
+		requiredArgumentsCount = iota + indexPublicKeyType
 		requiredArgumentsCountWithKeyType
 	)
 
@@ -72,28 +72,28 @@ func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
 		)
 	}
 
-	publicKey, err := publicKeyFromBase58String(args[publicKeyPosition])
+	publicKey, err := publicKeyFromBase58String(args[indexPublicKey])
 	if err != nil {
 		return AddUserRequest{}, fmt.Errorf("failed decoding public key: %w", err)
 	}
 
-	kycHash := args[kycHashPosition]
+	kycHash := args[indexKYCHash]
 	if len(kycHash) == 0 {
 		return AddUserRequest{}, errors.New("empty kyc hash")
 	}
 
-	userID := args[userIDPosition]
+	userID := args[indexUserID]
 	if len(userID) == 0 {
 		return AddUserRequest{}, errors.New("empty userID")
 	}
 
-	isIndustrial := helpers.ParseBool(args[isIndustrialPosition])
+	isIndustrial := helpers.ParseBool(args[indexIsIndustrial])
 
 	if argsNum == requiredArgumentsCountWithKeyType {
 		var ok bool
-		publicKey.Type, ok = textToKeyType[args[publicKeyTypePosition]]
+		publicKey.Type, ok = textToKeyType[args[indexPublicKeyType]]
 		if !ok {
-			return AddUserRequest{}, fmt.Errorf("unknow public key type %s", args[publicKeyTypePosition])
+			return AddUserRequest{}, fmt.Errorf("unknow public key type %s", args[indexPublicKeyType])
 		}
 	}
 

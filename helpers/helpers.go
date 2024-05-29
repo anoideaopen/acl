@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 
+	aclproto "github.com/anoideaopen/acl/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -31,14 +32,22 @@ func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 	if len(decode) == 0 {
 		return nil, fmt.Errorf("failed base58 decoding of key %s", encodedBase58PublicKey)
 	}
+	if !ValidateKeyLength(decode) {
+		return nil, fmt.Errorf(
+			"incorrect len of decoded from base58 public key '%s': '%d'",
+			encodedBase58PublicKey,
+			len(decode),
+		)
+	}
+
 	return decode, nil
 }
 
 // IsValidator checks whether a public key belongs to authorized entities and returns true or false
-func IsValidator(authorities []string, pk string) bool {
+func IsValidator(validators []*aclproto.ACLValidator, pk string) bool {
 	// check it was a validator
-	for _, authorityPublicKey := range authorities {
-		if authorityPublicKey == pk {
+	for _, validator := range validators {
+		if validator.PublicKey == pk {
 			return true
 		}
 	}

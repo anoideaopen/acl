@@ -131,10 +131,17 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, signer := range common.TestSigners {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(signer.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+				[]byte(signer.KeyType),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -206,10 +213,17 @@ func TestAddMultisig(t *testing.T) {
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, validator := range common.TestInitConfig.Validators {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(validator.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+				[]byte(validator.KeyType),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -394,10 +408,17 @@ func TestNonce(t *testing.T) {
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, validator := range common.TestInitConfig.Validators {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(validator.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+				[]byte(validator.KeyType),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}

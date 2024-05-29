@@ -152,16 +152,26 @@ func TestChangeMultisigPublicKeyWithSpecialSymbols(t *testing.T) {
 func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
-		pubKeys = append(pubKeys, pubKey)
-		privateKeys = append(privateKeys, privateKey)
+	pubKeys := make([]string, 0, len(common.TestSigners))
+	privateKeys := make([]string, 0, len(common.TestSigners))
+	for _, signer := range common.TestSigners {
+		pubKeys = append(pubKeys, signer.PublicKey)
+		privateKeys = append(privateKeys, signer.PrivateKey)
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
-		resp := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)})
+	for _, signer := range common.TestSigners {
+		resp := stub.MockInvoke(
+			"0",
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(signer.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+				[]byte(signer.KeyType),
+			},
+		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
 
@@ -266,12 +276,12 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 		decodedMessage := sha3.Sum256([]byte(strings.Join(append(srcArgs, pksOfValidators...), "")))
 		signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
 
-		mockValidatorsPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
-		for pubKey := range common.MockValidatorKeys {
-			mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
-		}
+		//mockValidatorsPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
+		//for pubKey := range common.MockValidatorKeys {
+		//	mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
+		//}
 		for i, vpk := range pksOfValidators {
-			require.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk), "pk %s does not belong to any validator", vpk)
+			require.True(t, helpers.IsValidator(common.TestInitConfig.Validators, vpk), "pk %s does not belong to any validator", vpk)
 			decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
 			require.NoError(t, err)
 			require.True(t, common.VerifySignature(base58.Decode(vpk), decodedMessage[:], decodedSignature),

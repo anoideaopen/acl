@@ -154,10 +154,17 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *seriesAddMultisigWithBase
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, validator := range common.TestInitConfig.Validators {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(validator.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+				[]byte(validator.KeyType),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -230,10 +237,17 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, validator := range common.TestInitConfig.Validators {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(validator.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+				[]byte(validator.KeyType),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}

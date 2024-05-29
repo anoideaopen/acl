@@ -23,6 +23,8 @@ const (
 	indexValidators
 )
 
+const defaultValidatorKeyType = "ed25519"
+
 var (
 	ErrCfgBytesEmpty = errors.New("config bytes is empty")
 
@@ -186,10 +188,18 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 
 	lastValidatorArgIndex := indexValidators + validatorsCount
 
-	validators := args[indexValidators:lastValidatorArgIndex]
-	for i, validator := range validators {
-		if validator == "" {
+	validatorKeys := args[indexValidators:lastValidatorArgIndex]
+	for i, validatorKey := range validatorKeys {
+		if validatorKey == "" {
 			return nil, fmt.Errorf(ErrValidatorsEmpty, i)
+		}
+	}
+
+	validators := make([]*proto.ACLValidator, len(validatorKeys))
+	for i, key := range validatorKeys {
+		validators[i] = &proto.ACLValidator{
+			PublicKey: key,
+			KeyType:   defaultValidatorKeyType,
 		}
 	}
 
