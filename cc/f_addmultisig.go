@@ -141,7 +141,7 @@ func addMultisigRequestFromArguments(
 
 	numberOfKeys := len(keysAndSignatures) / 2
 	if numberOfKeys < N {
-		return AddMultisigRequest{}, fmt.Errorf("N (%d) is greater then M (number of pubKeys, %d)", N, numberOfKeys)
+		return AddMultisigRequest{}, fmt.Errorf("number of pubKeys (%d) is less than required (%d)", numberOfKeys, N)
 	}
 
 	if err = helpers.CheckKeysArr(keysAndSignatures[:numberOfKeys]); err != nil {

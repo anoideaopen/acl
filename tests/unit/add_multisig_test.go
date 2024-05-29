@@ -381,7 +381,7 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(nonce)),
 			pubKeysBytes...), signatures...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, fmt.Sprintf(errs.ErrWrongNumberOfKeys, n, len(pubKeys)), resp.Message)
+		require.Equal(t, fmt.Sprintf(errs.ErrWrongNumberOfKeys, len(pubKeys), n), resp.Message)
 	})
 
 	t.Run("wrong number of parameters", func(t *testing.T) {

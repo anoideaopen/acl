@@ -756,7 +756,7 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 
 	validators := make(map[string]*aclproto.ACLValidator)
 	for _, validator := range c.config.GetValidators() {
-		validators[validator.PublicKey] = validator
+		validators[validator.GetPublicKey()] = validator
 	}
 
 	for i, encodedBase58PublicKey := range pks {
@@ -793,7 +793,7 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 
 	validators := make(map[string]*aclproto.ACLValidator)
 	for _, validator := range c.config.GetValidators() {
-		validators[validator.PublicKey] = validator
+		validators[validator.GetPublicKey()] = validator
 	}
 
 	for i, encodedBase58PublicKey := range validatorKeys {

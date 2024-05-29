@@ -46,8 +46,8 @@ func verifySignatureWithValidator(
 	message []byte,
 	signature []byte,
 ) bool {
-	decodedKey := base58.Decode(validator.PublicKey)
-	switch validator.KeyType {
+	decodedKey := base58.Decode(validator.GetPublicKey())
+	switch validator.GetKeyType() {
 	case KeyTypeTextECDSA:
 		return verifyECDSASignature(decodedKey, message, signature)
 	default:
