@@ -21,7 +21,7 @@ import (
 // arg[1] nonce
 // args[2:] are the public keys and signatures hex of all participants in the multi-wallet
 // and signatures confirming the agreement of all participants with the signature policy
-func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen
+func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
@@ -46,7 +46,7 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 // args[4] nonce
 // args[5:] are the public keys and signatures base58 of all participants in the multi-wallet
 // and signatures confirming the agreement of all participants with the signature policy
-func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen,gocognit
+func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}

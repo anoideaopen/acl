@@ -59,12 +59,12 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 		}
 	}
 
-	for i, validator := range cfg.Validators {
+	for i, validator := range cfg.GetValidators() {
 		if validator.GetPublicKey() == "" {
 			cfg.Validators[i].KeyType = helpers.DefaultPublicKeyType()
 		}
 		// gost key can't be used as a validator's key
-		if !helpers.ValidatePublicKeyType(validator.KeyType, proto.KeyType_gost.String()) {
+		if !helpers.ValidatePublicKeyType(validator.GetKeyType(), proto.KeyType_gost.String()) {
 			return fmt.Errorf("invalid key type: %s", validator.GetPublicKey())
 		}
 	}
