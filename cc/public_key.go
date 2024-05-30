@@ -5,21 +5,9 @@ import (
 	"fmt"
 
 	"github.com/anoideaopen/acl/helpers"
+	aclproto "github.com/anoideaopen/acl/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/sha3"
-)
-
-const (
-	KeyTypeUnknown KeyType = iota - 1
-	KeyTypeEd25519
-	KeyTypeECDSA
-	KeyTypeGOST
-)
-
-const (
-	KeyTypeTextEd25519 = "ed25519"
-	KeyTypeTextECDSA   = "ecdsa"
-	KeyTypeTextGOST    = "gost"
 )
 
 const (
@@ -28,23 +16,13 @@ const (
 	KeyLengthGOST    = 64
 )
 
-type (
-	KeyType int8
-
-	PublicKey struct {
-		InBase58          string
-		Bytes             []byte
-		Hash              []byte
-		HashInHex         string
-		HashInBase58Check string
-		Type              KeyType
-	}
-)
-
-var textToKeyType = map[string]KeyType{
-	KeyTypeTextEd25519: KeyTypeEd25519,
-	KeyTypeTextECDSA:   KeyTypeECDSA,
-	KeyTypeTextGOST:    KeyTypeGOST,
+type PublicKey struct {
+	InBase58          string
+	Bytes             []byte
+	Hash              []byte
+	HashInHex         string
+	HashInBase58Check string
+	Type              string
 }
 
 func publicKeyFromBase58String(base58Encoded string) (PublicKey, error) {
@@ -60,7 +38,7 @@ func publicKeyFromBase58String(base58Encoded string) (PublicKey, error) {
 		Hash:              hashed[:],
 		HashInHex:         hex.EncodeToString(hashed[:]),
 		HashInBase58Check: base58.CheckEncode(hashed[1:], hashed[0]),
-		Type:              KeyTypeEd25519,
+		Type:              helpers.DefaultPublicKeyType(),
 	}, nil
 }
 
@@ -68,9 +46,9 @@ func (key *PublicKey) validateLength() error {
 	var expectedLength int
 
 	switch key.Type {
-	case KeyTypeECDSA:
+	case aclproto.KeyType_ecdsa.String():
 		expectedLength = KeyLengthECDSA
-	case KeyTypeGOST:
+	case aclproto.KeyType_gost.String():
 		expectedLength = KeyLengthGOST
 	default:
 		expectedLength = KeyLengthEd25519
@@ -81,4 +59,16 @@ func (key *PublicKey) validateLength() error {
 	}
 
 	return nil
+}
+
+func (key *PublicKey) verifySignature(
+	message []byte,
+	signature []byte,
+) bool {
+	switch key.Type {
+	case aclproto.KeyType_ecdsa.String():
+		return verifyECDSASignature(key.Bytes, message, signature)
+	default:
+		return verifyEd25519Signature(key.Bytes, message, signature)
+	}
 }

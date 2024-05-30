@@ -768,7 +768,7 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		// check signature
 		decodedSignature := base58.Decode(signatures[i])
 
-		if !verifySignatureWithValidator(validator, message, decodedSignature) {
+		if !verifyValidatorSignature(validator, message, decodedSignature) {
 			return fmt.Errorf(
 				"the signature %s does not match the public key %s",
 				signatures[i],
@@ -808,7 +808,7 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 			return err
 		}
 
-		if !verifySignatureWithValidator(validator, digest, decodedSignature) {
+		if !verifyValidatorSignature(validator, digest, decodedSignature) {
 			// in this method args signatures in hex
 			return errors.Errorf(
 				"the signature %s does not match the public key %s",

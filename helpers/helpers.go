@@ -228,3 +228,20 @@ func ParseBool(text string) bool {
 	const True = "true"
 	return text == True
 }
+
+func ValidatePublicKeyType(keyType string, notAllowedTypes ...string) bool {
+	_, ok := aclproto.KeyType_value[keyType]
+	if !ok {
+		return false
+	}
+	for _, notAllowed := range notAllowedTypes {
+		if notAllowed == keyType {
+			return false
+		}
+	}
+	return true
+}
+
+func DefaultPublicKeyType() string {
+	return aclproto.KeyType_ed25519.String()
+}

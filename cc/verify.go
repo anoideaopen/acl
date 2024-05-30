@@ -11,44 +11,14 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-func verifySignatureWithPublicKey(
-	publicKey []byte,
-	message []byte,
-	signature []byte,
-) bool {
-	if verifyEd25519Signature(publicKey, message, signature) {
-		return true
-	}
-
-	if verifyECDSASignature(publicKey, message, signature) {
-		return true
-	}
-
-	return false
-}
-
-func verifySignatureWithPublicKeyWithType(
-	publicKey []byte,
-	keyType KeyType,
-	message []byte,
-	signature []byte,
-) bool {
-	switch keyType {
-	case KeyTypeECDSA:
-		return verifyECDSASignature(publicKey, message, signature)
-	default:
-		return verifyEd25519Signature(publicKey, message, signature)
-	}
-}
-
-func verifySignatureWithValidator(
+func verifyValidatorSignature(
 	validator *aclproto.ACLValidator,
 	message []byte,
 	signature []byte,
 ) bool {
 	decodedKey := base58.Decode(validator.GetPublicKey())
 	switch validator.GetKeyType() {
-	case KeyTypeTextECDSA:
+	case aclproto.KeyType_ecdsa.String():
 		return verifyECDSASignature(decodedKey, message, signature)
 	default:
 		return verifyEd25519Signature(decodedKey, message, signature)

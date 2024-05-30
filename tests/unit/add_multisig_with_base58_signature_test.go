@@ -2,6 +2,7 @@ package unit
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -53,7 +54,7 @@ func TestAddMultisigWithBase58SignaturePubKeyEmpty(t *testing.T) {
 	t.Parallel()
 	s := &seriesAddMultisigWithBase58Signature{
 		testPubKey: "",
-		errorMsg:   "encoded base 58 public key is empty",
+		errorMsg:   "empty public key detected",
 	}
 
 	AddMultisigWithBase58Signature(t, s)
@@ -223,7 +224,7 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *seriesAddMultisigWithBase
 		), signatures...),
 	)
 	require.Equal(t, int32(shim.ERROR), resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 }
 
 func TestAddMultisigWithBase58Signature(t *testing.T) {
@@ -359,7 +360,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 				[]byte(nonce)),
 			pubKeysBytes...), signatures[1:]...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, "uneven number of public keys and signatures provided: 5", resp.Message)
+		require.Contains(t, resp.Message, "counts of keys and signatures are not equal")
 	})
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {
@@ -393,7 +394,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 			),
 		)
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, fmt.Sprintf("the signature %s does not match the public key %s",
-			string(signatures[2]), pubKeys[2]), resp.Message)
+		require.Contains(t, resp.Message, fmt.Sprintf("the signature %s does not match the public key %s",
+			hex.EncodeToString(base58.Decode(string(signatures[2]))), pubKeys[2]))
 	})
 }

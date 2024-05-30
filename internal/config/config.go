@@ -23,8 +23,6 @@ const (
 	indexValidators
 )
 
-const defaultValidatorKeyType = "ed25519"
-
 var (
 	ErrCfgBytesEmpty = errors.New("config bytes is empty")
 
@@ -58,6 +56,16 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 		cfg, err = ParseArgsArr(args)
 		if err != nil {
 			return fmt.Errorf(ErrParsingArgsOld, err)
+		}
+	}
+
+	for i, validator := range cfg.Validators {
+		if validator.GetPublicKey() == "" {
+			cfg.Validators[i].KeyType = helpers.DefaultPublicKeyType()
+		}
+		// gost key can't be used as a validator's key
+		if !helpers.ValidatePublicKeyType(validator.KeyType, proto.KeyType_gost.String()) {
+			return fmt.Errorf("invalid key type: %s", validator.GetPublicKey())
 		}
 	}
 
@@ -199,7 +207,7 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 	for i, key := range validatorKeys {
 		validators[i] = &proto.ACLValidator{
 			PublicKey: key,
-			KeyType:   defaultValidatorKeyType,
+			KeyType:   helpers.DefaultPublicKeyType(),
 		}
 	}
 

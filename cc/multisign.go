@@ -38,6 +38,31 @@ func (c *ACL) AddMultisig(stub shim.ChaincodeStubInterface, args []string) peer.
 	return shim.Success(nil)
 }
 
+// AddMultisigWithBase58Signature creates multi-signature address which operates when N of M signatures is present
+// args[0] request id
+// args[1] chaincodeName acl
+// args[2] channelID acl
+// args[3] N number of signature policy (number of sufficient signatures), M part is derived from number of public keys
+// args[4] nonce
+// args[5:] are the public keys and signatures base58 of all participants in the multi-wallet
+// and signatures confirming the agreement of all participants with the signature policy
+func (c *ACL) AddMultisigWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen,gocognit
+	if err := c.verifyAccess(stub); err != nil {
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
+	}
+
+	request, err := addMultisigWithBase58SignaturesRequestFromArguments(stub, args)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	if err = addMultisig(stub, request); err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(nil)
+}
+
 // ChangeMultisigPublicKey changes public key of multisig member
 // arg[0] - multisig address (base58check)
 // arg[1] - old key (base58)

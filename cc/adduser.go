@@ -90,9 +90,8 @@ func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
 	isIndustrial := helpers.ParseBool(args[indexIsIndustrial])
 
 	if argsNum == requiredArgumentsCountWithKeyType {
-		var ok bool
-		publicKey.Type, ok = textToKeyType[args[indexPublicKeyType]]
-		if !ok {
+		publicKey.Type = args[indexPublicKeyType]
+		if !helpers.ValidatePublicKeyType(publicKey.Type) {
 			return AddUserRequest{}, fmt.Errorf("unknow public key type %s", args[indexPublicKeyType])
 		}
 	}
