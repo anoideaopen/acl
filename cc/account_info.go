@@ -173,27 +173,6 @@ func isAccountInfoInBlockedLists(accInfo *pb.AccountInfo) bool {
 	return false
 }
 
-func fetchAccountInfoFromPubKeys(stub shim.ChaincodeStubInterface, pubKeys []string) (*pb.AccountInfo, error) {
-	var info *pb.AccountInfo
-
-	pKeys, err := helpers.KeyStringToSortedHashedHex(pubKeys)
-	if err != nil {
-		return nil, fmt.Errorf("converting keys '%s'to sorted hash failed, err: %w", pubKeys, err)
-	}
-
-	addr, err := getAddressByHashedKeys(stub, pKeys)
-	if err != nil {
-		return nil, err
-	}
-
-	info, err = getAccountInfo(stub, addr.GetAddress().AddrString())
-	if err != nil {
-		return nil, err
-	}
-
-	return info, nil
-}
-
 func checkIfAccountInfoExistsAndGetData(stub shim.ChaincodeStubInterface, cKeyInfo string, address string) ([]byte, error) {
 	infoData, err := stub.GetState(cKeyInfo)
 	if err != nil {

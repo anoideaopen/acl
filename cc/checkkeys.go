@@ -106,7 +106,6 @@ func checkKeys(stub shim.ChaincodeStubInterface, request CheckKeysRequest) (pb.A
 
 			foundBlocked = isAccountInfoInBlockedLists(accountInfo)
 		}
-
 	}
 
 	return pb.AclResponse{
