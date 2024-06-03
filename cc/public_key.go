@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/anoideaopen/acl/helpers"
-	aclproto "github.com/anoideaopen/acl/proto"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/sha3"
 )
@@ -46,9 +46,9 @@ func (key *PublicKey) validateLength() error {
 	var expectedLength int
 
 	switch key.Type {
-	case aclproto.KeyType_ecdsa.String():
+	case pb.KeyType_ecdsa.String():
 		expectedLength = KeyLengthECDSA
-	case aclproto.KeyType_gost.String():
+	case pb.KeyType_gost.String():
 		expectedLength = KeyLengthGOST
 	default:
 		expectedLength = KeyLengthEd25519
@@ -66,7 +66,7 @@ func (key *PublicKey) verifySignature(
 	signature []byte,
 ) bool {
 	switch key.Type {
-	case aclproto.KeyType_ecdsa.String():
+	case pb.KeyType_ecdsa.String():
 		return verifyECDSASignature(key.Bytes, message, signature)
 	default:
 		return verifyEd25519Signature(key.Bytes, message, signature)

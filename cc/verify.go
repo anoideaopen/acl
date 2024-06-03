@@ -7,6 +7,7 @@ import (
 
 	"github.com/anoideaopen/acl/helpers"
 	aclproto "github.com/anoideaopen/acl/proto"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ed25519"
 )
@@ -18,7 +19,7 @@ func verifyValidatorSignature(
 ) bool {
 	decodedKey := base58.Decode(validator.GetPublicKey())
 	switch validator.GetKeyType() {
-	case aclproto.KeyType_ecdsa.String():
+	case pb.KeyType_ecdsa.String():
 		return verifyECDSASignature(decodedKey, message, signature)
 	default:
 		return verifyEd25519Signature(decodedKey, message, signature)

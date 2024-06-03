@@ -93,64 +93,23 @@ func (c *ACL) CheckKeys(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	if resp, ok := c.tryCheckAdditionalKey(stub, args); ok {
 		return resp
 	}
-	// -----------------------------------------------------
 
-	argsNum := len(args)
-	if argsNum < 1 {
-		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: N pubkeys", argsNum))
-	}
-
-	if len(args[0]) == 0 {
-		return shim.Error(errs.ErrEmptyPubKey)
-	}
-
-	const multiSignSeparator = "/"
-	strKeys := strings.Split(args[0], multiSignSeparator)
-	if err := helpers.CheckKeysArr(strKeys); err != nil {
-		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
-	}
-	pKeys, err := helpers.KeyStringToSortedHashedHex(strKeys)
-	if err != nil {
-		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
-	}
-
-	addr, err := getAddressByHashedKeys(stub, pKeys)
+	request, err := checkKeysRequestFromArguments(args)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	var info *pb.AccountInfo
-	if len(strKeys) == 1 {
-		info, err = fetchAccountInfoFromPubKeys(stub, strKeys)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-	} else {
-		// for multi keys
-		info = &pb.AccountInfo{}
-		for _, key := range strKeys {
-			strKeys = strings.Split(key, "/")
-			info, err = fetchAccountInfoFromPubKeys(stub, strKeys)
-			if err != nil {
-				return shim.Error(err.Error())
-			}
-
-			if isAccountInfoInBlockedLists(info) {
-				// stop handling
-				break
-			}
-		}
-	}
-
-	result, err := proto.Marshal(&pb.AclResponse{
-		Account: info,
-		Address: addr,
-	})
+	result, err := checkKeys(stub, request)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	return shim.Success(result)
+	marshalled, err := proto.Marshal(&result)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(marshalled)
 }
 
 // CheckAddress checks if the address is grayListed

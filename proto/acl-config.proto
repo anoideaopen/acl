@@ -6,12 +6,6 @@ import "validate/validate.proto";
 
 option go_package = "github.com/anoideaopen/acl/proto";
 
-enum KeyType {
-  ed25519 = 0;
-  ecdsa = 1;
-  gost = 2;
-}
-
 // Config stores ACL configuration parameters.
 message ACLConfig {
   // ccName - should be empty, field will be filled while Init transaction, filler will be ignored

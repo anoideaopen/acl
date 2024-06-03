@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	aclproto "github.com/anoideaopen/acl/proto"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -230,7 +231,7 @@ func ParseBool(text string) bool {
 }
 
 func ValidatePublicKeyType(keyType string, notAllowedTypes ...string) bool {
-	_, ok := aclproto.KeyType_value[keyType]
+	_, ok := pb.KeyType_value[keyType]
 	if !ok {
 		return false
 	}
@@ -243,5 +244,5 @@ func ValidatePublicKeyType(keyType string, notAllowedTypes ...string) bool {
 }
 
 func DefaultPublicKeyType() string {
-	return aclproto.KeyType_ed25519.String()
+	return pb.KeyType_ed25519.String()
 }

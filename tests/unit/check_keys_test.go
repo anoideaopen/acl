@@ -2,23 +2,30 @@ package unit
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/sha3"
 )
 
 type seriesCheckKeys struct {
 	testPubKey  string
+	testPrivKey string
 	testAddress string
 	respStatus  int32
 	kycHash     string
 	testUserID  string
 	errorMsg    string
+	keyTypes    []pb.KeyType
 }
 
 // add dynamic errorMsg in series
@@ -36,6 +43,7 @@ func TestCheckKeysPublicKeyEqual43Symbols(t *testing.T) {
 		kycHash:     "kycHash",
 		testUserID:  "testUserID",
 		errorMsg:    "",
+		keyTypes:    []pb.KeyType{pb.KeyType_ed25519},
 	}
 
 	checkKeys(t, s)
@@ -51,6 +59,7 @@ func TestCheckKeysPublicKeyEqual44Symbols(t *testing.T) {
 		kycHash:     "kycHash",
 		testUserID:  "testUserID",
 		errorMsg:    "",
+		keyTypes:    []pb.KeyType{pb.KeyType_ed25519},
 	}
 
 	checkKeys(t, s)
@@ -162,7 +171,7 @@ func TestCheckKeysWithSpecialSymbol(t *testing.T) {
 		testUserID:  "testUserID",
 	}
 
-	errorMsg := "empty public key detected, input: '" +
+	errorMsg := "encoded base 58 public key is empty, input: '" +
 		s.testPubKey + "'"
 	s.SetError(errorMsg)
 
@@ -180,11 +189,34 @@ func TestCheckKeysDuplicateKeys(t *testing.T) {
 		testUserID:  "testUserID",
 	}
 
-	errorMsg := "duplicated public keys, input: '" +
-		s.testPubKey + "'"
+	errorMsg := "duplicated public keys"
 	s.SetError(errorMsg)
 
 	checkKeys(t, s)
+}
+
+func TestCheckKeys(t *testing.T) {
+	t.Parallel()
+
+	s := &seriesCheckKeys{
+		testPubKey: common.TestSigners[0].PublicKey + "/" +
+			common.TestSigners[1].PublicKey + "/" +
+			common.TestSigners[2].PublicKey,
+		testPrivKey: common.TestSigners[0].PrivateKey + "/" +
+			common.TestSigners[1].PrivateKey + "/" +
+			common.TestSigners[2].PrivateKey,
+		testAddress: "2MfmUGiQLGVHLrCaZ7WVv5NdzmGyzH6uiDfc8fH4Nrwipn3DA6",
+		respStatus:  int32(shim.OK),
+		kycHash:     kycHash,
+		testUserID:  testUserID,
+		keyTypes: []pb.KeyType{
+			pb.KeyType(pb.KeyType_value[common.TestSigners[0].KeyType]),
+			pb.KeyType(pb.KeyType_value[common.TestSigners[1].KeyType]),
+			pb.KeyType(pb.KeyType_value[common.TestSigners[2].KeyType]),
+		},
+	}
+
+	checkMultiKeys(t, s)
 }
 
 func checkKeys(t *testing.T, ser *seriesCheckKeys) {
@@ -212,7 +244,7 @@ func checkKeys(t *testing.T, ser *seriesCheckKeys) {
 	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.testPubKey)})
 	require.Equal(t, ser.respStatus, result.Status)
 
-	require.Equal(t, ser.errorMsg, result.Message)
+	require.Contains(t, result.Message, ser.errorMsg)
 
 	// add field validation only for valid structures
 	if valid {
@@ -226,5 +258,81 @@ func checkKeys(t *testing.T, ser *seriesCheckKeys) {
 		require.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
 		require.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
 		require.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+		require.Equal(t, len(ser.keyTypes), len(response.KeyTypes))
+		for i := range ser.keyTypes {
+			require.Equal(t, ser.keyTypes[i], response.KeyTypes[i])
+		}
+	}
+}
+
+func checkMultiKeys(t *testing.T, ser *seriesCheckKeys) {
+	const keyDelimiter = "/"
+	// add user first
+	stub := common.StubCreateAndInit(t)
+
+	pubKeys := strings.Split(ser.testPubKey, keyDelimiter)
+	privateKeys := strings.Split(ser.testPrivKey, keyDelimiter)
+
+	for i, key := range pubKeys {
+		resp := stub.MockInvoke(
+			"0",
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(key),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+				[]byte(ser.keyTypes[i].String()),
+			},
+		)
+		require.Equal(t, int32(shim.OK), resp.Status)
+	}
+
+	pubKeysBytes := make([][]byte, 0, len(pubKeys))
+	for _, pubKey := range pubKeys {
+		pubKeysBytes = append(pubKeysBytes, []byte(pubKey))
+	}
+
+	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
+	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnAddMultisig, strconv.Itoa(len(pubKeys)), nonce}, pubKeys...), "")))
+
+	signatures := make([][]byte, 0, len(privateKeys))
+	for _, privateKey := range privateKeys {
+		signatures = append(signatures, common.HexEncodedSignature(base58.Decode(privateKey), message[:]))
+	}
+
+	resp := stub.MockInvoke(
+		"0",
+		append(append(
+			append([][]byte{},
+				[]byte(common.FnAddMultisig),
+				[]byte(strconv.Itoa(len(pubKeys))),
+				[]byte(nonce)),
+			pubKeysBytes...,
+		), signatures...),
+	)
+	// then check that the user has been added
+	require.Equal(t, int32(shim.OK), resp.Status)
+
+	// check
+	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.testPubKey)})
+	require.Equal(t, ser.respStatus, result.Status)
+
+	require.Contains(t, result.Message, ser.errorMsg)
+
+	// add field validation only for valid structures
+	response := &pb.AclResponse{}
+	require.NoError(t, proto.Unmarshal(result.Payload, response))
+	require.NotNil(t, response.Address)
+	require.NotNil(t, response.Account)
+	require.Equal(t, ser.testAddress, response.Address.Address.AddrString(), "invalid address")
+	require.Equal(t, kycHash, response.Account.KycHash)
+	require.False(t, response.Account.GrayListed)
+	require.Equal(t, "", response.Address.Address.UserID, "invalid userID")
+	require.Equal(t, false, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
+	require.Equal(t, true, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+	require.Equal(t, len(ser.keyTypes), len(response.KeyTypes))
+	for i := range ser.keyTypes {
+		require.Equal(t, ser.keyTypes[i], response.KeyTypes[i])
 	}
 }
