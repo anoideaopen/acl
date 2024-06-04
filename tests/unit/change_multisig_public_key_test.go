@@ -276,10 +276,6 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 		decodedMessage := sha3.Sum256([]byte(strings.Join(append(srcArgs, pksOfValidators...), "")))
 		signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
 
-		//mockValidatorsPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
-		//for pubKey := range common.MockValidatorKeys {
-		//	mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
-		//}
 		for i, vpk := range pksOfValidators {
 			require.True(t, helpers.IsValidator(common.TestInitConfig.Validators, vpk), "pk %s does not belong to any validator", vpk)
 			decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])

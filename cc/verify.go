@@ -2,6 +2,7 @@ package cc
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"math/big"
 
@@ -9,7 +10,6 @@ import (
 	aclproto "github.com/anoideaopen/acl/proto"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
-	"golang.org/x/crypto/ed25519"
 )
 
 func verifyValidatorSignature(
