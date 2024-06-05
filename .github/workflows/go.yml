@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VER: 1.22.3
+  GO_VER: 1.22.4
   GO_VER_OLD: 1.18.7
 
 jobs:
@@ -67,7 +67,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version:
-          - '1.22.3'
+          - '1.22.4'
           - '1.18.7'
     runs-on: 'ubuntu-20.04'
     steps:
