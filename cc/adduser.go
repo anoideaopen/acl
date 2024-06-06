@@ -64,6 +64,8 @@ func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
 		requiredArgumentsCountWithKeyType
 	)
 
+	const True = "true"
+
 	argsNum := len(args)
 	if argsNum != requiredArgumentsCount && argsNum != requiredArgumentsCountWithKeyType {
 		return AddUserRequest{}, fmt.Errorf(
@@ -87,7 +89,7 @@ func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
 		return AddUserRequest{}, errors.New("empty userID")
 	}
 
-	isIndustrial := helpers.ParseBool(args[indexIsIndustrial])
+	isIndustrial := args[indexIsIndustrial] == True
 
 	if argsNum == requiredArgumentsCountWithKeyType {
 		publicKey.Type = args[indexPublicKeyType]

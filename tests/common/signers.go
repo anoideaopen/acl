@@ -14,24 +14,24 @@ type TestSigner struct {
 	KeyType    string
 }
 
-func (signer *TestSigner) Sign(message []byte) []byte {
+func (s *TestSigner) Sign(message []byte) []byte {
 	const (
 		keyTypeEd25519 = "ed25519"
 		keyTypeECDSA   = "ecdsa"
 	)
 
-	switch signer.KeyType {
+	switch s.KeyType {
 	case keyTypeEd25519:
-		return ed25519.Sign([]byte(signer.PrivateKey), message)
+		return ed25519.Sign([]byte(s.PrivateKey), message)
 
 	case keyTypeECDSA:
 		ecdsaKey := &ecdsa.PrivateKey{
 			PublicKey: ecdsa.PublicKey{
 				Curve: elliptic.P256(),
 			},
-			D: new(big.Int).SetBytes([]byte(signer.PrivateKey)),
+			D: new(big.Int).SetBytes([]byte(s.PrivateKey)),
 		}
-		ecdsaKey.PublicKey.X, ecdsaKey.PublicKey.Y = elliptic.P256().ScalarBaseMult([]byte(signer.PrivateKey))
+		ecdsaKey.PublicKey.X, ecdsaKey.PublicKey.Y = elliptic.P256().ScalarBaseMult([]byte(s.PrivateKey))
 
 		signature, err := ecdsa.SignASN1(rand.Reader, ecdsaKey, message)
 		if err != nil {

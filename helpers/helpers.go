@@ -225,11 +225,6 @@ func ValidateKeyLength(key []byte) bool {
 	return false
 }
 
-func ParseBool(text string) bool {
-	const True = "true"
-	return text == True
-}
-
 func ValidatePublicKeyType(keyType string, notAllowedTypes ...string) bool {
 	_, ok := pb.KeyType_value[keyType]
 	if !ok {

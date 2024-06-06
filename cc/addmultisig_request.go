@@ -49,7 +49,7 @@ type AddMultisigRequest struct {
 	Nonce                   string
 }
 
-func (request *AddMultisigRequest) parseArguments(
+func (r *AddMultisigRequest) parseArguments(
 	stub shim.ChaincodeStubInterface,
 	args []string,
 	argOrder []string,
@@ -69,45 +69,45 @@ func (request *AddMultisigRequest) parseArguments(
 	}
 
 	if index := indexOf(argRequestID, argOrder); index != indexNotFound {
-		request.RequestID = args[index]
+		r.RequestID = args[index]
 	}
 
 	if index := indexOf(argChaincodeID, argOrder); index != indexNotFound {
-		request.ChaincodeName = args[index]
-		if request.ChaincodeName != chaincodeName {
+		r.ChaincodeName = args[index]
+		if r.ChaincodeName != chaincodeName {
 			return errors.New("incorrect chaincode name")
 		}
 	}
 
 	if index := indexOf(argChannelID, argOrder); index != indexNotFound {
-		request.ChannelName = args[index]
-		if request.ChannelName != stub.GetChannelID() {
+		r.ChannelName = args[index]
+		if r.ChannelName != stub.GetChannelID() {
 			return errors.New("incorrect channel")
 		}
 	}
 
 	if index := indexOf(argKeysRequired, argOrder); index != indexNotFound {
-		request.RequiredSignaturesCount, err = strconv.Atoi(args[index])
+		r.RequiredSignaturesCount, err = strconv.Atoi(args[index])
 		if err != nil {
 			return fmt.Errorf("failed to parse N: %w", err)
 		}
-		if request.RequiredSignaturesCount < minSignaturesRequired {
+		if r.RequiredSignaturesCount < minSignaturesRequired {
 			return fmt.Errorf("not enough signatures required, should be at least %d", minSignaturesRequired)
 		}
 	}
 
 	if index := indexOf(argNonce, argOrder); index != indexNotFound {
-		request.Nonce = args[index]
+		r.Nonce = args[index]
 	}
 
 	if index := indexOf(argKeysAndSignatures, argOrder); index != indexNotFound {
-		if err = request.parseKeysAndSignatures(stub, args[index:], signaturesInBase58); err != nil {
+		if err = r.parseKeysAndSignatures(stub, args[index:], signaturesInBase58); err != nil {
 			return fmt.Errorf("failed parsing keys and signatures from arguments: %w", err)
 		}
 	}
 
-	request.Message = message(operation, args[:len(args)-len(request.PublicKeys)]...)
-	request.SignedTx = append(
+	r.Message = message(operation, args[:len(args)-len(r.PublicKeys)]...)
+	r.SignedTx = append(
 		[]string{operation},
 		args...,
 	)
@@ -115,7 +115,7 @@ func (request *AddMultisigRequest) parseArguments(
 	return nil
 }
 
-func (request *AddMultisigRequest) parseKeysAndSignatures(
+func (r *AddMultisigRequest) parseKeysAndSignatures(
 	stub shim.ChaincodeStubInterface,
 	keysAndSignatures []string,
 	signaturesInBase58 bool,
@@ -127,11 +127,11 @@ func (request *AddMultisigRequest) parseKeysAndSignatures(
 	}
 
 	numberOfKeys := len(keysAndSignatures) / 2
-	if numberOfKeys < request.RequiredSignaturesCount {
+	if numberOfKeys < r.RequiredSignaturesCount {
 		return fmt.Errorf(
 			"number of pubKeys (%d) is less than required (%d)",
 			numberOfKeys,
-			request.RequiredSignaturesCount,
+			r.RequiredSignaturesCount,
 		)
 	}
 
@@ -139,21 +139,21 @@ func (request *AddMultisigRequest) parseKeysAndSignatures(
 		return fmt.Errorf("failed checking public keys: %w", err)
 	}
 
-	request.PublicKeys = make([]PublicKey, numberOfKeys)
-	request.Signatures = make([][]byte, numberOfKeys)
+	r.PublicKeys = make([]PublicKey, numberOfKeys)
+	r.Signatures = make([][]byte, numberOfKeys)
 	for i := 0; i < numberOfKeys; i++ {
-		if request.PublicKeys[i], err = publicKeyFromBase58String(keysAndSignatures[i]); err != nil {
+		if r.PublicKeys[i], err = publicKeyFromBase58String(keysAndSignatures[i]); err != nil {
 			return fmt.Errorf("failed decoding public key: %w", err)
 		}
 
-		if request.PublicKeys[i].Type, err = readPublicKeyType(stub, request.PublicKeys[i].HashInHex); err != nil {
+		if r.PublicKeys[i].Type, err = readPublicKeyType(stub, r.PublicKeys[i].HashInHex); err != nil {
 			return fmt.Errorf("failed reading type of a public key: %w", err)
 		}
 
 		if signaturesInBase58 {
-			request.Signatures[i] = base58.Decode(keysAndSignatures[i+numberOfKeys])
+			r.Signatures[i] = base58.Decode(keysAndSignatures[i+numberOfKeys])
 		} else {
-			if request.Signatures[i], err = hex.DecodeString(keysAndSignatures[i+numberOfKeys]); err != nil {
+			if r.Signatures[i], err = hex.DecodeString(keysAndSignatures[i+numberOfKeys]); err != nil {
 				return fmt.Errorf("failed decodign signatures: %w", err)
 			}
 		}
