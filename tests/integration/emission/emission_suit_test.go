@@ -1,4 +1,4 @@
-package config_test
+package emission
 
 import (
 	"encoding/json"
@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestConfig(t *testing.T) {
+func TestEmission(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ACL config Suite")
+	RunSpecs(t, "ACL emission suite")
 }
 
 var (
@@ -43,5 +43,5 @@ var _ = SynchronizedAfterSuite(func() {
 })
 
 func StartPort() int {
-	return integration.ConfigBasePort.StartPortForNode()
+	return integration.SmartBFTBasePort.StartPortForNode()
 }

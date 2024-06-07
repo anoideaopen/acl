@@ -1,4 +1,4 @@
-package transfer_test
+package config
 
 import (
 	"encoding/json"
@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestTransfer(t *testing.T) {
+func TestConfig(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ACL transfer Suite")
+	RunSpecs(t, "ACL config suite")
 }
 
 var (
@@ -43,5 +43,5 @@ var _ = SynchronizedAfterSuite(func() {
 })
 
 func StartPort() int {
-	return integration.SmartBFTBasePort.StartPortForNode()
+	return integration.ConfigBasePort.StartPortForNode()
 }
