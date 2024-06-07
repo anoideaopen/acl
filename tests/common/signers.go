@@ -8,6 +8,11 @@ import (
 	"math/big"
 )
 
+const (
+	KeyTypeEd25519 = "ed25519"
+	KeyTypeECDSA   = "ecdsa"
+)
+
 type TestSigner struct {
 	PublicKey  string
 	PrivateKey string
@@ -15,16 +20,11 @@ type TestSigner struct {
 }
 
 func (s *TestSigner) Sign(message []byte) []byte {
-	const (
-		keyTypeEd25519 = "ed25519"
-		keyTypeECDSA   = "ecdsa"
-	)
-
 	switch s.KeyType {
-	case keyTypeEd25519:
+	case KeyTypeEd25519:
 		return ed25519.Sign([]byte(s.PrivateKey), message)
 
-	case keyTypeECDSA:
+	case KeyTypeECDSA:
 		ecdsaKey := &ecdsa.PrivateKey{
 			PublicKey: ecdsa.PublicKey{
 				Curve: elliptic.P256(),

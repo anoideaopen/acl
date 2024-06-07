@@ -40,13 +40,40 @@ type AddrsWithPagination struct {
 // args[1] - Know Your Client (KYC) hash
 // args[2] - user identifier
 // args[3] - user can do industrial operation or not (boolean)
-// args[4] - key type: ed25519, ecdsa, gost (optional)
 func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	const withoutPublicKeyType = false
+
 	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
-	request, err := addUserRequestFromArguments(args)
+	request, err := addUserRequestFromArguments(args, withoutPublicKeyType)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	if err = addUser(stub, request); err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(nil)
+}
+
+// AddUserWithPublicKeyType adds user by public key to the ACL
+// args is slice of parameters:
+// args[0] - encoded base58 user publicKey
+// args[1] - Know Your Client (KYC) hash
+// args[2] - user identifier
+// args[3] - user can do industrial operation or not (boolean)
+// args[4] - key type: ed25519, ecdsa, gost
+func (c *ACL) AddUserWithPublicKeyType(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	const withPublicKeyType = true
+
+	if err := c.verifyAccess(stub); err != nil {
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
+	}
+
+	request, err := addUserRequestFromArguments(args, withPublicKeyType)
 	if err != nil {
 		return shim.Error(err.Error())
 	}

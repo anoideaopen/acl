@@ -245,47 +245,6 @@ func TestAddUserEmptyUserID(t *testing.T) {
 	validationResultAddUser(t, stub, resp, s)
 }
 
-func TestAddUserECDSAPublicKey(t *testing.T) {
-	t.Parallel()
-
-	const (
-		testKeyECDSA = "3VeCgHy4GFyMGW26sfc797eUUPHBtmngT4t4E2tx87d627JMmrBcsUgKnaDBtozuRp4Hvr1VUc7E8niMFfDdU9JG"
-		testAddress  = "2gNhUTgbNJEqnwFfrWLpdtQeGj2hxVz7d3VgzNJBHjpPpDhMVo"
-		keyTypeECDSA = "ecdsa"
-	)
-
-	t.Run("[negative] add user with wrong key length", func(t *testing.T) {
-		s := &seriesAddUser{
-			testPubKey:  testKeyECDSA,
-			testAddress: testAddress,
-			kycHash:     kycHash,
-			testUserID:  testUserID,
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "unexpected key length",
-		}
-
-		stub := common.StubCreateAndInit(t)
-		resp := addUser(stub, s)
-		validationResultAddUser(t, stub, resp, s)
-	})
-
-	t.Run("add user with ecdsa key", func(t *testing.T) {
-		s := &seriesAddUser{
-			testPubKey:     testKeyECDSA,
-			testAddress:    testAddress,
-			kycHash:        kycHash,
-			testUserID:     testUserID,
-			testPubKeyType: keyTypeECDSA,
-			respStatus:     int32(shim.OK),
-			errorMsg:       "",
-		}
-
-		stub := common.StubCreateAndInit(t)
-		resp := addUser(stub, s)
-		validationResultAddUser(t, stub, resp, s)
-	})
-}
-
 func TestAddUserAddExistedUser(t *testing.T) {
 	stub := common.StubCreateAndInit(t)
 
@@ -340,8 +299,18 @@ func addUser(stub *shimtest.MockStub, ser *seriesAddUser) peer.Response {
 		[]byte(ser.testUserID),
 		[]byte(stateTrue),
 	}
-	if ser.testPubKeyType != "" {
-		invokeArgs = append(invokeArgs, []byte(ser.testPubKeyType))
+	resp := stub.MockInvoke("0", invokeArgs)
+	return resp
+}
+
+func addUserWithPublicKeyType(stub *shimtest.MockStub, ser *seriesAddUser) peer.Response {
+	invokeArgs := [][]byte{
+		[]byte(common.FnAddUserWithPublicKeyType),
+		[]byte(ser.testPubKey),
+		[]byte(ser.kycHash),
+		[]byte(ser.testUserID),
+		[]byte(stateTrue),
+		[]byte(ser.testPubKeyType),
 	}
 	resp := stub.MockInvoke("0", invokeArgs)
 	return resp

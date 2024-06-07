@@ -123,15 +123,15 @@ func TestAddMultisigPubKeyWithSpecialSymbols(t *testing.T) {
 func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey, privateKey := range common.MockUsersKeys {
 		pubKeys = append(pubKeys, pubKey)
 		privateKeys = append(privateKeys, privateKey)
 	}
 
 	// add multisig members first
-	for _, signer := range common.TestSigners {
+	for _, signer := range common.TestUsers {
 		resp := stub.MockInvoke(
 			"0",
 			[][]byte{
@@ -140,7 +140,6 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 				[]byte(kycHash),
 				[]byte(testUserID),
 				[]byte(stateTrue),
-				[]byte(signer.KeyType),
 			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
@@ -205,24 +204,23 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 func TestAddMultisig(t *testing.T) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey, privateKey := range common.MockUsersKeys {
 		pubKeys = append(pubKeys, pubKey)
 		privateKeys = append(privateKeys, privateKey)
 	}
 
 	// add multisig members first
-	for _, validator := range common.TestInitConfig.Validators {
+	for _, signer := range common.TestUsers {
 		resp := stub.MockInvoke(
 			"0",
 			[][]byte{
 				[]byte(common.FnAddUser),
-				[]byte(validator.PublicKey),
+				[]byte(signer.PublicKey),
 				[]byte(kycHash),
 				[]byte(testUserID),
 				[]byte(stateTrue),
-				[]byte(validator.KeyType),
 			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
@@ -400,24 +398,23 @@ func TestAddMultisig(t *testing.T) {
 func TestNonce(t *testing.T) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey, privateKey := range common.MockUsersKeys {
 		pubKeys = append(pubKeys, pubKey)
 		privateKeys = append(privateKeys, privateKey)
 	}
 
 	// add multisig members first
-	for _, validator := range common.TestInitConfig.Validators {
+	for _, user := range common.TestUsers {
 		resp := stub.MockInvoke(
 			"0",
 			[][]byte{
 				[]byte(common.FnAddUser),
-				[]byte(validator.PublicKey),
+				[]byte(user.PublicKey),
 				[]byte(kycHash),
 				[]byte(testUserID),
 				[]byte(stateTrue),
-				[]byte(validator.KeyType),
 			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)

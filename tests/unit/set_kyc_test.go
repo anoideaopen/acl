@@ -89,20 +89,17 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *seriesSetKyc) peer.Respo
 
 	// change KYC
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
-	pKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey := range common.MockValidatorKeys {
-		pKeys = append(pKeys, pubKey)
+	pKeys := make([]string, 0, len(common.TestUsersDifferentKeyTypes))
+	for _, user := range common.TestUsersDifferentKeyTypes {
+		pKeys = append(pKeys, user.PublicKey)
 	}
-
-	// hashed := sha3.Sum256(base58.Decode(pkey))
-	// addr := base58.CheckEncode(hashed[1:], hashed[0])
 
 	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnSetKYC, ser.testAddress, ser.newKYC, nonce}, pKeys...), "")))
 
 	vPKeys := make([][]byte, 0, len(pKeys))
 	vSignatures := make([][]byte, 0, len(pKeys))
 	for _, pubKey := range pKeys {
-		sKey := common.MockValidatorKeys[pubKey]
+		sKey := common.MockValidatorsKeys[pubKey]
 		vPKeys = append(vPKeys, []byte(pubKey))
 		vSignatures = append(vSignatures, common.HexEncodedSignature(base58.Decode(sKey), message[:]))
 	}

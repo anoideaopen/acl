@@ -147,24 +147,21 @@ func TestAddMultisigWithBase58SignaturePubKeyWithSpecialSymbols(t *testing.T) {
 func AddMultisigWithBase58Signature(t *testing.T, ser *seriesAddMultisigWithBase58Signature) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
-		pubKeys = append(pubKeys, pubKey)
-		privateKeys = append(privateKeys, privateKey)
-	}
+	pubKeys := make([]string, 0, len(common.TestUsers))
+	privateKeys := make([]string, 0, len(common.TestUsers))
 
 	// add multisig members first
-	for _, validator := range common.TestInitConfig.Validators {
+	for _, user := range common.TestUsers {
+		pubKeys = append(pubKeys, user.PublicKey)
+		privateKeys = append(privateKeys, user.PrivateKey)
 		resp := stub.MockInvoke(
 			"0",
 			[][]byte{
 				[]byte(common.FnAddUser),
-				[]byte(validator.PublicKey),
+				[]byte(user.PublicKey),
 				[]byte(kycHash),
 				[]byte(testUserID),
 				[]byte(stateTrue),
-				[]byte(validator.KeyType),
 			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
@@ -230,24 +227,21 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *seriesAddMultisigWithBase
 func TestAddMultisigWithBase58Signature(t *testing.T) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
-		pubKeys = append(pubKeys, pubKey)
-		privateKeys = append(privateKeys, privateKey)
-	}
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
 
 	// add multisig members first
-	for _, validator := range common.TestInitConfig.Validators {
+	for _, user := range common.TestUsers {
+		pubKeys = append(pubKeys, user.PublicKey)
+		privateKeys = append(privateKeys, user.PrivateKey)
 		resp := stub.MockInvoke(
 			"0",
 			[][]byte{
 				[]byte(common.FnAddUser),
-				[]byte(validator.PublicKey),
+				[]byte(user.PublicKey),
 				[]byte(kycHash),
 				[]byte(testUserID),
 				[]byte(stateTrue),
-				[]byte(validator.KeyType),
 			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)

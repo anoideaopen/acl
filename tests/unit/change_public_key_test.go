@@ -204,9 +204,9 @@ func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *seriesChangePub
 	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
-	pKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey := range common.MockValidatorKeys {
-		pKeys = append(pKeys, pubKey)
+	pKeys := make([]string, len(common.TestUsersDifferentKeyTypes))
+	for i, user := range common.TestUsersDifferentKeyTypes {
+		pKeys[i] = user.PublicKey
 	}
 
 	duplicateKeysString := make([]string, 0, len(pKeys))
@@ -294,8 +294,8 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
-	pKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey := range common.MockValidatorKeys {
+	pKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey := range common.MockUsersKeys {
 		pKeys = append(pKeys, pubKey)
 	}
 

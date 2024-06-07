@@ -50,7 +50,7 @@ func addUser(stub shim.ChaincodeStubInterface, request AddUserRequest) error {
 	return nil
 }
 
-func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
+func addUserRequestFromArguments(args []string, withPublicKeyType bool) (AddUserRequest, error) {
 	const (
 		indexPublicKey = iota
 		indexKYCHash
@@ -60,17 +60,22 @@ func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
 	)
 
 	const (
-		requiredArgumentsCount = iota + indexPublicKeyType
+		requiredArgumentsCountWithoutKeyType = iota + indexPublicKeyType
 		requiredArgumentsCountWithKeyType
 	)
 
 	const True = "true"
 
+	requiredArgumentsCount := requiredArgumentsCountWithoutKeyType
+	if withPublicKeyType {
+		requiredArgumentsCount = requiredArgumentsCountWithKeyType
+	}
+
 	argsNum := len(args)
-	if argsNum != requiredArgumentsCount && argsNum != requiredArgumentsCountWithKeyType {
+	if argsNum != requiredArgumentsCount {
 		return AddUserRequest{}, fmt.Errorf(
-			"incorrect number of arguments: %d, expected %d or %d",
-			argsNum, requiredArgumentsCount, requiredArgumentsCountWithKeyType,
+			"incorrect number of arguments: %d, expected %d",
+			argsNum, requiredArgumentsCount,
 		)
 	}
 
@@ -91,7 +96,7 @@ func addUserRequestFromArguments(args []string) (AddUserRequest, error) {
 
 	isIndustrial := args[indexIsIndustrial] == True
 
-	if argsNum == requiredArgumentsCountWithKeyType {
+	if withPublicKeyType {
 		publicKey.Type = args[indexPublicKeyType]
 		if !helpers.ValidatePublicKeyType(publicKey.Type) {
 			return AddUserRequest{}, fmt.Errorf("unknow public key type %s", args[indexPublicKeyType])

@@ -199,20 +199,20 @@ func TestCheckKeys(t *testing.T) {
 	t.Parallel()
 
 	s := &seriesCheckKeys{
-		testPubKey: common.TestSigners[0].PublicKey + "/" +
-			common.TestSigners[1].PublicKey + "/" +
-			common.TestSigners[2].PublicKey,
-		testPrivKey: common.TestSigners[0].PrivateKey + "/" +
-			common.TestSigners[1].PrivateKey + "/" +
-			common.TestSigners[2].PrivateKey,
-		testAddress: "2MfmUGiQLGVHLrCaZ7WVv5NdzmGyzH6uiDfc8fH4Nrwipn3DA6",
+		testPubKey: common.TestUsers[0].PublicKey + "/" +
+			common.TestUsers[1].PublicKey + "/" +
+			common.TestUsers[2].PublicKey,
+		testPrivKey: common.TestUsers[0].PrivateKey + "/" +
+			common.TestUsers[1].PrivateKey + "/" +
+			common.TestUsers[2].PrivateKey,
+		testAddress: "K7n4n5Pn8r6EK83UaUnzk56DLoGywjYQfYxM4hVVSp9sBau42",
 		respStatus:  int32(shim.OK),
 		kycHash:     kycHash,
 		testUserID:  testUserID,
 		keyTypes: []pb.KeyType{
-			pb.KeyType(pb.KeyType_value[common.TestSigners[0].KeyType]),
-			pb.KeyType(pb.KeyType_value[common.TestSigners[1].KeyType]),
-			pb.KeyType(pb.KeyType_value[common.TestSigners[2].KeyType]),
+			pb.KeyType(pb.KeyType_value[common.TestUsers[0].KeyType]),
+			pb.KeyType(pb.KeyType_value[common.TestUsers[1].KeyType]),
+			pb.KeyType(pb.KeyType_value[common.TestUsers[2].KeyType]),
 		},
 	}
 
@@ -273,7 +273,7 @@ func checkMultiKeys(t *testing.T, ser *seriesCheckKeys) {
 	pubKeys := strings.Split(ser.testPubKey, keyDelimiter)
 	privateKeys := strings.Split(ser.testPrivKey, keyDelimiter)
 
-	for i, key := range pubKeys {
+	for _, key := range pubKeys {
 		resp := stub.MockInvoke(
 			"0",
 			[][]byte{
@@ -282,7 +282,6 @@ func checkMultiKeys(t *testing.T, ser *seriesCheckKeys) {
 				[]byte(kycHash),
 				[]byte(testUserID),
 				[]byte(stateTrue),
-				[]byte(ser.keyTypes[i].String()),
 			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)

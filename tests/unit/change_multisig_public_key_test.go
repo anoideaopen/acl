@@ -152,24 +152,21 @@ func TestChangeMultisigPublicKeyWithSpecialSymbols(t *testing.T) {
 func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.TestSigners))
-	privateKeys := make([]string, 0, len(common.TestSigners))
-	for _, signer := range common.TestSigners {
-		pubKeys = append(pubKeys, signer.PublicKey)
-		privateKeys = append(privateKeys, signer.PrivateKey)
-	}
+	pubKeys := make([]string, 0, len(common.TestUsers))
+	privateKeys := make([]string, 0, len(common.TestUsers))
 
 	// add multisig members first
-	for _, signer := range common.TestSigners {
+	for _, user := range common.TestUsers {
+		pubKeys = append(pubKeys, user.PublicKey)
+		privateKeys = append(privateKeys, user.PrivateKey)
 		resp := stub.MockInvoke(
 			"0",
 			[][]byte{
 				[]byte(common.FnAddUser),
-				[]byte(signer.PublicKey),
+				[]byte(user.PublicKey),
 				[]byte(kycHash),
 				[]byte(testUserID),
 				[]byte(stateTrue),
-				[]byte(signer.KeyType),
 			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
@@ -235,19 +232,26 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	}
 	newSeparatedPubKeys := strings.Join(newPubKeys, "/")
 
-	newNonce := strconv.Itoa(int(time.Now().Unix()*1000 + 1))
-	reason := "because..."
-	reasonID := "1"
-	message := sha3.Sum256([]byte(strings.Join(append([]string{"changeMultisigPublicKey", addrEncoded, oldKey, newSeparatedPubKeys, reason, reasonID, newNonce}, pubKeys...), "")))
+	validatorPublicKeys := make([]string, len(common.TestUsersDifferentKeyTypes))
+	for i, validator := range common.TestUsersDifferentKeyTypes {
+		validatorPublicKeys[i] = validator.PublicKey
+	}
 
-	signatures := make([][]byte, 0, len(privateKeys))
-	for _, privateKey := range privateKeys {
-		signatures = append(signatures, common.HexEncodedSignature(base58.Decode(privateKey), message[:]))
+	newNonce := strconv.Itoa(int(time.Now().Unix()*1000 + 1))
+	reason := common.DefaultReason
+	reasonID := "1"
+	message := sha3.Sum256([]byte(strings.Join(append([]string{"changeMultisigPublicKey", addrEncoded, oldKey, newSeparatedPubKeys, reason, reasonID, newNonce}, validatorPublicKeys...), "")))
+
+	validatorPublicKeysBytes := make([][]byte, len(common.TestUsersDifferentKeyTypes))
+	signatures := make([][]byte, len(common.TestUsersDifferentKeyTypes))
+	for i, validator := range common.TestUsersDifferentKeyTypes {
+		validatorPublicKeysBytes[i] = []byte(validator.PublicKey)
+		signatures[i] = common.HexEncodedSignature(base58.Decode(validator.PrivateKey), message[:])
 	}
 
 	// change key
 	changeResponse := stub.MockInvoke("0", append(
-		append([][]byte{[]byte("changeMultisigPublicKey"), []byte(addrEncoded), []byte(oldKey), []byte(newKey), []byte(reason), []byte(reasonID), []byte(newNonce)}, pubKeysBytes...), signatures...))
+		append([][]byte{[]byte("changeMultisigPublicKey"), []byte(addrEncoded), []byte(oldKey), []byte(newKey), []byte(reason), []byte(reasonID), []byte(newNonce)}, validatorPublicKeysBytes...), signatures...))
 	require.Equal(t, ser.respStatus, changeResponse.Status)
 
 	if !valid {
