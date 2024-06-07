@@ -2,6 +2,7 @@ package unit
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -17,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -82,8 +82,12 @@ func TestChangePublicKeyMoreThan44Symbols(t *testing.T) {
 		respStatus: int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.newPubKey + "'. decoded public key len is 33 but expected 32, input: '" + s.newPubKey + "'"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		s.newPubKey,
+		33,
+		s.newPubKey,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -99,8 +103,12 @@ func TestChangePublicKeyLessThan43Symbols(t *testing.T) {
 		respStatus: int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.newPubKey + "'. decoded public key len is 31 but expected 32, input: '" + s.newPubKey + "'"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		s.newPubKey,
+		31,
+		s.newPubKey,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -196,9 +204,9 @@ func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *seriesChangePub
 	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
-	pKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey := range common.MockValidatorKeys {
-		pKeys = append(pKeys, pubKey)
+	pKeys := make([]string, len(common.TestUsersDifferentKeyTypes))
+	for i, user := range common.TestUsersDifferentKeyTypes {
+		pKeys[i] = user.PublicKey
 	}
 
 	duplicateKeysString := make([]string, 0, len(pKeys))
@@ -265,16 +273,12 @@ func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp
 	decodedMessage := sha3.Sum256([]byte(strings.Join(append(srcArgs, pksOfValidators...), "")))
 	signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
 
-	mockValidatorsPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey := range common.MockValidatorKeys {
-		mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
-	}
 	for i, vpk := range pksOfValidators {
-		require.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk),
+		require.True(t, helpers.IsValidator(common.TestInitConfig.Validators, vpk),
 			"pk %s does not belong to any validator", vpk)
 		decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
 		require.NoError(t, err)
-		require.True(t, ed25519.Verify(base58.Decode(vpk), decodedMessage[:], decodedSignature),
+		require.True(t, common.VerifySignature(base58.Decode(vpk), decodedMessage[:], decodedSignature),
 			"the signature %s does not match the public key %s", signaturesOfValidators[i], vpk)
 	}
 }
@@ -290,8 +294,8 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 	require.Equal(t, int32(shim.OK), resp.Status)
 
 	// change pk
-	pKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey := range common.MockValidatorKeys {
+	pKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey := range common.MockUsersKeys {
 		pKeys = append(pKeys, pubKey)
 	}
 
@@ -330,7 +334,7 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 
 		respNewKey := stub.MockInvoke("0", invokeArgs)
 		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		require.True(t, strings.Contains(respNewKey.Message, "duplicate validators signatures are not allowed"))
+		require.Contains(t, respNewKey.Message, "duplicate validators signatures are not allowed")
 	})
 
 	t.Run("NEGATIVE. Number of pub keys does not match number of signatures", func(t *testing.T) {

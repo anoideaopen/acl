@@ -53,8 +53,8 @@ func TestAdditionalKeyManagement(t *testing.T) {
 
 	userAddress := userInfo.Address.Address.AddrString()
 
-	validatorPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for publicKey := range common.MockValidatorKeys {
+	validatorPublicKeys := make([]string, 0, len(common.TestUsersDifferentKeyTypes))
+	for publicKey := range common.MockValidatorsKeys {
 		validatorPublicKeys = append(validatorPublicKeys, publicKey)
 	}
 

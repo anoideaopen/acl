@@ -18,6 +18,7 @@ import (
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/helpers"
+	aclproto "github.com/anoideaopen/acl/proto"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
@@ -25,7 +26,6 @@ import (
 	"github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -41,88 +41,44 @@ type AddrsWithPagination struct {
 // args[2] - user identifier
 // args[3] - user can do industrial operation or not (boolean)
 func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	argsNum := len(args)
-	const requiredArgsCount = 4
-	if argsNum != requiredArgsCount {
-		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: public key, "+
-			"KYC hash, user ID, industrial attribute ('true' or 'false')", argsNum))
-	}
+	const withoutPublicKeyType = false
 
 	if err := c.verifyAccess(stub); err != nil {
 		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
-	encodedBase58PublicKey := args[0]
-	kycHash := args[1]
-	userID := args[2]
-	isIndustrial := args[3] == "true"
-
-	decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(kycHash) == 0 {
-		return shim.Error("empty kyc hash")
-	}
-	if len(userID) == 0 {
-		return shim.Error("empty userID")
-	}
-
-	hashed := sha3.Sum256(decodedPublicKey)
-	pKeys := hex.EncodeToString(hashed[:])
-	addr := base58.CheckEncode(hashed[1:], hashed[0])
-	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, pKeys)
+	request, err := addUserRequestFromArguments(args, withoutPublicKeyType)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	addrAlreadyInLedgerBytes, err := stub.GetState(pkToAddrCompositeKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(addrAlreadyInLedgerBytes) != 0 {
-		addrAlreadyInLedger := &pb.SignedAddress{}
-		err = proto.Unmarshal(addrAlreadyInLedgerBytes, addrAlreadyInLedger)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-		return shim.Error(fmt.Sprintf("The address %s associated with key %s already exists", addrAlreadyInLedger.GetAddress().AddrString(), pKeys))
-	}
-
-	addrToPkCompositeKey, err := compositekey.PublicKey(stub, addr)
-	if err != nil {
+	if err = addUser(stub, request); err != nil {
 		return shim.Error(err.Error())
 	}
 
-	addrMsg, err := proto.Marshal(&pb.SignedAddress{Address: &pb.Address{
-		UserID:       userID,
-		Address:      hashed[:],
-		IsIndustrial: isIndustrial,
-		IsMultisig:   false,
-	}})
-	if err != nil {
-		return shim.Error(err.Error())
+	return shim.Success(nil)
+}
+
+// AddUserWithPublicKeyType adds user by public key to the ACL
+// args is slice of parameters:
+// args[0] - encoded base58 user publicKey
+// args[1] - Know Your Client (KYC) hash
+// args[2] - user identifier
+// args[3] - user can do industrial operation or not (boolean)
+// args[4] - key type: ed25519, ecdsa, gost
+func (c *ACL) AddUserWithPublicKeyType(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	const withPublicKeyType = true
+
+	if err := c.verifyAccess(stub); err != nil {
+		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
 	}
 
-	if err = stub.PutState(pkToAddrCompositeKey, addrMsg); err != nil {
-		return shim.Error(err.Error())
-	}
-
-	// save address -> pubKey hash mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(pKeys)); err != nil {
-		return shim.Error(err.Error())
-	}
-
-	infoMsg, err := proto.Marshal(&pb.AccountInfo{KycHash: kycHash})
+	request, err := addUserRequestFromArguments(args, withPublicKeyType)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	cKey, err := compositekey.AccountInfo(stub, addr)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if err = stub.PutState(cKey, infoMsg); err != nil {
+	if err = addUser(stub, request); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -164,64 +120,23 @@ func (c *ACL) CheckKeys(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	if resp, ok := c.tryCheckAdditionalKey(stub, args); ok {
 		return resp
 	}
-	// -----------------------------------------------------
 
-	argsNum := len(args)
-	if argsNum < 1 {
-		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: N pubkeys", argsNum))
-	}
-
-	if len(args[0]) == 0 {
-		return shim.Error(errs.ErrEmptyPubKey)
-	}
-
-	const multiSignSeparator = "/"
-	strKeys := strings.Split(args[0], multiSignSeparator)
-	if err := helpers.CheckKeysArr(strKeys); err != nil {
-		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
-	}
-	pKeys, err := helpers.KeyStringToSortedHashedHex(strKeys)
-	if err != nil {
-		return shim.Error(fmt.Sprintf("%s, input: '%s'", err.Error(), args[0]))
-	}
-
-	addr, err := getAddressByHashedKeys(stub, pKeys)
+	request, err := checkKeysRequestFromArguments(args)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	var info *pb.AccountInfo
-	if len(strKeys) == 1 {
-		info, err = fetchAccountInfoFromPubKeys(stub, strKeys)
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-	} else {
-		// for multi keys
-		info = &pb.AccountInfo{}
-		for _, key := range strKeys {
-			strKeys = strings.Split(key, "/")
-			info, err = fetchAccountInfoFromPubKeys(stub, strKeys)
-			if err != nil {
-				return shim.Error(err.Error())
-			}
-
-			if isAccountInfoInBlockedLists(info) {
-				// stop handling
-				break
-			}
-		}
-	}
-
-	result, err := proto.Marshal(&pb.AclResponse{
-		Account: info,
-		Address: addr,
-	})
+	result, err := checkKeys(stub, request)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	return shim.Success(result)
+	marshalled, err := proto.Marshal(&result)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(marshalled)
 }
 
 // CheckAddress checks if the address is grayListed
@@ -435,6 +350,11 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) peer
 	if err != nil {
 		return shim.Error(err.Error())
 	}
+
+	if iterator == nil {
+		return shim.Error("empty address iterator")
+	}
+
 	defer func() {
 		_ = iterator.Close()
 	}()
@@ -499,10 +419,7 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	}
 
 	forAddrOrig := args[3]
-	if len(forAddrOrig) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
-	}
-	err := helpers.CheckPublicKey(forAddrOrig)
+	err := helpers.CheckAddress(forAddrOrig)
 	if err != nil {
 		return shim.Error("the user's address is not valid: " + err.Error())
 	}
@@ -812,7 +729,10 @@ func checkNonce(stub shim.ChaincodeStubInterface, sender, nonceStr string) error
 }
 
 func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, signatures []string) error {
-	var countValidatorsSigned int
+	if len(signatures) < len(c.config.GetValidators()) {
+		return errors.Errorf("%d of %d signed", len(signatures), len(c.config.GetValidators()))
+	}
+
 	if err := helpers.CheckDuplicates(signatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -820,31 +740,36 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
+	validators := make(map[string]*aclproto.ACLValidator)
+	for _, validator := range c.config.GetValidators() {
+		validators[validator.GetPublicKey()] = validator
+	}
+
 	for i, encodedBase58PublicKey := range pks {
-		if !helpers.IsValidator(c.config.GetValidators(), encodedBase58PublicKey) {
+		validator, isValidator := validators[encodedBase58PublicKey]
+		if !isValidator {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
-		countValidatorsSigned++
 
 		// check signature
 		decodedSignature := base58.Decode(signatures[i])
-		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
-		if err != nil {
-			return err
-		}
-		if !ed25519.Verify(decodedPublicKey, message, decodedSignature) {
-			return errors.Errorf("the signature %s does not match the public key %s", signatures[i], encodedBase58PublicKey)
-		}
-	}
 
-	if countValidatorsSigned < len(c.config.GetValidators()) {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.GetValidators()))
+		if !verifyValidatorSignature(validator, message, decodedSignature) {
+			return fmt.Errorf(
+				"the signature %s does not match the public key %s",
+				signatures[i],
+				encodedBase58PublicKey,
+			)
+		}
 	}
 	return nil
 }
 
 func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorSignatures []string) error {
-	var countValidatorsSigned int
+	if len(validatorSignatures) < len(c.config.GetValidators()) {
+		return errors.Errorf("%d of %d signed", len(validatorSignatures), len(c.config.GetValidators()))
+	}
+
 	if err := helpers.CheckDuplicates(validatorSignatures); err != nil {
 		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
 	}
@@ -852,30 +777,31 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
 	}
 
+	validators := make(map[string]*aclproto.ACLValidator)
+	for _, validator := range c.config.GetValidators() {
+		validators[validator.GetPublicKey()] = validator
+	}
+
 	for i, encodedBase58PublicKey := range validatorKeys {
-		if !helpers.IsValidator(c.config.GetValidators(), encodedBase58PublicKey) {
+		validator, isValidator := validators[encodedBase58PublicKey]
+		if !isValidator {
 			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
 		}
-		countValidatorsSigned++
 
 		// check signature
 		decodedSignature, err := hex.DecodeString(validatorSignatures[i])
 		if err != nil {
 			return err
 		}
-		decodedPublicKey, err := helpers.DecodeBase58PublicKey(encodedBase58PublicKey)
-		if err != nil {
-			return err
-		}
-		if !ed25519.Verify(decodedPublicKey, digest, decodedSignature) {
-			// TODO why signature in error in base58 format?
-			// in this method args signatures in hex
-			return errors.Errorf("the signature %s does not match the public key %s", base58.Encode(decodedSignature), encodedBase58PublicKey)
-		}
-	}
 
-	if countValidatorsSigned < len(c.config.GetValidators()) {
-		return errors.Errorf("%d of %d signed", countValidatorsSigned, len(c.config.GetValidators()))
+		if !verifyValidatorSignature(validator, digest, decodedSignature) {
+			// in this method args signatures in hex
+			return errors.Errorf(
+				"the signature %s does not match the public key %s",
+				validatorSignatures[i],
+				encodedBase58PublicKey,
+			)
+		}
 	}
 	return nil
 }
@@ -910,6 +836,9 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 		return fmt.Errorf("could not deserialize a SerializedIdentity, err: %w", err)
 	}
 	b, _ := pem.Decode(sID.GetIdBytes())
+	if b == nil {
+		return errors.New("no bytes in serialized identity")
+	}
 	parsed, err := x509.ParseCertificate(b.Bytes)
 	if err != nil {
 		return err

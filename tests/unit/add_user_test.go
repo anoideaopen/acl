@@ -24,12 +24,13 @@ const (
 )
 
 type seriesAddUser struct {
-	testPubKey  string
-	testAddress string
-	kycHash     string
-	testUserID  string
-	respStatus  int32
-	errorMsg    string
+	testPubKey     string
+	testAddress    string
+	kycHash        string
+	testUserID     string
+	testPubKeyType string
+	respStatus     int32
+	errorMsg       string
 }
 
 // add dynamic errorMsg in series
@@ -99,8 +100,11 @@ func TestAddUserPubkeyMoreThan44Symbols(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 33 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		33,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -119,8 +123,11 @@ func TestAddUserPubKeyLessThan43Symbols(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 31 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		31,
+	)
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -285,16 +292,33 @@ func TestAddUserAddExistedUser(t *testing.T) {
 }
 
 func addUser(stub *shimtest.MockStub, ser *seriesAddUser) peer.Response {
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(ser.testPubKey), []byte(ser.kycHash), []byte(ser.testUserID), []byte(stateTrue)},
-	)
+	invokeArgs := [][]byte{
+		[]byte(common.FnAddUser),
+		[]byte(ser.testPubKey),
+		[]byte(ser.kycHash),
+		[]byte(ser.testUserID),
+		[]byte(stateTrue),
+	}
+	resp := stub.MockInvoke("0", invokeArgs)
+	return resp
+}
+
+func addUserWithPublicKeyType(stub *shimtest.MockStub, ser *seriesAddUser) peer.Response {
+	invokeArgs := [][]byte{
+		[]byte(common.FnAddUserWithPublicKeyType),
+		[]byte(ser.testPubKey),
+		[]byte(ser.kycHash),
+		[]byte(ser.testUserID),
+		[]byte(stateTrue),
+		[]byte(ser.testPubKeyType),
+	}
+	resp := stub.MockInvoke("0", invokeArgs)
 	return resp
 }
 
 func validationResultAddUser(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesAddUser) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return

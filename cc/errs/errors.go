@@ -24,5 +24,5 @@ const (
 	ErrEmptyNewKey     = "empty new key"
 	ErrRecordsNotFound = "not found any records"
 
-	ErrWrongNumberOfKeys = "N (%d) is greater then M (number of pubKeys, %d)"
+	ErrWrongNumberOfKeys = "number of pubKeys (%d) is less than required (%d)"
 )

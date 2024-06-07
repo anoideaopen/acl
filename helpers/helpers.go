@@ -9,15 +9,22 @@ import (
 	"strings"
 	"unicode"
 
+	aclproto "github.com/anoideaopen/acl/proto"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
-// DecodeBase58PublicKey decode public key from base58 to ed25519 byte array
+const (
+	KeyLengthEd25519 = 32
+	KeyLengthECDSA   = 64
+	KeyLengthGOST    = 64
+)
+
+// DecodeBase58PublicKey decode public key from base58 to a byte array
 func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 	if len(encodedBase58PublicKey) == 0 {
 		return nil, errors.New("encoded base 58 public key is empty")
@@ -26,18 +33,22 @@ func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 	if len(decode) == 0 {
 		return nil, fmt.Errorf("failed base58 decoding of key %s", encodedBase58PublicKey)
 	}
-	if len(decode) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("incorrect decoded from base58 public key len '%s'. "+
-			"decoded public key len is %d but expected %d", encodedBase58PublicKey, len(decode), ed25519.PublicKeySize)
+	if !ValidateKeyLength(decode) {
+		return nil, fmt.Errorf(
+			"incorrect len of decoded from base58 public key '%s': '%d'",
+			encodedBase58PublicKey,
+			len(decode),
+		)
 	}
+
 	return decode, nil
 }
 
 // IsValidator checks whether a public key belongs to authorized entities and returns true or false
-func IsValidator(authorities []string, pk string) bool {
+func IsValidator(validators []*aclproto.ACLValidator, pk string) bool {
 	// check it was a validator
-	for _, authorityPublicKey := range authorities {
-		if authorityPublicKey == pk {
+	for _, validator := range validators {
+		if validator.GetPublicKey() == pk {
 			return true
 		}
 	}
@@ -68,7 +79,7 @@ func CheckDuplicates(arr []string) error {
 	for _, item := range arr {
 		// If the item is already present in the map, return an error indicating duplication.
 		if _, ok := itemsMap[item]; ok {
-			return fmt.Errorf("found duplicated iteam '%s'", item)
+			return fmt.Errorf("found duplicated item '%s'", item)
 		}
 
 		// Store the item in the map to mark its presence.
@@ -166,8 +177,14 @@ func ParseCCName(stub shim.ChaincodeStubInterface) (string, error) {
 	return cis.GetChaincodeSpec().GetChaincodeId().GetName(), nil
 }
 
-// CheckPublicKey verifies public key in the address variable
-func CheckPublicKey(address string) error {
+// CheckAddress verifies length of given address
+func CheckAddress(address string) error {
+	const sha256Length = 32
+
+	if len(address) == 0 {
+		return errors.New("address is empty")
+	}
+
 	result, version, err := base58.CheckDecode(address)
 	if err != nil {
 		return fmt.Errorf("check decode address : %w", err)
@@ -176,8 +193,8 @@ func CheckPublicKey(address string) error {
 	hash := []byte{version}
 	hash = append(hash, result...)
 
-	if len(hash) != ed25519.PublicKeySize {
-		return fmt.Errorf("decoded size %d, but must be equal to the length of the ed25519 public key (%d)", len(hash), ed25519.PublicKeySize)
+	if len(hash) != sha256Length {
+		return fmt.Errorf("decoded size %d, but must be equal to the length of the sha256 hash (%d)", len(hash), sha256Length)
 	}
 
 	return nil
@@ -193,4 +210,34 @@ func ValidateMinSignatures(n int) error {
 		return fmt.Errorf("invalid N '%d', must be greater than %d for multisignature transactions", n, MinSignaturesRequired)
 	}
 	return nil
+}
+
+func ValidateKeyLength(key []byte) bool {
+	if len(key) == KeyLengthEd25519 {
+		return true
+	}
+	if len(key) == KeyLengthECDSA {
+		return true
+	}
+	if len(key) == KeyLengthGOST {
+		return true
+	}
+	return false
+}
+
+func ValidatePublicKeyType(keyType string, notAllowedTypes ...string) bool {
+	_, ok := pb.KeyType_value[keyType]
+	if !ok {
+		return false
+	}
+	for _, notAllowed := range notAllowedTypes {
+		if notAllowed == keyType {
+			return false
+		}
+	}
+	return true
+}
+
+func DefaultPublicKeyType() string {
+	return pb.KeyType_ed25519.String()
 }

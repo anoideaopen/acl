@@ -9,6 +9,7 @@ import (
 
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
+	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -56,6 +57,16 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 		cfg, err = ParseArgsArr(args)
 		if err != nil {
 			return fmt.Errorf(ErrParsingArgsOld, err)
+		}
+	}
+
+	for i, validator := range cfg.GetValidators() {
+		if validator.GetPublicKey() == "" {
+			cfg.Validators[i].KeyType = helpers.DefaultPublicKeyType()
+		}
+		// gost key can't be used as a validator's key
+		if !helpers.ValidatePublicKeyType(validator.GetKeyType(), pb.KeyType_gost.String()) {
+			return fmt.Errorf("invalid key type: %s", validator.GetPublicKey())
 		}
 	}
 
@@ -186,10 +197,18 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 
 	lastValidatorArgIndex := indexValidators + validatorsCount
 
-	validators := args[indexValidators:lastValidatorArgIndex]
-	for i, validator := range validators {
-		if validator == "" {
+	validatorKeys := args[indexValidators:lastValidatorArgIndex]
+	for i, validatorKey := range validatorKeys {
+		if validatorKey == "" {
 			return nil, fmt.Errorf(ErrValidatorsEmpty, i)
+		}
+	}
+
+	validators := make([]*proto.ACLValidator, len(validatorKeys))
+	for i, key := range validatorKeys {
+		validators[i] = &proto.ACLValidator{
+			PublicKey: key,
+			KeyType:   helpers.DefaultPublicKeyType(),
 		}
 	}
 

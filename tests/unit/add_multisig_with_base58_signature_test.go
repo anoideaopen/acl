@@ -2,6 +2,7 @@ package unit
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,13 +12,11 @@ import (
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/tests/common"
-	"github.com/stretchr/testify/require"
-
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"golang.org/x/crypto/ed25519"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -55,7 +54,7 @@ func TestAddMultisigWithBase58SignaturePubKeyEmpty(t *testing.T) {
 	t.Parallel()
 	s := &seriesAddMultisigWithBase58Signature{
 		testPubKey: "",
-		errorMsg:   "encoded base 58 public key is empty",
+		errorMsg:   "empty public key detected",
 	}
 
 	AddMultisigWithBase58Signature(t, s)
@@ -68,8 +67,11 @@ func TestAddMultisigWithBase58SignaturePubKeyMoreThan44Symbols(t *testing.T) {
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 33 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		33,
+	)
 	s.SetError(errorMsg)
 
 	AddMultisigWithBase58Signature(t, s)
@@ -82,8 +84,11 @@ func TestAddMultisigWithBase58SignaturePubKeyLessThan43Symbols(t *testing.T) {
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 31 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		31,
+	)
 	s.SetError(errorMsg)
 
 	AddMultisigWithBase58Signature(t, s)
@@ -142,18 +147,22 @@ func TestAddMultisigWithBase58SignaturePubKeyWithSpecialSymbols(t *testing.T) {
 func AddMultisigWithBase58Signature(t *testing.T, ser *seriesAddMultisigWithBase58Signature) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
-		pubKeys = append(pubKeys, pubKey)
-		privateKeys = append(privateKeys, privateKey)
-	}
+	pubKeys := make([]string, 0, len(common.TestUsers))
+	privateKeys := make([]string, 0, len(common.TestUsers))
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, user := range common.TestUsers {
+		pubKeys = append(pubKeys, user.PublicKey)
+		privateKeys = append(privateKeys, user.PrivateKey)
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(user.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -184,18 +193,18 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *seriesAddMultisigWithBase
 	// duplicateSignatures      []string
 	duplicateSignaturesBytes := make([][]byte, 0, len(privateKeys))
 	for i, privateKey := range privateKeys {
-		signatures = append(signatures, []byte(base58.Encode(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+		signatures = append(signatures, common.Base58EncodedSignature(base58.Decode(privateKey), message[:]))
 		if i == 2 {
 			// duplicateSignatures = append(duplicateSignatures, base58.Encode(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append( //nolint:staticcheck
 				duplicateSignaturesBytes,
-				[]byte(base58.Encode(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]))),
+				common.Base58EncodedSignature(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]),
 			)
 		} else {
 			// duplicateSignatures = append(duplicateSignatures, base58.Encode(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append( //nolint:staticcheck
 				duplicateSignaturesBytes,
-				[]byte(base58.Encode(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:]))),
+				common.Base58EncodedSignature(base58.Decode(privateKey), messageForCaseWithDuplicates[:]),
 			)
 		}
 	}
@@ -212,24 +221,28 @@ func AddMultisigWithBase58Signature(t *testing.T, ser *seriesAddMultisigWithBase
 		), signatures...),
 	)
 	require.Equal(t, int32(shim.ERROR), resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 }
 
 func TestAddMultisigWithBase58Signature(t *testing.T) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
-		pubKeys = append(pubKeys, pubKey)
-		privateKeys = append(privateKeys, privateKey)
-	}
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, user := range common.TestUsers {
+		pubKeys = append(pubKeys, user.PublicKey)
+		privateKeys = append(privateKeys, user.PrivateKey)
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(user.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -258,18 +271,18 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 	// duplicateSignatures      []string
 	duplicateSignaturesBytes := make([][]byte, 0, len(privateKeys))
 	for i, privateKey := range privateKeys {
-		signatures = append(signatures, []byte(base58.Encode(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+		signatures = append(signatures, common.Base58EncodedSignature(base58.Decode(privateKey), message[:]))
 		if i == 2 {
 			// duplicateSignatures = append(duplicateSignatures, base58.Encode(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append(
 				duplicateSignaturesBytes,
-				[]byte(base58.Encode(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]))),
+				common.Base58EncodedSignature(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]),
 			)
 		} else {
 			// duplicateSignatures = append(duplicateSignatures, base58.Encode(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append(
 				duplicateSignaturesBytes,
-				[]byte(base58.Encode(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:]))),
+				common.Base58EncodedSignature(base58.Decode(privateKey), messageForCaseWithDuplicates[:]),
 			)
 		}
 	}
@@ -315,7 +328,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 
 		for i, pk := range pksOfMultisigWallet {
 			decodedSignature := base58.Decode(signaturesOfMembers[i])
-			require.True(t, ed25519.Verify(base58.Decode(pk), decodedMessage[:], decodedSignature), "the signature %s does not match the public key %s", signaturesOfMembers[i], pk)
+			require.True(t, common.VerifySignature(base58.Decode(pk), decodedMessage[:], decodedSignature), "the signature %s does not match the public key %s", signaturesOfMembers[i], pk)
 		}
 	})
 
@@ -341,7 +354,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 				[]byte(nonce)),
 			pubKeysBytes...), signatures[1:]...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, "uneven number of public keys and signatures provided: 5", resp.Message)
+		require.Contains(t, resp.Message, "counts of keys and signatures are not equal")
 	})
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {
@@ -351,11 +364,11 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 		signatures = signatures[:0]
 		for i, privateKey := range privateKeys {
 			if i < 2 {
-				signatures = append(signatures, []byte(base58.Encode(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+				signatures = append(signatures, common.Base58EncodedSignature(base58.Decode(privateKey), message[:]))
 			} else {
 				// make last signature wrong way
 				hash := sha3.Sum256([]byte(strings.Join(append([]string{"lalalala", "req", "acl", "acl", "3", nonce}, pubKeys...), "")))
-				signatures = append(signatures, []byte(base58.Encode(ed25519.Sign(base58.Decode(privateKey), hash[:]))))
+				signatures = append(signatures, common.Base58EncodedSignature(base58.Decode(privateKey), hash[:]))
 			}
 		}
 
@@ -375,7 +388,7 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 			),
 		)
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, fmt.Sprintf("the signature %s does not match the public key %s",
-			string(signatures[2]), pubKeys[2]), resp.Message)
+		require.Contains(t, resp.Message, fmt.Sprintf("the signature %s does not match the public key %s",
+			hex.EncodeToString(base58.Decode(string(signatures[2]))), pubKeys[2]))
 	})
 }

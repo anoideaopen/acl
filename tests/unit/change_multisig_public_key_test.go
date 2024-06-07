@@ -3,6 +3,7 @@ package unit
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,7 +17,6 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -87,8 +87,11 @@ func TestChangeMultisigPublicKeyMoreThan44Symbols(t *testing.T) {
 		testUserID: "testUserID",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.newPubKey + "'. decoded public key len is 33 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.newPubKey,
+		33,
+	)
 	s.SetError(errorMsg)
 
 	changeMultisigPublicKey(t, s)
@@ -104,8 +107,11 @@ func TestChangeMultisigPublicKeyLessThan43Symbols(t *testing.T) {
 		testUserID: "testUserID",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.newPubKey + "'. decoded public key len is 31 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.newPubKey,
+		31,
+	)
 	s.SetError(errorMsg)
 
 	changeMultisigPublicKey(t, s)
@@ -146,16 +152,23 @@ func TestChangeMultisigPublicKeyWithSpecialSymbols(t *testing.T) {
 func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
-		pubKeys = append(pubKeys, pubKey)
-		privateKeys = append(privateKeys, privateKey)
-	}
+	pubKeys := make([]string, 0, len(common.TestUsers))
+	privateKeys := make([]string, 0, len(common.TestUsers))
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
-		resp := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)})
+	for _, user := range common.TestUsers {
+		pubKeys = append(pubKeys, user.PublicKey)
+		privateKeys = append(privateKeys, user.PrivateKey)
+		resp := stub.MockInvoke(
+			"0",
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(user.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+			},
+		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
 
@@ -171,7 +184,7 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	for _, privateKey := range privateKeys {
 		signaturesAddMultisig = append(
 			signaturesAddMultisig,
-			[]byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), messageAddMultisig[:]))),
+			common.HexEncodedSignature(base58.Decode(privateKey), messageAddMultisig[:]),
 		)
 	}
 
@@ -219,19 +232,26 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	}
 	newSeparatedPubKeys := strings.Join(newPubKeys, "/")
 
-	newNonce := strconv.Itoa(int(time.Now().Unix()*1000 + 1))
-	reason := "because..."
-	reasonID := "1"
-	message := sha3.Sum256([]byte(strings.Join(append([]string{"changeMultisigPublicKey", addrEncoded, oldKey, newSeparatedPubKeys, reason, reasonID, newNonce}, pubKeys...), "")))
+	validatorPublicKeys := make([]string, len(common.TestUsersDifferentKeyTypes))
+	for i, validator := range common.TestUsersDifferentKeyTypes {
+		validatorPublicKeys[i] = validator.PublicKey
+	}
 
-	signatures := make([][]byte, 0, len(privateKeys))
-	for _, privateKey := range privateKeys {
-		signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+	newNonce := strconv.Itoa(int(time.Now().Unix()*1000 + 1))
+	reason := common.DefaultReason
+	reasonID := "1"
+	message := sha3.Sum256([]byte(strings.Join(append([]string{"changeMultisigPublicKey", addrEncoded, oldKey, newSeparatedPubKeys, reason, reasonID, newNonce}, validatorPublicKeys...), "")))
+
+	validatorPublicKeysBytes := make([][]byte, len(common.TestUsersDifferentKeyTypes))
+	signatures := make([][]byte, len(common.TestUsersDifferentKeyTypes))
+	for i, validator := range common.TestUsersDifferentKeyTypes {
+		validatorPublicKeysBytes[i] = []byte(validator.PublicKey)
+		signatures[i] = common.HexEncodedSignature(base58.Decode(validator.PrivateKey), message[:])
 	}
 
 	// change key
 	changeResponse := stub.MockInvoke("0", append(
-		append([][]byte{[]byte("changeMultisigPublicKey"), []byte(addrEncoded), []byte(oldKey), []byte(newKey), []byte(reason), []byte(reasonID), []byte(newNonce)}, pubKeysBytes...), signatures...))
+		append([][]byte{[]byte("changeMultisigPublicKey"), []byte(addrEncoded), []byte(oldKey), []byte(newKey), []byte(reason), []byte(reasonID), []byte(newNonce)}, validatorPublicKeysBytes...), signatures...))
 	require.Equal(t, ser.respStatus, changeResponse.Status)
 
 	if !valid {
@@ -260,15 +280,11 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 		decodedMessage := sha3.Sum256([]byte(strings.Join(append(srcArgs, pksOfValidators...), "")))
 		signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
 
-		mockValidatorsPublicKeys := make([]string, 0, len(common.MockValidatorKeys))
-		for pubKey := range common.MockValidatorKeys {
-			mockValidatorsPublicKeys = append(mockValidatorsPublicKeys, pubKey)
-		}
 		for i, vpk := range pksOfValidators {
-			require.True(t, helpers.IsValidator(mockValidatorsPublicKeys, vpk), "pk %s does not belong to any validator", vpk)
+			require.True(t, helpers.IsValidator(common.TestInitConfig.Validators, vpk), "pk %s does not belong to any validator", vpk)
 			decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
 			require.NoError(t, err)
-			require.True(t, ed25519.Verify(base58.Decode(vpk), decodedMessage[:], decodedSignature),
+			require.True(t, common.VerifySignature(base58.Decode(vpk), decodedMessage[:], decodedSignature),
 				"the signature %s does not match the public key %s", signaturesOfValidators[i], vpk)
 		}
 

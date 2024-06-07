@@ -17,7 +17,6 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -55,7 +54,7 @@ func TestAddMultisigPubKeyEmpty(t *testing.T) {
 	t.Parallel()
 	s := &seriesAddMultisig{
 		testPubKey: "",
-		errorMsg:   "encoded base 58 public key is empty",
+		errorMsg:   "empty public key detected",
 	}
 
 	addMultisig(t, s)
@@ -68,8 +67,11 @@ func TestAddMultisigPubKeyMoreThan44Symbols(t *testing.T) {
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 33 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		33,
+	)
 	s.SetError(errorMsg)
 
 	addMultisig(t, s)
@@ -82,8 +84,11 @@ func TestAddMultisigPubKeyLessThan43Symbols(t *testing.T) {
 		testPubKey: "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
 	}
 
-	errorMsg := "incorrect decoded from base58 public key len '" +
-		s.testPubKey + "'. decoded public key len is 31 but expected 32"
+	errorMsg := fmt.Sprintf(
+		"incorrect len of decoded from base58 public key '%s': '%d'",
+		s.testPubKey,
+		31,
+	)
 	s.SetError(errorMsg)
 
 	addMultisig(t, s)
@@ -118,18 +123,24 @@ func TestAddMultisigPubKeyWithSpecialSymbols(t *testing.T) {
 func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey, privateKey := range common.MockUsersKeys {
 		pubKeys = append(pubKeys, pubKey)
 		privateKeys = append(privateKeys, privateKey)
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, signer := range common.TestUsers {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(signer.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -160,18 +171,18 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 	// duplicateSignatures      []string
 	duplicateSignaturesBytes := make([][]byte, 0, len(privateKeys))
 	for i, privateKey := range privateKeys {
-		signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+		signatures = append(signatures, common.HexEncodedSignature(base58.Decode(privateKey), message[:]))
 		if i == 2 {
 			// duplicateSignatures = append(duplicateSignatures, hex.EncodeToString(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append( //nolint:staticcheck
 				duplicateSignaturesBytes,
-				[]byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]))),
+				common.HexEncodedSignature(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]),
 			)
 		} else {
 			// duplicateSignatures = append(duplicateSignatures, hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append( //nolint:staticcheck
 				duplicateSignaturesBytes,
-				[]byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:]))),
+				common.HexEncodedSignature(base58.Decode(privateKey), messageForCaseWithDuplicates[:]),
 			)
 		}
 	}
@@ -187,24 +198,30 @@ func addMultisig(t *testing.T, ser *seriesAddMultisig) {
 		), signatures...),
 	)
 	require.Equal(t, int32(shim.ERROR), resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 }
 
 func TestAddMultisig(t *testing.T) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey, privateKey := range common.MockUsersKeys {
 		pubKeys = append(pubKeys, pubKey)
 		privateKeys = append(privateKeys, privateKey)
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, signer := range common.TestUsers {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(signer.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -233,18 +250,18 @@ func TestAddMultisig(t *testing.T) {
 	// duplicateSignatures      []string
 	duplicateSignaturesBytes := make([][]byte, 0, len(privateKeys))
 	for i, privateKey := range privateKeys {
-		signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+		signatures = append(signatures, common.HexEncodedSignature(base58.Decode(privateKey), message[:]))
 		if i == 2 {
 			// duplicateSignatures = append(duplicateSignatures, hex.EncodeToString(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append(
 				duplicateSignaturesBytes,
-				[]byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]))),
+				common.HexEncodedSignature(base58.Decode(privateKeys[i-1]), messageForCaseWithDuplicates[:]),
 			)
 		} else {
 			// duplicateSignatures = append(duplicateSignatures, hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:])))
 			duplicateSignaturesBytes = append(
 				duplicateSignaturesBytes,
-				[]byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), messageForCaseWithDuplicates[:]))),
+				common.HexEncodedSignature(base58.Decode(privateKey), messageForCaseWithDuplicates[:]),
 			)
 		}
 	}
@@ -290,7 +307,7 @@ func TestAddMultisig(t *testing.T) {
 		for i, pk := range pksOfMultisigWallet {
 			decodedSignature, err := hex.DecodeString(signaturesOfMembers[i])
 			require.NoError(t, err)
-			require.True(t, ed25519.Verify(base58.Decode(pk), decodedMessage[:], decodedSignature), "the signature %s does not match the public key %s", signaturesOfMembers[i], pk)
+			require.True(t, common.VerifySignature(base58.Decode(pk), decodedMessage[:], decodedSignature), "the signature %s does not match the public key %s", signaturesOfMembers[i], pk)
 		}
 	})
 
@@ -315,7 +332,7 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(nonce)),
 			pubKeysBytes...), signatures[1:]...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, "the number of signatures (3) does not match the number of public keys (2)", resp.Message)
+		require.Contains(t, resp.Message, "counts of keys and signatures are not equal")
 	})
 
 	t.Run("with one fake signature (wrong case)", func(t *testing.T) {
@@ -325,11 +342,11 @@ func TestAddMultisig(t *testing.T) {
 		signatures = signatures[:0]
 		for i, privateKey := range privateKeys {
 			if i < 2 {
-				signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+				signatures = append(signatures, common.HexEncodedSignature(base58.Decode(privateKey), message[:]))
 			} else {
 				// make last signature wrong way
 				hash := sha3.Sum256([]byte(strings.Join(append([]string{"lalalala", "3", nonce}, pubKeys...), "")))
-				signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), hash[:]))))
+				signatures = append(signatures, common.HexEncodedSignature(base58.Decode(privateKey), hash[:]))
 			}
 		}
 
@@ -348,8 +365,8 @@ func TestAddMultisig(t *testing.T) {
 			),
 		)
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, fmt.Sprintf("the signature %s does not match the public key %s",
-			string(signatures[2]), hex.EncodeToString(base58.Decode(pubKeys[2]))), resp.Message)
+		require.Contains(t, resp.Message, fmt.Sprintf("the signature %s does not match the public key %s",
+			string(signatures[2]), pubKeys[2]))
 	})
 
 	t.Run("wrong number of signature policy", func(t *testing.T) {
@@ -362,7 +379,7 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(nonce)),
 			pubKeysBytes...), signatures...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, fmt.Sprintf(errs.ErrWrongNumberOfKeys, n, len(pubKeys)), resp.Message)
+		require.Contains(t, resp.Message, fmt.Sprintf(errs.ErrWrongNumberOfKeys, len(pubKeys), n))
 	})
 
 	t.Run("wrong number of parameters", func(t *testing.T) {
@@ -374,25 +391,31 @@ func TestAddMultisig(t *testing.T) {
 				[]byte(nonce)),
 			p...), s...))
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, "incorrect number of arguments: 1, but this method expects: address, N (signatures required), nonce, public keys, signatures", resp.Message)
+		require.Contains(t, resp.Message, "incorrect number of arguments")
 	})
 }
 
 func TestNonce(t *testing.T) {
 	stub := common.StubCreateAndInit(t)
 
-	pubKeys := make([]string, 0, len(common.MockValidatorKeys))
-	privateKeys := make([]string, 0, len(common.MockValidatorKeys))
-	for pubKey, privateKey := range common.MockValidatorKeys {
+	pubKeys := make([]string, 0, len(common.MockUsersKeys))
+	privateKeys := make([]string, 0, len(common.MockUsersKeys))
+	for pubKey, privateKey := range common.MockUsersKeys {
 		pubKeys = append(pubKeys, pubKey)
 		privateKeys = append(privateKeys, privateKey)
 	}
 
 	// add multisig members first
-	for _, memberPk := range pubKeys {
+	for _, user := range common.TestUsers {
 		resp := stub.MockInvoke(
 			"0",
-			[][]byte{[]byte(common.FnAddUser), []byte(memberPk), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
+			[][]byte{
+				[]byte(common.FnAddUser),
+				[]byte(user.PublicKey),
+				[]byte(kycHash),
+				[]byte(testUserID),
+				[]byte(stateTrue),
+			},
 		)
 		require.Equal(t, int32(shim.OK), resp.Status)
 	}
@@ -407,7 +430,7 @@ func TestNonce(t *testing.T) {
 
 	signatures := make([][]byte, 0, len(privateKeys))
 	for _, privateKey := range privateKeys {
-		signatures = append(signatures, []byte(hex.EncodeToString(ed25519.Sign(base58.Decode(privateKey), message[:]))))
+		signatures = append(signatures, common.HexEncodedSignature(base58.Decode(privateKey), message[:]))
 	}
 	t.Run("use duplicate nonce", func(t *testing.T) {
 		nonceForDuplicateNonceTest := strconv.Itoa(int(time.Now().Unix() * 1000))
