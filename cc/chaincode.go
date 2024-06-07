@@ -2,6 +2,7 @@ package cc
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -82,12 +83,12 @@ func (c *ACL) readValidateConfig(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 	if cfg == nil {
-		return fmt.Errorf("ACL chaincode not initialized, please invoke Init with init args first")
+		return errors.New("ACL chaincode not initialized, please invoke Init with init args first")
 	}
 
 	adminSKIEncoded := cfg.GetAdminSKIEncoded()
 	if adminSKIEncoded == "" {
-		return fmt.Errorf(config.ErrAdminSKIEmpty)
+		return errors.New(config.ErrAdminSKIEmpty)
 	}
 
 	adminSKI, err := hex.DecodeString(adminSKIEncoded)
