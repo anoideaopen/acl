@@ -1,4 +1,4 @@
-package integrational
+package integration
 
 import (
 	"crypto/rand"

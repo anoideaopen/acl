@@ -49,23 +49,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}()
 	fn, args := stub.GetFunctionAndParameters()
 
-	// Always read the config so that there is no determinism when executing a transaction
-	// init config begin
-	cfg, err := config.GetConfig(stub)
-	if err != nil {
+	// Need to always read the config to assure there will be no determinism while executing the transaction
+	if err := c.readValidateConfig(stub); err != nil {
 		return shim.Error(err.Error())
 	}
-	if cfg == nil {
-		return shim.Error("ACL chaincode not initialized, please invoke Init with init args first")
-	}
-	c.config = cfg
-
-	adminSKI, err := hex.DecodeString(cfg.GetAdminSKIEncoded())
-	if err != nil {
-		return shim.Error(fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.GetAdminSKIEncoded()))
-	}
-	c.adminSKI = adminSKI
-	// init config end
 
 	methods := make(map[string]ccFunc)
 	t := reflect.TypeOf(c)
@@ -86,4 +73,38 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}
 
 	return ccInvoke(stub, args)
+}
+
+// readValidateConfig reads & validates ACL config
+func (c *ACL) readValidateConfig(stub shim.ChaincodeStubInterface) error {
+	cfg, err := config.GetConfig(stub)
+	if err != nil {
+		return err
+	}
+	if cfg == nil {
+		return fmt.Errorf("ACL chaincode not initialized, please invoke Init with init args first")
+	}
+
+	adminSKIEncoded := cfg.GetAdminSKIEncoded()
+	if adminSKIEncoded == "" {
+		return fmt.Errorf(config.ErrAdminSKIEmpty)
+	}
+
+	adminSKI, err := hex.DecodeString(adminSKIEncoded)
+	if err != nil {
+		return fmt.Errorf(config.ErrInvalidAdminSKI, adminSKIEncoded)
+	}
+
+	for i, validator := range cfg.Validators {
+		if validator == "" {
+			return fmt.Errorf(config.ErrValidatorsEmpty, i)
+		}
+
+		// ToDo: need to check validator's key type - it should be encoded with Edward curve by default
+	}
+
+	c.config = cfg
+	c.adminSKI = adminSKI
+
+	return nil
 }

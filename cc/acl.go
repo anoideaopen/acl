@@ -868,9 +868,7 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 			return err
 		}
 		if !ed25519.Verify(decodedPublicKey, digest, decodedSignature) {
-			// TODO why signature in error in base58 format?
-			// in this method args signatures in hex
-			return errors.Errorf("the signature %s does not match the public key %s", base58.Encode(decodedSignature), encodedBase58PublicKey)
+			return errors.Errorf("the signature %s does not match the public key %s", hex.EncodeToString(decodedSignature), encodedBase58PublicKey)
 		}
 	}
 
