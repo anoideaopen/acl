@@ -1,4 +1,4 @@
-package transfer_test
+package emission
 
 import (
 	"github.com/anoideaopen/acl/tests/integration/cmn"
@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-var _ = Describe("ACL config tests", func() {
+var _ = Describe("ACL emission tests", func() {
 	var (
 		testDir          string
 		cli              *docker.Client
