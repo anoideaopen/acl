@@ -4,11 +4,12 @@ import (
 	"log"
 
 	acl "github.com/anoideaopen/acl/cc"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
 
 func main() {
-	if err := shim.Start(acl.New()); err != nil {
+	cc := acl.New()
+
+	if err := cc.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
