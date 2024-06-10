@@ -64,7 +64,7 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 
 	adminSKIEncoded := cfg.GetAdminSKIEncoded()
 	if adminSKIEncoded == "" {
-		return fmt.Errorf(ErrAdminSKIEmpty)
+		return errors.New(ErrAdminSKIEmpty)
 	}
 
 	_, err = hex.DecodeString(adminSKIEncoded)
@@ -75,7 +75,7 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 	validators := cfg.GetValidators()
 
 	if len(validators) == 0 {
-		return fmt.Errorf(ErrValidatorsEmpty)
+		return errors.New(ErrValidatorsEmpty)
 	}
 
 	for i, validator := range validators {
