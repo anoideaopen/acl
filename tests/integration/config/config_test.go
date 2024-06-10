@@ -1,17 +1,18 @@
 package config
 
 import (
-	"github.com/anoideaopen/acl/tests/common"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
 
 	aclpb "github.com/anoideaopen/acl/proto"
-	"github.com/anoideaopen/acl/tests/integration/cmn"
+	"github.com/anoideaopen/acl/tests/common"
+	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
 	"github.com/anoideaopen/acl/tests/integration/cmn/client"
-	"github.com/anoideaopen/acl/tests/integration/cmn/fabricnetwork"
-	"github.com/anoideaopen/acl/tests/integration/cmn/runner"
+	"github.com/anoideaopen/foundation/test/integration/cmn"
+	"github.com/anoideaopen/foundation/test/integration/cmn/fabricnetwork"
+	"github.com/anoideaopen/foundation/test/integration/cmn/runner"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/hyperledger/fabric/integration/nwo"
 	"github.com/hyperledger/fabric/integration/nwo/fabricconfig"
@@ -166,7 +167,7 @@ var _ = Describe("ACL config tests", func() {
 				},
 			},
 		}
-		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `'adminSKI' (index of args 0) is invalid - format found 'a' but expected hex encoded string`)
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'adminSKI' (index of args 0) is invalid - format found 'a' but expected hex encoded string`)
 	})
 
 	It("Acl init empty admin ski", func() {
@@ -180,7 +181,7 @@ var _ = Describe("ACL config tests", func() {
 				},
 			},
 		}
-		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `'adminSKI' is empty`)
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'adminSKI' is empty`)
 	})
 
 	It("Acl init empty validators", func() {
@@ -193,7 +194,7 @@ var _ = Describe("ACL config tests", func() {
 			AdminSKIEncoded: skiBackend,
 			Validators:      []*aclpb.ACLValidator{},
 		}
-		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `validators does not set`)
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `validators does not set`)
 	})
 
 	It("Acl init empty validator", func() {
@@ -215,7 +216,7 @@ var _ = Describe("ACL config tests", func() {
 				},
 			},
 		}
-		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `'validator #'0'' is empty`)
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'validator #'0'' is empty`)
 	})
 
 	It("Acl init invalid key type", func() {
@@ -233,7 +234,7 @@ var _ = Describe("ACL config tests", func() {
 				},
 			},
 		}
-		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `'validator #'0'' has invalid key type:`)
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'validator #'0'' has invalid key type:`)
 	})
 
 	It("Acl init gost key type", func() {
@@ -251,6 +252,6 @@ var _ = Describe("ACL config tests", func() {
 				},
 			},
 		}
-		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `'validator #'0'' has invalid key type:`)
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'validator #'0'' has invalid key type:`)
 	})
 })

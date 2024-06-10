@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/anoideaopen/acl/tests/integration/cmn/runner"
+	"github.com/anoideaopen/foundation/test/integration/cmn/runner"
 	"github.com/hyperledger/fabric/integration"
 	"github.com/hyperledger/fabric/integration/nwo"
 	. "github.com/onsi/ginkgo/v2"

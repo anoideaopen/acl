@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	aclpb "github.com/anoideaopen/acl/proto"
+	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/hyperledger/fabric/integration/nwo"
 	"github.com/hyperledger/fabric/integration/nwo/commands"
 	. "github.com/onsi/ginkgo/v2"
@@ -12,14 +13,14 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func DeployACLWithError(network *nwo.Network, components *nwo.Components, peer *nwo.Peer,
+func DeployACLWithError(network *nwo.Network, components *nwo.Components,
 	testDir string, aclCfg *aclpb.ACLConfig, errorMsg string) {
 	By("Deploying chaincode acl")
 	cfgBytesACL, err := protojson.Marshal(aclCfg)
 	Expect(err).NotTo(HaveOccurred())
-	ctorACL := CtorFromSlice([]string{string(cfgBytesACL)})
-	DeployChaincodeFoundationWithError(network, ChannelAcl, components,
-		AclModulePath(), ctorACL, testDir, errorMsg)
+	ctorACL := cmn.CtorFromSlice([]string{string(cfgBytesACL)})
+	DeployChaincodeFoundationWithError(network, cmn.ChannelAcl, components,
+		cmn.AclModulePath(), ctorACL, testDir, errorMsg)
 }
 
 func DeployChaincodeFoundationWithError(

@@ -3,56 +3,29 @@ package client
 import (
 	"bytes"
 	"crypto/ed25519"
-	"crypto/rand"
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/sha3"
 )
 
-type UserFoundation struct {
-	PrivateKey         ed25519.PrivateKey
-	PublicKey          ed25519.PublicKey
-	PublicKeyBase58    string
-	AddressBase58Check string
-	UserID             string
-}
-
 type UserFoundationMultisigned struct {
-	Users              []*UserFoundation
+	Users              []*client.UserFoundation
 	AddressBase58Check string
 	UserID             string
-}
-
-func NewUserFoundation() *UserFoundation {
-	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return &UserFoundation{}
-	}
-	publicKeyBase58 := base58.Encode(publicKey)
-	hash := sha3.Sum256(publicKey)
-	addressBase58Check := base58.CheckEncode(hash[1:], hash[0])
-
-	return &UserFoundation{
-		PrivateKey:         privateKey,
-		PublicKey:          publicKey,
-		PublicKeyBase58:    publicKeyBase58,
-		AddressBase58Check: addressBase58Check,
-		UserID:             "testuser",
-	}
 }
 
 func NewUserFoundationMultisigned(n int) *UserFoundationMultisigned {
 	var pKeys []ed25519.PublicKey
 	userMultisigned := &UserFoundationMultisigned{
-		Users:  make([]*UserFoundation, 0),
+		Users:  make([]*client.UserFoundation, 0),
 		UserID: "testUserMultisigned",
 	}
 	for i := 0; i < n; i++ {
-		user := NewUserFoundation()
+		user := client.NewUserFoundation()
 		userMultisigned.Users = append(userMultisigned.Users, user)
 		pKeys = append(pKeys, user.PublicKey)
 	}
@@ -68,58 +41,6 @@ func NewUserFoundationMultisigned(n int) *UserFoundationMultisigned {
 	hashedAddr := sha3.Sum256(bytes.Join(binPubKeys, []byte("")))
 	userMultisigned.AddressBase58Check = base58.CheckEncode(hashedAddr[1:], hashedAddr[0])
 	return userMultisigned
-}
-
-func UserFoundationFromPrivateKey(privateKey ed25519.PrivateKey) (*UserFoundation, error) {
-	publicKey, ok := privateKey.Public().(ed25519.PublicKey)
-	if !ok {
-		return nil, errors.New("type requireion failed")
-	}
-
-	publicKeyBase58 := base58.Encode(publicKey)
-	hash := sha3.Sum256(publicKey)
-	addressBase58Check := base58.CheckEncode(hash[1:], hash[0])
-
-	return &UserFoundation{
-		PrivateKey:         privateKey,
-		PublicKey:          publicKey,
-		PublicKeyBase58:    publicKeyBase58,
-		AddressBase58Check: addressBase58Check,
-		UserID:             "testuser",
-	}, nil
-}
-
-func UserFoundationFromBase58CheckPrivateKey(base58Check string) (*UserFoundation, error) {
-	decode, ver, err := base58.CheckDecode(base58Check)
-	if err != nil {
-		return nil, fmt.Errorf("check decode: %w", err)
-	}
-	privateKey := ed25519.PrivateKey(append([]byte{ver}, decode...))
-
-	return UserFoundationFromPrivateKey(privateKey)
-}
-
-func (u *UserFoundation) Sign(args ...string) (publicKeyBase58 string, signMsg []byte, err error) {
-	publicKeyBase58 = u.PublicKeyBase58
-	msg := make([]string, 0, len(args)+1)
-	msg = append(msg, args...)
-	msg = append(msg, publicKeyBase58)
-
-	bytesToSign := sha3.Sum256([]byte(strings.Join(msg, "")))
-
-	signMsg = signMessage(u.PrivateKey, bytesToSign[:])
-	err = verifyEd25519(u.PublicKey, bytesToSign[:], signMsg)
-	if err != nil {
-		return "", nil, err
-	}
-
-	return
-}
-
-func (u *UserFoundation) SetUserID(id string) {
-	if len(id) != 0 {
-		u.UserID = id
-	}
 }
 
 // Sign adds sign for multisigned user

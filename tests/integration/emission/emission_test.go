@@ -7,10 +7,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/anoideaopen/acl/tests/integration/cmn"
-	"github.com/anoideaopen/acl/tests/integration/cmn/client"
-	"github.com/anoideaopen/acl/tests/integration/cmn/fabricnetwork"
-	"github.com/anoideaopen/acl/tests/integration/cmn/runner"
+	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
+	"github.com/anoideaopen/foundation/test/integration/cmn"
+	"github.com/anoideaopen/foundation/test/integration/cmn/client"
+	"github.com/anoideaopen/foundation/test/integration/cmn/fabricnetwork"
+	"github.com/anoideaopen/foundation/test/integration/cmn/runner"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/hyperledger/fabric/integration/nwo"
 	"github.com/hyperledger/fabric/integration/nwo/fabricconfig"
@@ -217,7 +218,7 @@ var _ = Describe("ACL emission tests", func() {
 
 		By("creating multisigned user")
 		const usersPolicy = 3
-		multisigUser := client.NewUserFoundationMultisigned(usersPolicy)
+		multisigUser := aclclient.NewUserFoundationMultisigned(usersPolicy)
 
 		By("adding users to ACL")
 		for _, user := range multisigUser.Users {
@@ -225,7 +226,7 @@ var _ = Describe("ACL emission tests", func() {
 		}
 
 		By("adding multisign")
-		client.AddMultisig(network, peer, network.Orderers[0], usersPolicy, multisigUser)
+		aclclient.AddMultisig(network, peer, network.Orderers[0], usersPolicy, multisigUser)
 
 		By("deploying fiat channel")
 		cmn.DeployFiat(network, components, peer, testDir, skiRobot,
@@ -237,7 +238,7 @@ var _ = Describe("ACL emission tests", func() {
 
 		By("emit tokens")
 		emitAmount := "1000"
-		client.TxInvokeWithMultisign(network, peer, network.Orderers[0],
+		aclclient.TxInvokeWithMultisign(network, peer, network.Orderers[0],
 			cmn.ChannelFiat, cmn.ChannelFiat, multisigUser,
 			"emit", "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
 
@@ -253,7 +254,7 @@ var _ = Describe("ACL emission tests", func() {
 
 		By("creating multisigned user")
 		const usersPolicy = 3
-		multisigUser := client.NewUserFoundationMultisigned(usersPolicy)
+		multisigUser := aclclient.NewUserFoundationMultisigned(usersPolicy)
 
 		By("adding users to ACL")
 		for _, user := range multisigUser.Users {
@@ -261,7 +262,7 @@ var _ = Describe("ACL emission tests", func() {
 		}
 
 		By("adding multisign")
-		client.AddMultisig(network, peer, network.Orderers[0], usersPolicy, multisigUser)
+		aclclient.AddMultisig(network, peer, network.Orderers[0], usersPolicy, multisigUser)
 
 		By("deploying fiat channel")
 		cmn.DeployFiat(network, components, peer, testDir, skiRobot,
@@ -278,7 +279,7 @@ var _ = Describe("ACL emission tests", func() {
 		multisigUser.Users = slices.Replace(multisigUser.Users, 0, 1, newUser)
 
 		By("changing multisigned user public key")
-		client.ChangeMultisigPublicKey(network, peer, network.Orderers[0], multisigUser, oldUser.PublicKeyBase58, newUser.PublicKeyBase58, "reason", "0", admin)
+		aclclient.ChangeMultisigPublicKey(network, peer, network.Orderers[0], multisigUser, oldUser.PublicKeyBase58, newUser.PublicKeyBase58, "reason", "0", admin)
 
 		By("add user to acl")
 		user = client.NewUserFoundation()
@@ -286,7 +287,7 @@ var _ = Describe("ACL emission tests", func() {
 
 		By("emit tokens")
 		emitAmount := "1000"
-		client.TxInvokeWithMultisign(network, peer, network.Orderers[0],
+		aclclient.TxInvokeWithMultisign(network, peer, network.Orderers[0],
 			cmn.ChannelFiat, cmn.ChannelFiat, multisigUser,
 			"emit", "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
 
