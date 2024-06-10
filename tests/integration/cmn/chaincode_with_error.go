@@ -1,7 +1,8 @@
 package cmn
 
 import (
-	"fmt"
+	"path/filepath"
+
 	aclpb "github.com/anoideaopen/acl/proto"
 	"github.com/hyperledger/fabric/integration/nwo"
 	"github.com/hyperledger/fabric/integration/nwo/commands"
@@ -9,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/protobuf/encoding/protojson"
-	"path/filepath"
 )
 
 func DeployACLWithError(network *nwo.Network, components *nwo.Components, peer *nwo.Peer,
@@ -109,7 +109,5 @@ func InitChaincodeWithError(n *nwo.Network, channel string, orderer *nwo.Orderer
 	})
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(1))
-	errMsg := string(sess.Err.Contents())
-	fmt.Println(errMsg)
 	Expect(sess.Err.Contents()).To(ContainSubstring(errorMsg))
 }

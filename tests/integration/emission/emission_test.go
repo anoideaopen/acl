@@ -1,6 +1,12 @@
 package emission
 
 import (
+	"os"
+	"path/filepath"
+	"slices"
+	"syscall"
+	"time"
+
 	"github.com/anoideaopen/acl/tests/integration/cmn"
 	"github.com/anoideaopen/acl/tests/integration/cmn/client"
 	"github.com/anoideaopen/acl/tests/integration/cmn/fabricnetwork"
@@ -14,11 +20,6 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/tedsuo/ifrit"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
-	"os"
-	"path/filepath"
-	"slices"
-	"syscall"
-	"time"
 )
 
 var _ = Describe("ACL emission tests", func() {

@@ -1,10 +1,10 @@
 package cmn
 
 import (
-	"github.com/anoideaopen/acl/tests/common"
 	"path/filepath"
 
 	aclpb "github.com/anoideaopen/acl/proto"
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	industrialtoken "github.com/anoideaopen/foundation/test/chaincode/industrial/industrial_token"
 	"github.com/hyperledger/fabric/integration/nwo"
