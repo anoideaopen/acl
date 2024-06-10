@@ -218,7 +218,25 @@ var _ = Describe("ACL config tests", func() {
 		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `'validator #'0'' is empty`)
 	})
 
-	It("Acl init wrong key type", func() {
+	It("Acl init invalid key type", func() {
+		By("Deploying chaincode acl")
+		pathToPrivateKeyBackend := network.PeerUserKey(peer, "User1")
+		skiBackend, err := cmn.ReadSKI(pathToPrivateKeyBackend)
+		Expect(err).NotTo(HaveOccurred())
+
+		aclCfg := &aclpb.ACLConfig{
+			AdminSKIEncoded: skiBackend,
+			Validators: []*aclpb.ACLValidator{
+				{
+					PublicKey: admin.PublicKeyBase58,
+					KeyType:   "fhdsjkaghfjkahfgk",
+				},
+			},
+		}
+		cmn.DeployACLWithError(network, components, peer, testDir, aclCfg, `'validator #'0'' has invalid key type:`)
+	})
+
+	It("Acl init gost key type", func() {
 		By("Deploying chaincode acl")
 		pathToPrivateKeyBackend := network.PeerUserKey(peer, "User1")
 		skiBackend, err := cmn.ReadSKI(pathToPrivateKeyBackend)
