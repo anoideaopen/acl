@@ -80,7 +80,6 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 
 	for i, validator := range validators {
 		if validator.GetPublicKey() == "" {
-			// cfg.Validators[i].KeyType = helpers.DefaultPublicKeyType()
 			return fmt.Errorf(ErrValidatorEmpty, i)
 		}
 		// gost key can't be used as a validator's key

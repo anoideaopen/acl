@@ -51,7 +51,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	fn, args := stub.GetFunctionAndParameters()
 
 	// Need to always read the config to assure there will be no determinism while executing the transaction
-	if err := c.readValidateConfig(stub); err != nil {
+	if err := c.readConfig(stub); err != nil {
 		return shim.Error(err.Error())
 	}
 
@@ -76,8 +76,8 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	return ccInvoke(stub, args)
 }
 
-// readValidateConfig reads & validates ACL config
-func (c *ACL) readValidateConfig(stub shim.ChaincodeStubInterface) error {
+// readConfig reads & validates ACL config
+func (c *ACL) readConfig(stub shim.ChaincodeStubInterface) error {
 	cfg, err := config.GetConfig(stub)
 	if err != nil {
 		return err
@@ -94,14 +94,6 @@ func (c *ACL) readValidateConfig(stub shim.ChaincodeStubInterface) error {
 	adminSKI, err := hex.DecodeString(adminSKIEncoded)
 	if err != nil {
 		return fmt.Errorf(config.ErrInvalidAdminSKI, adminSKIEncoded)
-	}
-
-	validators := cfg.GetValidators()
-
-	for i, validator := range validators {
-		if validator.GetPublicKey() == "" {
-			return fmt.Errorf(config.ErrValidatorEmpty, i)
-		}
 	}
 
 	c.config = cfg

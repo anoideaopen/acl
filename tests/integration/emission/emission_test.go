@@ -295,45 +295,5 @@ var _ = Describe("ACL emission tests", func() {
 		client.Query(network, peer, cmn.ChannelFiat, cmn.ChannelFiat,
 			fabricnetwork.CheckResult(fabricnetwork.CheckBalance(emitAmount), nil),
 			"balanceOf", user.AddressBase58Check)
-
-		/*
-			// check that ReplaceKeysSignedTx committed to token channel too
-			compKey, err := shim.CreateCompositeKey(replaceTxChangePrefix, []string{owner.Address()})
-			require.NoError(t, err)
-			resp, err := ledgerMock.GetStub("fiat").GetState(compKey)
-			require.NoError(t, err)
-			var msg []string
-			require.NoError(t, json.Unmarshal(resp, &msg))
-			require.NotNil(t, msg)
-			signedMsgFromACL := append(
-				append(
-					[]string{"changeMultisigPublicKey", owner.Address(), oldPubKey, newKeysString, "reason", "1", newNanoNonce},
-					validatorsPubKeys...,
-				),
-				validatorsSignaturesString...,
-			)
-			for index, stx := range signedMsgFromACL {
-				require.Equal(t, stx, msg[index])
-			}
-
-			// check that SignedTx committed to token channel too
-			compKeySignedTx, err := shim.CreateCompositeKey(signedTxChangePrefix, []string{owner.Address()})
-			require.NoError(t, err)
-			respSignedTx, err := ledgerMock.GetStub("fiat").GetState(compKeySignedTx)
-			require.NoError(t, err)
-			var msgSignedTx []string
-			require.NoError(t, json.Unmarshal(respSignedTx, &msgSignedTx))
-			require.NotNil(t, msgSignedTx)
-			signedTxMsgFromACL := append(
-				append(
-					[]string{"changeMultisigPublicKey", owner.Address(), oldPubKey, newKeysString, "reason", "1", newNanoNonce},
-					validatorsPubKeys...,
-				),
-				validatorsSignaturesString...,
-			)
-			for index, stx := range signedTxMsgFromACL {
-				require.Equal(t, stx, msg[index])
-			}
-		*/
 	})
 })
