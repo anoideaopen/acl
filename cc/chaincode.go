@@ -2,8 +2,10 @@ package cc
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
+	"os"
 	"reflect"
 	"runtime/debug"
 
@@ -86,4 +88,51 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}
 
 	return ccInvoke(stub, args)
+}
+
+func (c *ACL) Start() error {
+	const (
+		chaincodeExecModeEnv    = "CHAINCODE_EXEC_MODE"
+		chaincodeExecModeServer = "server"
+	)
+
+	switch os.Getenv(chaincodeExecModeEnv) {
+	case chaincodeExecModeServer:
+		return c.startAsChaincodeServer()
+	}
+
+	return c.startAsRegularChaincode()
+}
+
+func (c *ACL) startAsRegularChaincode() error {
+	return shim.Start(c)
+}
+
+func (c *ACL) startAsChaincodeServer() error {
+	const (
+		chaincodeCcIDEnv           = "CHAINCODE_ID"
+		chaincodeServerPortEnv     = "CHAINCODE_SERVER_PORT"
+		chaincodeServerDefaultPort = "9999"
+	)
+
+	ccID := os.Getenv(chaincodeCcIDEnv)
+	if ccID == "" {
+		return errors.New("need to specify chaincode id if running as a server")
+	}
+
+	port := os.Getenv(chaincodeServerPortEnv)
+	if port == "" {
+		port = chaincodeServerDefaultPort
+	}
+
+	srv := shim.ChaincodeServer{
+		CCID:    ccID,
+		Address: fmt.Sprintf("%s:%s", "0.0.0.0", port),
+		CC:      c,
+		TLSProps: shim.TLSProperties{
+			Disabled: true,
+		},
+	}
+
+	return srv.Start()
 }
