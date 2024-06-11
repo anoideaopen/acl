@@ -108,6 +108,8 @@ func (c *ACL) startAsRegularChaincode() error {
 	return shim.Start(c)
 }
 
+// startAsChaincodeServer creates a chaincode server without TLS.
+// Support of TLS should be implemented if required
 func (c *ACL) startAsChaincodeServer() error {
 	const (
 		chaincodeCcIDEnv           = "CHAINCODE_ID"
