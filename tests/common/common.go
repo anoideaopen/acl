@@ -38,6 +38,7 @@ const (
 	FnCheckKeys                      = "checkKeys"
 	FnGetAccInfoFn                   = "getAccountInfo"
 	FnChangePublicKey                = "changePublicKey"
+	FnChangeMultisigPublicKey        = "changeMultisigPublicKey"
 	FnSetKYC                         = "setkyc"
 	FnAddAdditionalKey               = "addAdditionalKey"
 	FnRemoveAdditionalKey            = "removeAdditionalKey"

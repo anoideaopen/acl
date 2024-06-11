@@ -49,7 +49,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}()
 	fn, args := stub.GetFunctionAndParameters()
 
-	// Always read the config so that there is no determinism when executing a transaction
+	// Need to always read the config to assure there will be no determinism while executing the transaction
 	// init config begin
 	cfg, err := config.GetConfig(stub)
 	if err != nil {
