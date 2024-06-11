@@ -20,12 +20,32 @@ type (
 	ACL struct {
 		adminSKI []byte
 		config   *proto.ACLConfig
+		tls      shim.TLSProperties // TLS configuration properties.
 	}
 	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
 
-func New() *ACL {
-	return &ACL{}
+func New() (*ACL, error) {
+	tlsProps := shim.TLSProperties{
+		Disabled: true,
+	}
+
+	key, cert, clientCACerts, err := readTLSConfigFromEnv()
+	if err != nil {
+		return &ACL{}, fmt.Errorf("error reading TLS config from environment: %w", err)
+	}
+
+	// If TLS configuration is found in environment variables, use it.
+	if key != nil && cert != nil {
+		tlsProps.Disabled = false
+		tlsProps.Key = key
+		tlsProps.Cert = cert
+		tlsProps.ClientCACerts = clientCACerts
+	}
+
+	return &ACL{
+		tls: tlsProps,
+	}, nil
 }
 
 // Init - method for initialize chaincode
@@ -51,7 +71,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}()
 	fn, args := stub.GetFunctionAndParameters()
 
-	// Need to always read the config to assure there will be no determinism while executing the transaction
+	// Always read the config so that there is no determinism when executing a transaction
 	// init config begin
 	cfg, err := config.GetConfig(stub)
 	if err != nil {
@@ -127,13 +147,66 @@ func (c *ACL) startAsChaincodeServer() error {
 	}
 
 	srv := shim.ChaincodeServer{
-		CCID:    ccID,
-		Address: fmt.Sprintf("%s:%s", "0.0.0.0", port),
-		CC:      c,
-		TLSProps: shim.TLSProperties{
-			Disabled: true,
-		},
+		CCID:     ccID,
+		Address:  fmt.Sprintf("%s:%s", "0.0.0.0", port),
+		CC:       c,
+		TLSProps: c.tls,
 	}
 
 	return srv.Start()
+}
+
+// readTLSConfigFromEnv tries to read TLS configuration from environment variables.
+func readTLSConfigFromEnv() ([]byte, []byte, []byte, error) {
+	const (
+		// TLS environment variables for the chaincode's TLS configuration with files.
+		// tlsKeyFileEnv is the environment variable that specifies the private key file for TLS communication.
+		tlsKeyFileEnv = "CHAINCODE_TLS_KEY_FILE"
+		// tlsCertFileEnv is the environment variable that specifies the public key certificate file for TLS communication.
+		tlsCertFileEnv = "CHAINCODE_TLS_CERT_FILE"
+		// tlsClientCACertsFileEnv is the environment variable that specifies the client CA certificates file for TLS communication.
+		tlsClientCACertsFileEnv = "CHAINCODE_TLS_CLIENT_CA_CERTS_FILE"
+
+		// TLS environment variables for the chaincode's TLS configuration, directly from ENVs.
+		// tlsKeyEnv is the environment variable that specifies the private key for TLS communication.
+		tlsKeyEnv = "CHAINCODE_TLS_KEY"
+		// tlsCertEnv is the environment variable that specifies the public key certificate for TLS communication.
+		tlsCertEnv = "CHAINCODE_TLS_CERT"
+		// tlsClientCACertsEnv is the environment variable that specifies the client CA certificates for TLS communication.
+		tlsClientCACertsEnv = "CHAINCODE_TLS_CLIENT_CA_CERTS"
+	)
+
+	var (
+		key, cert, clientCACerts []byte
+		err                      error
+	)
+
+	if keyEnv := os.Getenv(tlsKeyEnv); keyEnv != "" {
+		key = []byte(keyEnv)
+	} else if keyFile := os.Getenv(tlsKeyFileEnv); keyFile != "" {
+		key, err = os.ReadFile(keyFile)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to read TLS key file: %w", err)
+		}
+	}
+
+	if certEnv := os.Getenv(tlsCertEnv); certEnv != "" {
+		cert = []byte(certEnv)
+	} else if certFile := os.Getenv(tlsCertFileEnv); certFile != "" {
+		cert, err = os.ReadFile(certFile)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to read TLS certificate file: %w", err)
+		}
+	}
+
+	if caCertsEnv := os.Getenv(tlsClientCACertsEnv); caCertsEnv != "" {
+		clientCACerts = []byte(caCertsEnv)
+	} else if caCertsFile := os.Getenv(tlsClientCACertsFileEnv); caCertsFile != "" {
+		clientCACerts, err = os.ReadFile(caCertsFile)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to read client CA certificates file: %w", err)
+		}
+	}
+
+	return key, cert, clientCACerts, nil
 }
