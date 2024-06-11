@@ -19,9 +19,9 @@ import (
 )
 
 const (
-	KeyLengthEd25519 = 32
-	KeyLengthECDSA   = 64
-	KeyLengthGOST    = 64
+	KeyLengthEd25519   = 32
+	KeyLengthSecp256k1 = 64
+	KeyLengthGOST      = 64
 )
 
 // DecodeBase58PublicKey decode public key from base58 to a byte array
@@ -216,7 +216,7 @@ func ValidateKeyLength(key []byte) bool {
 	if len(key) == KeyLengthEd25519 {
 		return true
 	}
-	if len(key) == KeyLengthECDSA {
+	if len(key) == KeyLengthSecp256k1 {
 		return true
 	}
 	if len(key) == KeyLengthGOST {

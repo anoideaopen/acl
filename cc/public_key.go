@@ -10,12 +10,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-const (
-	KeyLengthEd25519 = 32
-	KeyLengthECDSA   = 64
-	KeyLengthGOST    = 64
-)
-
 type PublicKey struct {
 	InBase58          string
 	Bytes             []byte
@@ -46,12 +40,12 @@ func (key *PublicKey) validateLength() error {
 	var expectedLength int
 
 	switch key.Type {
-	case pb.KeyType_ecdsa.String():
-		expectedLength = KeyLengthECDSA
+	case pb.KeyType_secp256k1.String():
+		expectedLength = helpers.KeyLengthSecp256k1
 	case pb.KeyType_gost.String():
-		expectedLength = KeyLengthGOST
+		expectedLength = helpers.KeyLengthGOST
 	default:
-		expectedLength = KeyLengthEd25519
+		expectedLength = helpers.KeyLengthEd25519
 	}
 
 	if len(key.Bytes) != expectedLength {
@@ -66,8 +60,8 @@ func (key *PublicKey) verifySignature(
 	signature []byte,
 ) bool {
 	switch key.Type {
-	case pb.KeyType_ecdsa.String():
-		return verifyECDSASignature(key.Bytes, message, signature)
+	case pb.KeyType_secp256k1.String():
+		return verifySecp256k1Signature(key.Bytes, message, signature)
 	default:
 		return verifyEd25519Signature(key.Bytes, message, signature)
 	}
