@@ -42,7 +42,8 @@ func CheckUserMultisigned(network *nwo.Network, peer *nwo.Peer, user *UserFounda
 			return fmt.Sprintf("failed to unmarshal response: %v", err)
 		}
 
-		addr := base58.CheckEncode(resp.GetAddress().GetAddress().GetAddress()[1:], resp.GetAddress().GetAddress().GetAddress()[0])
+		addressBytes := resp.GetAddress().GetAddress().GetAddress()
+		addr := base58.CheckEncode(addressBytes[1:], addressBytes[0])
 		if addr != user.AddressBase58Check {
 			return fmt.Sprintf("Error: expected %s, received %s", user.AddressBase58Check, addr)
 		}
