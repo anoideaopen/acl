@@ -7,12 +7,9 @@ import (
 )
 
 func main() {
-	cc, err := acl.New()
-	if err != nil {
-		log.Fatal(err)
-	}
+	cc := acl.New()
 
-	if err = cc.Start(); err != nil {
+	if err := cc.Start(); err != nil {
 		log.Fatal(err)
 	}
 }

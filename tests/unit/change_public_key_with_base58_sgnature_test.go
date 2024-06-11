@@ -50,9 +50,7 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 }
 
 func changePublicKeyWithBase58Signature(t *testing.T, ser *tChangePublicKeyWithBase58Signature, validatorCount int) {
-	c, err := cc.New()
-	require.NoError(t, err)
-	stub := shimtest.NewMockStub("mockStub", c)
+	stub := shimtest.NewMockStub("mockStub", cc.New())
 	require.NotNil(t, stub)
 	cert, err := common.GetCert(common.AdminCertPath)
 	require.NoError(t, err)

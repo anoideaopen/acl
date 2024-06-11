@@ -195,9 +195,7 @@ func SetCreator(stub *shimtest.MockStub, creatorMSP string, creatorCert []byte) 
 
 // StubCreate creates mock stub
 func StubCreate(t *testing.T) *shimtest.MockStub {
-	c, err := cc.New()
-	require.NoError(t, err)
-	stub := shimtest.NewMockStub("mockStub", c)
+	stub := shimtest.NewMockStub("mockStub", cc.New())
 	stub.ChannelID = "acl"
 	require.NotNil(t, stub)
 

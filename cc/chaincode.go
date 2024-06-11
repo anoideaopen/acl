@@ -20,32 +20,12 @@ type (
 	ACL struct {
 		adminSKI []byte
 		config   *proto.ACLConfig
-		tls      shim.TLSProperties // TLS configuration properties.
 	}
 	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
 
-func New() (*ACL, error) {
-	tlsProps := shim.TLSProperties{
-		Disabled: true,
-	}
-
-	key, cert, clientCACerts, err := readTLSConfigFromEnv()
-	if err != nil {
-		return &ACL{}, fmt.Errorf("error reading TLS config from environment: %w", err)
-	}
-
-	// If TLS configuration is found in environment variables, use it.
-	if key != nil && cert != nil {
-		tlsProps.Disabled = false
-		tlsProps.Key = key
-		tlsProps.Cert = cert
-		tlsProps.ClientCACerts = clientCACerts
-	}
-
-	return &ACL{
-		tls: tlsProps,
-	}, nil
+func New() *ACL {
+	return &ACL{}
 }
 
 // Init - method for initialize chaincode
@@ -146,14 +126,40 @@ func (c *ACL) startAsChaincodeServer() error {
 		port = chaincodeServerDefaultPort
 	}
 
+	tlsProps, err := tlsProperties()
+	if err != nil {
+		return fmt.Errorf("failed obtaining tls properties for chaincode server: %w", err)
+	}
+
 	srv := shim.ChaincodeServer{
 		CCID:     ccID,
 		Address:  fmt.Sprintf("%s:%s", "0.0.0.0", port),
 		CC:       c,
-		TLSProps: c.tls,
+		TLSProps: tlsProps,
 	}
 
 	return srv.Start()
+}
+
+func tlsProperties() (shim.TLSProperties, error) {
+	tlsProps := shim.TLSProperties{
+		Disabled: true,
+	}
+
+	key, cert, clientCACerts, err := readTLSConfigFromEnv()
+	if err != nil {
+		return tlsProps, fmt.Errorf("error reading TLS config from environment: %w", err)
+	}
+
+	// If TLS configuration is found in environment variables, use it.
+	if key != nil && cert != nil {
+		tlsProps.Disabled = false
+		tlsProps.Key = key
+		tlsProps.Cert = cert
+		tlsProps.ClientCACerts = clientCACerts
+	}
+
+	return tlsProps, nil
 }
 
 // readTLSConfigFromEnv tries to read TLS configuration from environment variables.

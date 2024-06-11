@@ -250,9 +250,7 @@ func TestAclCalledFromChaincode(t *testing.T) {
 	owner := ledgerMock.NewWallet()
 
 	t.Run("Initializing acl chaincode", func(t *testing.T) {
-		c, err := cc.New()
-		require.NoError(t, err)
-		aclCC := mstub.NewMockStub("acl", c)
+		aclCC := mstub.NewMockStub("acl", cc.New())
 		cert, err := common.GetCert(common.AdminCertPath)
 		require.NoError(t, err)
 		creator, err := common.MarshalIdentity(common.TestCreatorMSP, cert.Raw)
