@@ -85,7 +85,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AccountRights{}
-		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NoError(t, protojson.Unmarshal(result.Payload, response))
 		require.NotNil(t, response.Address)
 		require.NotNil(t, response.Rights)
 		require.Equal(t, addr, response.Address.AddrString(), "wrong address")
@@ -138,7 +138,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.OperationRights{}
-		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NoError(t, protojson.Unmarshal(result.Payload, response))
 		require.NotNil(t, response.OperationName)
 		require.NotNil(t, response.Rights)
 		require.Equal(t, operationName, response.OperationName, "wrong address")
@@ -216,7 +216,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.AccountRights{}
-		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NoError(t, protojson.Unmarshal(result.Payload, response))
 		require.NotNil(t, response.Address)
 		require.Nil(t, response.Rights)
 		require.Equal(t, addr, response.Address.AddrString(), "wrong address")
@@ -237,7 +237,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.Equal(t, int32(shim.OK), result.Status)
 
 		response := &pb.OperationRights{}
-		require.NoError(t, proto.Unmarshal(result.Payload, response))
+		require.NoError(t, protojson.Unmarshal(result.Payload, response))
 		require.NotNil(t, response.OperationName)
 		require.Nil(t, response.Rights)
 		require.Equal(t, operationName, response.OperationName, "wrong address")
