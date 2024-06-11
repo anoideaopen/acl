@@ -3,9 +3,10 @@ module github.com/anoideaopen/acl
 go 1.18
 
 require (
-	github.com/anoideaopen/foundation v0.0.2-0.20240603112837-d0830e597d52
+	github.com/anoideaopen/foundation v0.0.2-0.20240611113254-7a93731397e7
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/envoyproxy/protoc-gen-validate v0.10.1
+	github.com/ethereum/go-ethereum v1.10.16
 	github.com/golang/protobuf v1.5.3
 	github.com/hyperledger/fabric-chaincode-go v0.0.0-20230228194215-b84622ba6a7a
 	github.com/hyperledger/fabric-protos-go v0.3.0
@@ -16,6 +17,7 @@ require (
 )
 
 require (
+	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ddulesov/gogost v1.0.0 // indirect

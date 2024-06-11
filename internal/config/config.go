@@ -27,14 +27,17 @@ const (
 var (
 	ErrCfgBytesEmpty = errors.New("config bytes is empty")
 
-	ErrAdminSKIEmpty          = "'adminSKI' is empty"
-	ErrInvalidAdminSKI        = "'adminSKI' (index of args 0) is invalid - format found '%s' but expected hex encoded string"
-	ErrValidatorsCountEmpty   = "'validatorsCount' is empty"
-	ErrInvalidValidatorsCount = "'validatorsCount' (index of args 1) is invalid - format found '%s' but expected value with type int"
-	ErrValidatorsEmpty        = "'validator #'%d'' is empty"
-	ErrParsingArgsOld         = "init: parsing args old way: %s"
-	ErrSavingConfig           = "init: saving config: %s"
-	ErrArgsLessThanMin        = "minimum required args length is '%d', passed %d"
+	ErrAdminSKIEmpty           = "'adminSKI' is empty"
+	ErrInvalidAdminSKI         = "'adminSKI' (index of args 0) is invalid - format found '%s' but expected hex encoded string"
+	ErrValidatorsCountEmpty    = "'validatorsCount' is empty"
+	ErrInvalidValidatorsCount  = "'validatorsCount' (index of args 1) is invalid - format found '%s' but expected value with type int"
+	ErrValidatorsEmpty         = "validators are not set"
+	ErrValidatorEmpty          = "'validator #'%d'' is empty"
+	ErrValidatorDuplicates     = "'validator #'%d'' is duplicated"
+	ErrValidatorInvalidKeyType = "'validator #'%d'' has invalid key type: %s"
+	ErrParsingArgsOld          = "init: parsing args old way: %s"
+	ErrSavingConfig            = "init: saving config: %s"
+	ErrArgsLessThanMin         = "minimum required args length is '%d', passed %d"
 )
 
 func SetConfig(stub shim.ChaincodeStubInterface) error {
@@ -60,13 +63,38 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 		}
 	}
 
-	for i, validator := range cfg.GetValidators() {
-		if validator.GetPublicKey() == "" {
-			cfg.Validators[i].KeyType = helpers.DefaultPublicKeyType()
+	adminSKIEncoded := cfg.GetAdminSKIEncoded()
+	if adminSKIEncoded == "" {
+		return errors.New(ErrAdminSKIEmpty)
+	}
+
+	_, err = hex.DecodeString(adminSKIEncoded)
+	if err != nil {
+		return fmt.Errorf(ErrInvalidAdminSKI, adminSKIEncoded)
+	}
+
+	validators := cfg.GetValidators()
+
+	if len(validators) == 0 {
+		return errors.New(ErrValidatorsEmpty)
+	}
+
+	validatorKeys := make(map[string]string)
+	for i, validator := range validators {
+		validatorKey := validator.GetPublicKey()
+		if validatorKey == "" {
+			return fmt.Errorf(ErrValidatorEmpty, i)
 		}
+
+		if _, ok := validatorKeys[validatorKey]; ok {
+			return fmt.Errorf(ErrValidatorDuplicates, i)
+		}
+
+		validatorKeys[validatorKey] = validatorKey
+
 		// gost key can't be used as a validator's key
 		if !helpers.ValidatePublicKeyType(validator.GetKeyType(), pb.KeyType_gost.String()) {
-			return fmt.Errorf("invalid key type: %s", validator.GetPublicKey())
+			return fmt.Errorf(ErrValidatorInvalidKeyType, i, validator.GetPublicKey())
 		}
 	}
 
@@ -200,7 +228,7 @@ func ParseArgsArr(args []string) (*proto.ACLConfig, error) {
 	validatorKeys := args[indexValidators:lastValidatorArgIndex]
 	for i, validatorKey := range validatorKeys {
 		if validatorKey == "" {
-			return nil, fmt.Errorf(ErrValidatorsEmpty, i)
+			return nil, fmt.Errorf(ErrValidatorEmpty, i)
 		}
 	}
 

@@ -10,6 +10,7 @@ on:
 env:
   GO_VER: 1.22.4
   GO_VER_OLD: 1.18.7
+  GINKGO_VER: 2.13.2
 
 jobs:
   check-cyrillic-comments:
@@ -56,7 +57,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.58
+          version: v1.59
           args: --out-format=colored-line-number
           skip-cache: true
 
@@ -102,4 +103,30 @@ jobs:
           config: ./.testcoverage.yml
           profile: coverage.out
           local-prefix: github.com/${{ github.repository }}
+
+  go-test-integration:
+    needs:
+      - golangci-lint
+    strategy:
+      fail-fast: false
+      matrix:
+        INTEGRATION_TEST_SUITE: [ "config","emission" ]
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VER }}
+      - name: redis
+        run: docker pull redis:7.2.4
+      - name: fabric-ccenv
+        run: docker pull hyperledger/fabric-ccenv:latest
+      - name: fabric-baseos
+        run: docker pull hyperledger/fabric-baseos:latest
+      - name: install ginkgo
+        run: go install github.com/onsi/ginkgo/v2/ginkgo@v${{ env.GINKGO_VER }}
+      - name: integration test
+        working-directory: ./tests/integration
+        run: |
+          ginkgo --keep-going --poll-progress-after 60s --timeout 24h ${{matrix.INTEGRATION_TEST_SUITE}}
 
