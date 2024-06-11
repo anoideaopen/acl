@@ -288,7 +288,7 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 	return shim.Success(rawResult)
 }
 
-// GetAccountOperationRightJson checks address have rights for the operation
+// GetAccountOperationRightJSON checks address have rights for the operation
 // args[0] -> channelName
 // args[1] -GetOperationAllRights> chaincodeName
 // args[2] -> roleName
