@@ -1,6 +1,7 @@
 package cc
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/anoideaopen/acl/cc/errs"
@@ -9,6 +10,7 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // matrix keys
@@ -23,7 +25,7 @@ const (
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen,gocognit
+func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen,gocognit,gocyclo
 	argsNum := len(args)
 	const requiredArgsCount = 5
 	if argsNum != requiredArgsCount {
@@ -75,9 +77,10 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
-		err = proto.Unmarshal(rawAddresses, addresses)
-		if err != nil {
-			return shim.Error(err.Error())
+		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
+			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
+				return shim.Error(err.Error())
+			}
 		}
 	}
 
@@ -91,7 +94,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 
 	if !addressFound {
 		addresses.Addresses = append(addresses.Addresses, address)
-		rawAddresses, err = proto.Marshal(addresses)
+		rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(addresses)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -117,9 +120,10 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 		Rights:  []*pb.Right{},
 	}
 	if len(rawAccountRights) != 0 {
-		err = proto.Unmarshal(rawAccountRights, accountRights)
-		if err != nil {
-			return shim.Error(err.Error())
+		if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
+			if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
+				return shim.Error(err.Error())
+			}
 		}
 	}
 
@@ -144,7 +148,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 			Address:       address,
 			HaveRight:     &pb.HaveRight{HaveRight: true},
 		})
-		rawAccountRights, err = proto.Marshal(accountRights)
+		rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -199,16 +203,17 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
-		err = proto.Unmarshal(rawAddresses, addresses)
-		if err != nil {
-			return shim.Error(err.Error())
+		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
+			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
+				return shim.Error(err.Error())
+			}
 		}
 	}
 
 	for i, existedAddr := range addresses.GetAddresses() {
 		if existedAddr.AddrString() == address.AddrString() {
 			addresses.Addresses = append(addresses.Addresses[:i], addresses.GetAddresses()[i+1:]...)
-			rawAddresses, err = proto.Marshal(addresses)
+			rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(addresses)
 			if err != nil {
 				return shim.Error(err.Error())
 			}
@@ -236,9 +241,10 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 		Rights:  []*pb.Right{},
 	}
 	if len(rawAccountRights) != 0 {
-		err = proto.Unmarshal(rawAccountRights, accountRights)
-		if err != nil {
-			return shim.Error(err.Error())
+		if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
+			if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
+				return shim.Error(err.Error())
+			}
 		}
 	}
 
@@ -247,7 +253,7 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 			rightExists.GetRoleName() == roleName && rightExists.GetOperationName() == operationName &&
 			rightExists.GetAddress().String() == address.String() {
 			accountRights.Rights = append(accountRights.Rights[:i], accountRights.GetRights()[i+1:]...)
-			rawAccountRights, err = proto.Marshal(accountRights)
+			rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 			if err != nil {
 				return shim.Error(err.Error())
 			}
@@ -268,21 +274,54 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen
+func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	result, err := c.getAccountOperationRight(stub, args)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	rawResult, err := proto.Marshal(result)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(rawResult)
+}
+
+// GetAccountOperationRightJson checks address have rights for the operation
+// args[0] -> channelName
+// args[1] -GetOperationAllRights> chaincodeName
+// args[2] -> roleName
+// args[3] -> operationName
+// args[4] -> addressEncoded
+func (c *ACL) GetAccountOperationRightJSON(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	result, err := c.getAccountOperationRight(stub, args)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	rawResult, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(result)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(rawResult)
+}
+
+func (c *ACL) getAccountOperationRight(stub shim.ChaincodeStubInterface, args []string) (*pb.HaveRight, error) { //nolint:funlen
 	argsNum := len(args)
 	const requiredArgsCount = 5
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum,
+		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
-		return shim.Error(errMsg)
 	}
 
 	canCall, err := c.isCalledFromChaincodeOrAdmin(stub)
 	if err != nil {
-		return shim.Error(fmt.Sprintf(errs.ErrCallAthFailed, err.Error()))
+		return nil, fmt.Errorf(errs.ErrCallAthFailed, err.Error())
 	}
 	if !canCall {
-		return shim.Error(errs.ErrCalledNotCCOrAdmin)
+		return nil, errors.New(errs.ErrCalledNotCCOrAdmin)
 	}
 
 	channelName := args[0]
@@ -292,40 +331,41 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 	addressEncoded := args[4]
 
 	if len(channelName) == 0 {
-		return shim.Error(errs.ErrEmptyChannelName)
+		return nil, errors.New(errs.ErrEmptyChannelName)
 	}
 
 	if len(chaincodeName) == 0 {
-		return shim.Error(errs.ErrEmptyChaincodeName)
+		return nil, errors.New(errs.ErrEmptyChaincodeName)
 	}
 
 	if len(roleName) == 0 {
-		return shim.Error(errs.ErrEmptyRoleName)
+		return nil, errors.New(errs.ErrEmptyRoleName)
 	}
 
 	if len(addressEncoded) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
+		return nil, errors.New(errs.ErrEmptyAddress)
 	}
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, err
 	}
 
 	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, err
 	}
 
 	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, err
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
-		err = proto.Unmarshal(rawAddresses, addresses)
-		if err != nil {
-			return shim.Error(err.Error())
+		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
+			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -338,12 +378,7 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 		}
 	}
 
-	rawResult, err := proto.Marshal(result)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	return shim.Success(rawResult)
+	return result, nil
 }
 
 // GetAccountAllRights returns all operations specified account have right to execute
@@ -380,6 +415,19 @@ func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []strin
 	}
 
 	rawAccountRights, err := stub.GetState(key)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	accountRights := &pb.AccountRights{
+		Address: address,
+		Rights:  []*pb.Right{},
+	}
+	if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
+		if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
+			return shim.Error(err.Error())
+		}
+	}
+	rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -436,9 +484,10 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
-		err = proto.Unmarshal(rawAddresses, addresses)
-		if err != nil {
-			return shim.Error(err.Error())
+		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
+			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
+				return shim.Error(err.Error())
+			}
 		}
 	}
 
@@ -454,7 +503,7 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 		})
 	}
 
-	rawRights, err := proto.Marshal(&pb.OperationRights{OperationName: operationName, Rights: rights})
+	rawRights, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(&pb.OperationRights{OperationName: operationName, Rights: rights})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
