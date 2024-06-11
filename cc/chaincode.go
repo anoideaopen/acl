@@ -74,7 +74,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	var ok bool
 	for i := 0; i < t.NumMethod(); i++ {
 		method := t.Method(i)
-		if method.Name != "Init" && method.Name != "Invoke" {
+		if method.Name != "Init" && method.Name != "Invoke" && method.Name != "Start" {
 			name := helpers.ToLowerFirstLetter(method.Name)
 			if methods[name], ok = reflect.ValueOf(c).MethodByName(method.Name).Interface().(func(shim.ChaincodeStubInterface, []string) peer.Response); !ok {
 				return shim.Error(fmt.Sprintf("Chaincode initialization failure: cc method %s does not satisfy signature func(stub shim.ChaincodeStubInterface, args []string) peer.Response", method.Name))
