@@ -76,7 +76,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	return ccInvoke(stub, args)
 }
 
-// readConfig reads & validates ACL config
+// readConfig reads ACL config
 func (c *ACL) readConfig(stub shim.ChaincodeStubInterface) error {
 	cfg, err := config.GetConfig(stub)
 	if err != nil {

@@ -23,6 +23,12 @@ import (
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
 )
 
+// Functions names
+const (
+	FnEmit      = "emit"
+	FnBalanceOf = "balanceOf"
+)
+
 var _ = Describe("ACL emission tests", func() {
 	var (
 		testDir          string
@@ -204,12 +210,12 @@ var _ = Describe("ACL emission tests", func() {
 		emitAmount := "1000"
 		client.TxInvokeWithSign(network, peer, network.Orderers[0],
 			cmn.ChannelFiat, cmn.ChannelFiat, admin,
-			"emit", "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
+			FnEmit, "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
 
 		By("emit check")
 		client.Query(network, peer, cmn.ChannelFiat, cmn.ChannelFiat,
 			fabricnetwork.CheckResult(fabricnetwork.CheckBalance(emitAmount), nil),
-			"balanceOf", user.AddressBase58Check)
+			FnBalanceOf, user.AddressBase58Check)
 	})
 
 	It("Multisigned emit transfer test", func() {
@@ -240,12 +246,12 @@ var _ = Describe("ACL emission tests", func() {
 		emitAmount := "1000"
 		aclclient.TxInvokeWithMultisign(network, peer, network.Orderers[0],
 			cmn.ChannelFiat, cmn.ChannelFiat, multisigUser,
-			"emit", "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
+			FnEmit, "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
 
 		By("emit check")
 		client.Query(network, peer, cmn.ChannelFiat, cmn.ChannelFiat,
 			fabricnetwork.CheckResult(fabricnetwork.CheckBalance(emitAmount), nil),
-			"balanceOf", user.AddressBase58Check)
+			FnBalanceOf, user.AddressBase58Check)
 	})
 
 	It("Multisig change pub key test", func() {
@@ -289,11 +295,11 @@ var _ = Describe("ACL emission tests", func() {
 		emitAmount := "1000"
 		aclclient.TxInvokeWithMultisign(network, peer, network.Orderers[0],
 			cmn.ChannelFiat, cmn.ChannelFiat, multisigUser,
-			"emit", "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
+			FnEmit, "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
 
 		By("emit check")
 		client.Query(network, peer, cmn.ChannelFiat, cmn.ChannelFiat,
 			fabricnetwork.CheckResult(fabricnetwork.CheckBalance(emitAmount), nil),
-			"balanceOf", user.AddressBase58Check)
+			FnBalanceOf, user.AddressBase58Check)
 	})
 })

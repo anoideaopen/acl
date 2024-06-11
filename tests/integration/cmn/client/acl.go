@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -25,7 +26,7 @@ func CheckUserMultisigned(network *nwo.Network, peer *nwo.Peer, user *UserFounda
 		sess, err := network.PeerUserSession(peer, "User1", commands.ChaincodeQuery{
 			ChannelID: cmn.ChannelAcl,
 			Name:      cmn.ChannelAcl,
-			Ctor:      cmn.CtorFromSlice([]string{"checkKeys", user.PublicKey()}),
+			Ctor:      cmn.CtorFromSlice([]string{common.FnCheckKeys, user.PublicKey()}),
 		})
 		Eventually(sess, network.EventuallyTimeout).Should(gexec.Exit())
 		Expect(sess.ExitCode()).To(Equal(0))
@@ -52,7 +53,7 @@ func CheckUserMultisigned(network *nwo.Network, peer *nwo.Peer, user *UserFounda
 
 // AddMultisig adds multisigned user
 func AddMultisig(network *nwo.Network, peer *nwo.Peer, orderer *nwo.Orderer, n int, user *UserFoundationMultisigned) {
-	ctorArgs := []string{"addMultisig", strconv.Itoa(n), client.NewNonceByTime().Get()}
+	ctorArgs := []string{common.FnAddMultisig, strconv.Itoa(n), client.NewNonceByTime().Get()}
 	publicKeys, sMsgsByte, err := user.Sign(ctorArgs...)
 	var sMsgsStr []string
 	for _, sMsgByte := range sMsgsByte {
@@ -78,12 +79,20 @@ func AddMultisig(network *nwo.Network, peer *nwo.Peer, orderer *nwo.Orderer, n i
 }
 
 // ChangeMultisigPublicKey changes public key for multisigned user by validators
-func ChangeMultisigPublicKey(network *nwo.Network, peer *nwo.Peer, orderer *nwo.Orderer,
-	multisignedUser *UserFoundationMultisigned, oldPubKeyBase58 string, newPubKeyBase58 string,
-	reason string, reasonID string, validators ...*client.UserFoundation) {
+func ChangeMultisigPublicKey(
+	network *nwo.Network,
+	peer *nwo.Peer,
+	orderer *nwo.Orderer,
+	multisignedUser *UserFoundationMultisigned,
+	oldPubKeyBase58 string,
+	newPubKeyBase58 string,
+	reason string,
+	reasonID string,
+	validators ...*client.UserFoundation,
+) {
 	nonce := client.NewNonceByTime().Get()
 	// ToDo - Why are we signing arguments that differs we are sending?
-	ctorArgsToSign := []string{"changeMultisigPublicKey", multisignedUser.AddressBase58Check, oldPubKeyBase58, multisignedUser.PublicKey(), reason, reasonID, nonce}
+	ctorArgsToSign := []string{common.FnChangeMultisigPublicKey, multisignedUser.AddressBase58Check, oldPubKeyBase58, multisignedUser.PublicKey(), reason, reasonID, nonce}
 	validatorMultisignedUser := &UserFoundationMultisigned{
 		UserID: "multisigned validators",
 		Users:  validators,
@@ -93,7 +102,7 @@ func ChangeMultisigPublicKey(network *nwo.Network, peer *nwo.Peer, orderer *nwo.
 	Expect(err).NotTo(HaveOccurred())
 
 	var sMsgsStr []string
-	ctorArgs := []string{"changeMultisigPublicKey", multisignedUser.AddressBase58Check, oldPubKeyBase58, newPubKeyBase58, reason, reasonID, nonce}
+	ctorArgs := []string{common.FnChangeMultisigPublicKey, multisignedUser.AddressBase58Check, oldPubKeyBase58, newPubKeyBase58, reason, reasonID, nonce}
 	for _, sMsgByte := range sMsgsByte {
 		sMsgsStr = append(sMsgsStr, hex.EncodeToString(sMsgByte))
 	}

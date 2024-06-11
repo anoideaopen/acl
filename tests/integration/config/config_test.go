@@ -194,7 +194,7 @@ var _ = Describe("ACL config tests", func() {
 			AdminSKIEncoded: skiBackend,
 			Validators:      []*aclpb.ACLValidator{},
 		}
-		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `validators does not set`)
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `validators are not set`)
 	})
 
 	It("Acl init empty validator", func() {
@@ -217,6 +217,28 @@ var _ = Describe("ACL config tests", func() {
 			},
 		}
 		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'validator #'0'' is empty`)
+	})
+
+	It("Acl init validator duplicated", func() {
+		By("Deploying chaincode acl")
+		pathToPrivateKeyBackend := network.PeerUserKey(peer, "User1")
+		skiBackend, err := cmn.ReadSKI(pathToPrivateKeyBackend)
+		Expect(err).NotTo(HaveOccurred())
+
+		aclCfg := &aclpb.ACLConfig{
+			AdminSKIEncoded: skiBackend,
+			Validators: []*aclpb.ACLValidator{
+				{
+					PublicKey: admin.PublicKeyBase58,
+					KeyType:   common.KeyTypeEd25519,
+				},
+				{
+					PublicKey: admin.PublicKeyBase58,
+					KeyType:   common.KeyTypeEd25519,
+				},
+			},
+		}
+		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'validator #'1'' is duplicated`)
 	})
 
 	It("Acl init invalid key type", func() {

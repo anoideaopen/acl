@@ -31,8 +31,9 @@ var (
 	ErrInvalidAdminSKI         = "'adminSKI' (index of args 0) is invalid - format found '%s' but expected hex encoded string"
 	ErrValidatorsCountEmpty    = "'validatorsCount' is empty"
 	ErrInvalidValidatorsCount  = "'validatorsCount' (index of args 1) is invalid - format found '%s' but expected value with type int"
-	ErrValidatorsEmpty         = "validators does not set"
+	ErrValidatorsEmpty         = "validators are not set"
 	ErrValidatorEmpty          = "'validator #'%d'' is empty"
+	ErrValidatorDuplicates     = "'validator #'%d'' is duplicated"
 	ErrValidatorInvalidKeyType = "'validator #'%d'' has invalid key type: %s"
 	ErrParsingArgsOld          = "init: parsing args old way: %s"
 	ErrSavingConfig            = "init: saving config: %s"
@@ -78,10 +79,19 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 		return errors.New(ErrValidatorsEmpty)
 	}
 
+	validatorKeys := make(map[string]string)
 	for i, validator := range validators {
-		if validator.GetPublicKey() == "" {
+		validatorKey := validator.GetPublicKey()
+		if validatorKey == "" {
 			return fmt.Errorf(ErrValidatorEmpty, i)
 		}
+
+		if _, ok := validatorKeys[validatorKey]; ok {
+			return fmt.Errorf(ErrValidatorDuplicates, i)
+		}
+
+		validatorKeys[validatorKey] = validatorKey
+
 		// gost key can't be used as a validator's key
 		if !helpers.ValidatePublicKeyType(validator.GetKeyType(), pb.KeyType_gost.String()) {
 			return fmt.Errorf(ErrValidatorInvalidKeyType, i, validator.GetPublicKey())

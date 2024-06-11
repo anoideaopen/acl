@@ -85,8 +85,7 @@ func signMessage(privateKey ed25519.PrivateKey, msgToSign []byte) []byte {
 // verifyEd25519 - verify publicKey with message and signed message
 func verifyEd25519(publicKey ed25519.PublicKey, bytesToSign []byte, sMsg []byte) error {
 	if !ed25519.Verify(publicKey, bytesToSign, sMsg) {
-		err := errors.New("valid signature rejected")
-		return err
+		return errors.New("valid signature rejected")
 	}
 	return nil
 }
