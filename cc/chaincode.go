@@ -2,7 +2,6 @@ package cc
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -51,9 +50,22 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	fn, args := stub.GetFunctionAndParameters()
 
 	// Need to always read the config to assure there will be no determinism while executing the transaction
-	if err := c.readConfig(stub); err != nil {
+	// init config begin
+	cfg, err := config.GetConfig(stub)
+	if err != nil {
 		return shim.Error(err.Error())
 	}
+	if cfg == nil {
+		return shim.Error("ACL chaincode not initialized, please invoke Init with init args first")
+	}
+	c.config = cfg
+
+	adminSKI, err := hex.DecodeString(cfg.GetAdminSKIEncoded())
+	if err != nil {
+		return shim.Error(fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.GetAdminSKIEncoded()))
+	}
+	c.adminSKI = adminSKI
+	// init config end
 
 	methods := make(map[string]ccFunc)
 	t := reflect.TypeOf(c)
@@ -74,30 +86,4 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}
 
 	return ccInvoke(stub, args)
-}
-
-// readConfig reads ACL config
-func (c *ACL) readConfig(stub shim.ChaincodeStubInterface) error {
-	cfg, err := config.GetConfig(stub)
-	if err != nil {
-		return err
-	}
-	if cfg == nil {
-		return errors.New("ACL chaincode not initialized, please invoke Init with init args first")
-	}
-
-	adminSKIEncoded := cfg.GetAdminSKIEncoded()
-	if adminSKIEncoded == "" {
-		return errors.New(config.ErrAdminSKIEmpty)
-	}
-
-	adminSKI, err := hex.DecodeString(adminSKIEncoded)
-	if err != nil {
-		return fmt.Errorf(config.ErrInvalidAdminSKI, adminSKIEncoded)
-	}
-
-	c.config = cfg
-	c.adminSKI = adminSKI
-
-	return nil
 }
