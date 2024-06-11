@@ -2,8 +2,10 @@ package cc
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
+	"os"
 	"reflect"
 	"runtime/debug"
 
@@ -72,7 +74,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	var ok bool
 	for i := 0; i < t.NumMethod(); i++ {
 		method := t.Method(i)
-		if method.Name != "Init" && method.Name != "Invoke" {
+		if method.Name != "Init" && method.Name != "Invoke" && method.Name != "Start" {
 			name := helpers.ToLowerFirstLetter(method.Name)
 			if methods[name], ok = reflect.ValueOf(c).MethodByName(method.Name).Interface().(func(shim.ChaincodeStubInterface, []string) peer.Response); !ok {
 				return shim.Error(fmt.Sprintf("Chaincode initialization failure: cc method %s does not satisfy signature func(stub shim.ChaincodeStubInterface, args []string) peer.Response", method.Name))
@@ -86,4 +88,52 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}
 
 	return ccInvoke(stub, args)
+}
+
+func (c *ACL) Start() error {
+	const (
+		chaincodeExecModeEnv    = "CHAINCODE_EXEC_MODE"
+		chaincodeExecModeServer = "server"
+	)
+
+	if os.Getenv(chaincodeExecModeEnv) == chaincodeExecModeServer {
+		return c.startAsChaincodeServer()
+	}
+
+	return c.startAsRegularChaincode()
+}
+
+func (c *ACL) startAsRegularChaincode() error {
+	return shim.Start(c)
+}
+
+// startAsChaincodeServer creates a chaincode server without TLS.
+// Support of TLS should be implemented if required
+func (c *ACL) startAsChaincodeServer() error {
+	const (
+		chaincodeCcIDEnv           = "CHAINCODE_ID"
+		chaincodeServerPortEnv     = "CHAINCODE_SERVER_PORT"
+		chaincodeServerDefaultPort = "9999"
+	)
+
+	ccID := os.Getenv(chaincodeCcIDEnv)
+	if ccID == "" {
+		return errors.New("need to specify chaincode id if running as a server")
+	}
+
+	port := os.Getenv(chaincodeServerPortEnv)
+	if port == "" {
+		port = chaincodeServerDefaultPort
+	}
+
+	srv := shim.ChaincodeServer{
+		CCID:    ccID,
+		Address: fmt.Sprintf("%s:%s", "0.0.0.0", port),
+		CC:      c,
+		TLSProps: shim.TLSProperties{
+			Disabled: true,
+		},
+	}
+
+	return srv.Start()
 }
