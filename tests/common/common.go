@@ -2,7 +2,6 @@ package common
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
@@ -17,6 +16,7 @@ import (
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/btcsuite/btcutil/base58"
+	eth "github.com/ethereum/go-ethereum/crypto"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
@@ -95,9 +95,9 @@ var (
 			KeyType:    KeyTypeEd25519,
 		},
 		{
-			PublicKey:  "3VeCgHy4GFyMGW26sfc797eUUPHBtmngT4t4E2tx87d627JMmrBcsUgKnaDBtozuRp4Hvr1VUc7E8niMFfDdU9JG",
-			PrivateKey: "FkBBwcDTqv3JKScX98a8iMZRBs2GbinNWLey47kfY2C4",
-			KeyType:    KeyTypeECDSA,
+			PublicKey:  "4DorLT9cRqaUeiDsBtDmm2Gwz18CqGsLn3f4eNLPi8LfzaS3h29aGZXp8aSFMEb8K3BEDA3Z9kFnTqD2TuAud15V",
+			PrivateKey: "8XfQpgs3iBeJ1tSKzsdCU9t7Jd8vbxcLsrDgGHq78C4x",
+			KeyType:    KeyTypeSecp256k1,
 		},
 	}
 
@@ -268,19 +268,18 @@ func HexEncodedSignature(privateKey []byte, message []byte) []byte {
 	return []byte(hex.EncodeToString(sign(privateKey, message)))
 }
 
-func sign(privateKey []byte, message []byte) []byte {
-	if len(privateKey) == ed25519.PrivateKeySize {
-		return ed25519.Sign(privateKey, message)
+func sign(privateKeyBytes []byte, message []byte) []byte {
+	if len(privateKeyBytes) == ed25519.PrivateKeySize {
+		return ed25519.Sign(privateKeyBytes, message)
 	}
-	ecdsaKey := &ecdsa.PrivateKey{
+	privateKey := &ecdsa.PrivateKey{
 		PublicKey: ecdsa.PublicKey{
-			Curve: elliptic.P256(),
+			Curve: eth.S256(),
 		},
-		D: new(big.Int).SetBytes(privateKey),
+		D: new(big.Int).SetBytes(privateKeyBytes),
 	}
-	ecdsaKey.PublicKey.X, ecdsaKey.PublicKey.Y = elliptic.P256().ScalarBaseMult(privateKey)
 
-	signature, err := ecdsa.SignASN1(rand.Reader, ecdsaKey, message)
+	signature, err := ecdsa.SignASN1(rand.Reader, privateKey, message)
 	if err != nil {
 		return nil
 	}
@@ -297,7 +296,7 @@ func VerifySignature(
 		return true
 	}
 
-	if verifyECDSASignature(publicKey, message, signature) {
+	if verifySecp256k1Signature(publicKey, message, signature) {
 		return true
 	}
 
@@ -312,28 +311,28 @@ func verifyEd25519Signature(
 	return len(publicKey) == ed25519.PublicKeySize && ed25519.Verify(publicKey, message, signature)
 }
 
-func verifyECDSASignature(
-	publicKey []byte,
+func verifySecp256k1Signature(
+	publicKeyBytes []byte,
 	message []byte,
 	signature []byte,
 ) bool {
-	if len(publicKey) != helpers.KeyLengthECDSA {
+	publicKey := secp256k1PublicKeyFromBytes(publicKeyBytes)
+	if publicKey == nil {
 		return false
 	}
-	ecdsaKey := ecdsaPublicKeyFromBytes(publicKey)
-	if ecdsaKey == nil {
-		return false
-	}
-	return ecdsa.VerifyASN1(ecdsaKey, message, signature)
+	return ecdsa.VerifyASN1(publicKey, message, signature)
 }
 
-func ecdsaPublicKeyFromBytes(bytes []byte) *ecdsa.PublicKey {
-	if len(bytes) != helpers.KeyLengthECDSA {
+func secp256k1PublicKeyFromBytes(bytes []byte) *ecdsa.PublicKey {
+	if bytes[0] == 0x04 && len(bytes) == helpers.KeyLengthSecp256k1+1 {
+		bytes = bytes[1:]
+	}
+	if len(bytes) != helpers.KeyLengthSecp256k1 {
 		return nil
 	}
 	return &ecdsa.PublicKey{
-		Curve: elliptic.P256(),
-		X:     new(big.Int).SetBytes(bytes[:helpers.KeyLengthECDSA/2]),
-		Y:     new(big.Int).SetBytes(bytes[helpers.KeyLengthECDSA/2:]),
+		Curve: eth.S256(),
+		X:     new(big.Int).SetBytes(bytes[:helpers.KeyLengthSecp256k1/2]),
+		Y:     new(big.Int).SetBytes(bytes[helpers.KeyLengthSecp256k1/2:]),
 	}
 }

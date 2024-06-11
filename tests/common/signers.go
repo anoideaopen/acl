@@ -3,14 +3,15 @@ package common
 import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/elliptic"
 	"crypto/rand"
 	"math/big"
+
+	eth "github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
-	KeyTypeEd25519 = "ed25519"
-	KeyTypeECDSA   = "ecdsa"
+	KeyTypeEd25519   = "ed25519"
+	KeyTypeSecp256k1 = "secp256k1"
 )
 
 type TestSigner struct {
@@ -24,16 +25,15 @@ func (s *TestSigner) Sign(message []byte) []byte {
 	case KeyTypeEd25519:
 		return ed25519.Sign([]byte(s.PrivateKey), message)
 
-	case KeyTypeECDSA:
-		ecdsaKey := &ecdsa.PrivateKey{
+	case KeyTypeSecp256k1:
+		secp256k1Key := &ecdsa.PrivateKey{
 			PublicKey: ecdsa.PublicKey{
-				Curve: elliptic.P256(),
+				Curve: eth.S256(),
 			},
 			D: new(big.Int).SetBytes([]byte(s.PrivateKey)),
 		}
-		ecdsaKey.PublicKey.X, ecdsaKey.PublicKey.Y = elliptic.P256().ScalarBaseMult([]byte(s.PrivateKey))
 
-		signature, err := ecdsa.SignASN1(rand.Reader, ecdsaKey, message)
+		signature, err := ecdsa.SignASN1(rand.Reader, secp256k1Key, message)
 		if err != nil {
 			return nil
 		}

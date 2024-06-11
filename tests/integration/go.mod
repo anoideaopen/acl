@@ -5,7 +5,7 @@ go 1.22.4
 require (
 	github.com/IBM/idemix v0.0.2-0.20231011101252-a4feda90f3f7
 	github.com/anoideaopen/acl v0.0.0-20240607204953-f8b676b2225f
-	github.com/anoideaopen/foundation v0.0.2-0.20240603112837-d0830e597d52
+	github.com/anoideaopen/foundation v0.0.2-0.20240611113254-7a93731397e7
 	github.com/anoideaopen/foundation/test/integration v0.0.0-20240610143718-2d6a2e1472b6
 	github.com/anoideaopen/robot v0.0.2-0.20240605153321-0e09032227bf
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
@@ -37,6 +37,7 @@ require (
 	github.com/avast/retry-go/v4 v4.3.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
+	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/cfssl v1.4.1 // indirect
@@ -51,6 +52,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
+	github.com/ethereum/go-ethereum v1.10.16 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
@@ -113,7 +115,7 @@ require (
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/sykesm/zap-logfmt v0.0.4 // indirect
-	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954 // indirect
+	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/weppos/publicsuffix-go v0.5.0 // indirect
 	github.com/zmap/zcrypto v0.0.0-20190729165852-9051775e6a2e // indirect
 	github.com/zmap/zlint v0.0.0-20190806154020-fd021b4cfbeb // indirect

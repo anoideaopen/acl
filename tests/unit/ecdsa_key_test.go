@@ -38,7 +38,7 @@ func TestAddUserECDSAPublicKey(t *testing.T) {
 			testAddress:    testAddress,
 			kycHash:        kycHash,
 			testUserID:     testUserID,
-			testPubKeyType: common.KeyTypeECDSA,
+			testPubKeyType: common.KeyTypeSecp256k1,
 			respStatus:     int32(shim.OK),
 			errorMsg:       "",
 		}
@@ -53,7 +53,7 @@ func TestAddUserECDSAPublicKey(t *testing.T) {
 			testAddress:    testAddress,
 			kycHash:        kycHash,
 			testUserID:     testUserID,
-			testPubKeyType: common.KeyTypeECDSA,
+			testPubKeyType: common.KeyTypeSecp256k1,
 			respStatus:     int32(shim.ERROR),
 			errorMsg:       "already exists",
 		}
