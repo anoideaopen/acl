@@ -24,6 +24,8 @@ const (
 	KeyLengthGOST      = 64
 )
 
+const PrefixUncompressedSecp259k1Key = 0x04
+
 // DecodeBase58PublicKey decode public key from base58 to a byte array
 func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 	if len(encodedBase58PublicKey) == 0 {
@@ -214,6 +216,9 @@ func ValidateMinSignatures(n int) error {
 
 func ValidateKeyLength(key []byte) bool {
 	if len(key) == KeyLengthEd25519 {
+		return true
+	}
+	if len(key) == KeyLengthSecp256k1+1 && key[0] == PrefixUncompressedSecp259k1Key {
 		return true
 	}
 	if len(key) == KeyLengthSecp256k1 {

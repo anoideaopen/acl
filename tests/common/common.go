@@ -90,11 +90,13 @@ var (
 			KeyType:    KeyTypeEd25519,
 		},
 		{
-			PublicKey:  "5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
-			PrivateKey: "5D2BpuHZwik9zPFuaqba4zbvNP8TB7PQ6usZke5bufPbKf8xG6ZMHReBqwKw9aDfpTaNfaRsg1j2zVZWrX8hg18D",
-			KeyType:    KeyTypeEd25519,
+			// secp256k1 key with 0x04 prefix
+			PublicKey:  "RtR8wrDuNvVXHNraBkNyeR6YVCdfUL6dWGXk1GAz2wPkp41BUYApzjVcJ9DutTmTZCSPQdKf3UgiuWrGCuL4C7fg",
+			PrivateKey: "CPjbqe7PzmgimpTdvvAuHsF8KcCw8ac3Sj8phUp2duuS",
+			KeyType:    KeyTypeSecp256k1,
 		},
 		{
+			// secp256k1 key without 0x04 prefix
 			PublicKey:  "4DorLT9cRqaUeiDsBtDmm2Gwz18CqGsLn3f4eNLPi8LfzaS3h29aGZXp8aSFMEb8K3BEDA3Z9kFnTqD2TuAud15V",
 			PrivateKey: "8XfQpgs3iBeJ1tSKzsdCU9t7Jd8vbxcLsrDgGHq78C4x",
 			KeyType:    KeyTypeSecp256k1,
@@ -324,7 +326,7 @@ func verifySecp256k1Signature(
 }
 
 func secp256k1PublicKeyFromBytes(bytes []byte) *ecdsa.PublicKey {
-	if bytes[0] == 0x04 && len(bytes) == helpers.KeyLengthSecp256k1+1 {
+	if len(bytes) == helpers.KeyLengthSecp256k1+1 && bytes[0] == helpers.PrefixUncompressedSecp259k1Key {
 		bytes = bytes[1:]
 	}
 	if len(bytes) != helpers.KeyLengthSecp256k1 {

@@ -12,6 +12,7 @@ import (
 const (
 	KeyTypeEd25519   = "ed25519"
 	KeyTypeSecp256k1 = "secp256k1"
+	KeyTypeGost      = "gost"
 )
 
 type TestSigner struct {

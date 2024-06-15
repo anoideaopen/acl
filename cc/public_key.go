@@ -36,19 +36,37 @@ func publicKeyFromBase58String(base58Encoded string) (PublicKey, error) {
 	}, nil
 }
 
+func (key *PublicKey) isSecp256k1() bool {
+	if len(key.Bytes) == 0 {
+		return false
+	}
+	if key.Bytes[0] == helpers.PrefixUncompressedSecp259k1Key {
+		return len(key.Bytes) == helpers.KeyLengthSecp256k1+1
+	}
+	return len(key.Bytes) == helpers.KeyLengthSecp256k1
+}
+
+func (key *PublicKey) isEd25519() bool {
+	return len(key.Bytes) == helpers.KeyLengthEd25519
+}
+
+func (key *PublicKey) isGost() bool {
+	return len(key.Bytes) == helpers.KeyLengthGOST
+}
+
 func (key *PublicKey) validateLength() error {
-	var expectedLength int
+	valid := false
 
 	switch key.Type {
 	case pb.KeyType_secp256k1.String():
-		expectedLength = helpers.KeyLengthSecp256k1
+		valid = key.isSecp256k1()
 	case pb.KeyType_gost.String():
-		expectedLength = helpers.KeyLengthGOST
+		valid = key.isGost()
 	default:
-		expectedLength = helpers.KeyLengthEd25519
+		valid = key.isEd25519()
 	}
 
-	if len(key.Bytes) != expectedLength {
+	if !valid {
 		return fmt.Errorf("unexpected key length %d", len(key.Bytes))
 	}
 
