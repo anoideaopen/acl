@@ -47,7 +47,7 @@ func verifySecp256k1Signature(
 }
 
 func secp256k1PublicKeyFromBytes(bytes []byte) *ecdsa.PublicKey {
-	if bytes[0] == 0x04 && len(bytes) == helpers.KeyLengthSecp256k1+1 {
+	if len(bytes) == helpers.KeyLengthSecp256k1+1 && bytes[0] == helpers.PrefixUncompressedSecp259k1Key {
 		bytes = bytes[1:]
 	}
 	if len(bytes) != helpers.KeyLengthSecp256k1 {
