@@ -3,7 +3,7 @@ module github.com/anoideaopen/acl
 go 1.18
 
 require (
-	github.com/anoideaopen/foundation v0.0.2-0.20240611130553-67a5dbb1fa4f
+	github.com/anoideaopen/foundation v0.0.3-0.20240620215102-6fa9c9911658
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/ethereum/go-ethereum v1.13.15
