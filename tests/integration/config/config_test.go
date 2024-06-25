@@ -9,6 +9,7 @@ import (
 	aclpb "github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/acl/tests/common"
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
+	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/anoideaopen/foundation/test/integration/cmn/fabricnetwork"
@@ -152,8 +153,8 @@ var _ = Describe("ACL config tests", func() {
 
 		peer = network.Peer("Org1", "peer0")
 
-		admin = client.NewUserFoundation()
-		Expect(admin.PrivateKey).NotTo(Equal(nil))
+		admin = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		Expect(admin.PrivateKeyBytes).NotTo(Equal(nil))
 	})
 
 	It("Acl init wrong admin ski format", func() {
