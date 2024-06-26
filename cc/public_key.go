@@ -37,13 +37,7 @@ func publicKeyFromBase58String(base58Encoded string) (PublicKey, error) {
 }
 
 func (key *PublicKey) isSecp256k1() bool {
-	if len(key.Bytes) == 0 {
-		return false
-	}
-	if key.Bytes[0] == helpers.PrefixUncompressedSecp259k1Key {
-		return len(key.Bytes) == helpers.KeyLengthSecp256k1+1
-	}
-	return len(key.Bytes) == helpers.KeyLengthSecp256k1
+	return len(key.Bytes) == helpers.KeyLengthSecp256k1 && key.Bytes[0] == helpers.PrefixUncompressedSecp259k1Key
 }
 
 func (key *PublicKey) isEd25519() bool {
@@ -74,13 +68,8 @@ func (key *PublicKey) validateLength() error {
 }
 
 func (key *PublicKey) verifySignature(
-	message []byte,
+	digest []byte,
 	signature []byte,
 ) bool {
-	switch key.Type {
-	case pb.KeyType_secp256k1.String():
-		return verifySecp256k1Signature(key.Bytes, message, signature)
-	default:
-		return verifyEd25519Signature(key.Bytes, message, signature)
-	}
+	return verifySignature(key.Bytes, key.Type, digest, signature)
 }

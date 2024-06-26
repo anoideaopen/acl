@@ -1,28 +1,24 @@
 package common
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
+	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/big"
 	"strconv"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
-	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
+	"github.com/anoideaopen/foundation/core/eth"
 	"github.com/btcsuite/btcutil/base58"
-	eth "github.com/ethereum/go-ethereum/crypto"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/ed25519"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -64,6 +60,18 @@ const (
 	DefaultReason = "because..."
 )
 
+const (
+	KeyTypeEd25519   = "ed25519"
+	KeyTypeSecp256k1 = "secp256k1"
+	KeyTypeGost      = "gost"
+)
+
+type TestSigner struct {
+	PublicKey  string
+	PrivateKey string
+	KeyType    string
+}
+
 var (
 	TestUsers = []TestSigner{
 		{
@@ -90,15 +98,13 @@ var (
 			KeyType:    KeyTypeEd25519,
 		},
 		{
-			// secp256k1 key with 0x04 prefix
-			PublicKey:  "RtR8wrDuNvVXHNraBkNyeR6YVCdfUL6dWGXk1GAz2wPkp41BUYApzjVcJ9DutTmTZCSPQdKf3UgiuWrGCuL4C7fg",
-			PrivateKey: "CPjbqe7PzmgimpTdvvAuHsF8KcCw8ac3Sj8phUp2duuS",
+			PublicKey:  "N4AmjUQajatSkH9k38vBkMp86WwRRMQ9B2yspj5ovbfJynD4dVUVZ2FBKdr7oDJ6AF6YDCD3qb47kmSwZge92LU1",
+			PrivateKey: "42nRs6TVpkAa4K55A6F6sNJNMCXGTtfmbTwJtaD459Bp",
 			KeyType:    KeyTypeSecp256k1,
 		},
 		{
-			// secp256k1 key without 0x04 prefix
-			PublicKey:  "4DorLT9cRqaUeiDsBtDmm2Gwz18CqGsLn3f4eNLPi8LfzaS3h29aGZXp8aSFMEb8K3BEDA3Z9kFnTqD2TuAud15V",
-			PrivateKey: "8XfQpgs3iBeJ1tSKzsdCU9t7Jd8vbxcLsrDgGHq78C4x",
+			PublicKey:  "QdeZQ5jZAEL6icB1qwhwZ41FSDsYrgtWTfnZdaP4UnJrN6du6jDHFFphH44sq4hxuhvyHFeqNuMRD6FZwUvMihVR",
+			PrivateKey: "GN8RvP2wRMCWfaCat7swGf37MtGFX67BTj3C6xrBqDMS",
 			KeyType:    KeyTypeSecp256k1,
 		},
 	}
@@ -271,17 +277,19 @@ func HexEncodedSignature(privateKey []byte, message []byte) []byte {
 }
 
 func sign(privateKeyBytes []byte, message []byte) []byte {
+	// try to sign with ed25519
 	if len(privateKeyBytes) == ed25519.PrivateKeySize {
 		return ed25519.Sign(privateKeyBytes, message)
 	}
-	privateKey := &ecdsa.PrivateKey{
-		PublicKey: ecdsa.PublicKey{
-			Curve: eth.S256(),
-		},
-		D: new(big.Int).SetBytes(privateKeyBytes),
+
+	// try to sign with secp256k1
+	privateKey, err := eth.PrivateKeyFromBytes(privateKeyBytes)
+	if err != nil {
+		return nil
 	}
 
-	signature, err := ecdsa.SignASN1(rand.Reader, privateKey, message)
+	digest := eth.Hash(message)
+	signature, err := eth.Sign(digest, privateKey)
 	if err != nil {
 		return nil
 	}
@@ -294,47 +302,12 @@ func VerifySignature(
 	message []byte,
 	signature []byte,
 ) bool {
-	if verifyEd25519Signature(publicKey, message, signature) {
+	// try to verity ed25519
+	if len(publicKey) == ed25519.PublicKeySize && ed25519.Verify(publicKey, message, signature) {
 		return true
 	}
 
-	if verifySecp256k1Signature(publicKey, message, signature) {
-		return true
-	}
-
-	return false
-}
-
-func verifyEd25519Signature(
-	publicKey []byte,
-	message []byte,
-	signature []byte,
-) bool {
-	return len(publicKey) == ed25519.PublicKeySize && ed25519.Verify(publicKey, message, signature)
-}
-
-func verifySecp256k1Signature(
-	publicKeyBytes []byte,
-	message []byte,
-	signature []byte,
-) bool {
-	publicKey := secp256k1PublicKeyFromBytes(publicKeyBytes)
-	if publicKey == nil {
-		return false
-	}
-	return ecdsa.VerifyASN1(publicKey, message, signature)
-}
-
-func secp256k1PublicKeyFromBytes(bytes []byte) *ecdsa.PublicKey {
-	if len(bytes) == helpers.KeyLengthSecp256k1+1 && bytes[0] == helpers.PrefixUncompressedSecp259k1Key {
-		bytes = bytes[1:]
-	}
-	if len(bytes) != helpers.KeyLengthSecp256k1 {
-		return nil
-	}
-	return &ecdsa.PublicKey{
-		Curve: eth.S256(),
-		X:     new(big.Int).SetBytes(bytes[:helpers.KeyLengthSecp256k1/2]),
-		Y:     new(big.Int).SetBytes(bytes[helpers.KeyLengthSecp256k1/2:]),
-	}
+	// try to verity secp256k1
+	digest := eth.Hash(message)
+	return eth.Verify(publicKey, digest, signature)
 }

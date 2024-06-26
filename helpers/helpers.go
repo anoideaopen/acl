@@ -20,7 +20,7 @@ import (
 
 const (
 	KeyLengthEd25519   = 32
-	KeyLengthSecp256k1 = 64
+	KeyLengthSecp256k1 = 65
 	KeyLengthGOST      = 64
 )
 
@@ -218,10 +218,7 @@ func ValidateKeyLength(key []byte) bool {
 	if len(key) == KeyLengthEd25519 {
 		return true
 	}
-	if len(key) == KeyLengthSecp256k1+1 && key[0] == PrefixUncompressedSecp259k1Key {
-		return true
-	}
-	if len(key) == KeyLengthSecp256k1 {
+	if len(key) == KeyLengthSecp256k1 && key[0] == PrefixUncompressedSecp259k1Key {
 		return true
 	}
 	if len(key) == KeyLengthGOST {

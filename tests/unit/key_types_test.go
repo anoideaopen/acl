@@ -14,8 +14,8 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 	t.Parallel()
 
 	const (
-		testKeyECDSA = "7cbbb6989aa2df8926ebd925fa87eb843f3328b4b2ba2f35532309c759af96c9a8b0a824f2f65c5515181638546dd13917d4be3e6bf7370934dc845443788381"
-		testAddress  = "2gNhUTgbNJEqnwFfrWLpdtQeGj2hxVz7d3VgzNJBHjpPpDhMVo"
+		testKeyECDSA = "041d16de99a91959437215b163172a0402346557eabdcb71535c287cba153cea65241a13a33ed672abc3223305b7e240cc8782469612c6b1f59ba0007b0248ce52"
+		testAddress  = "9xVBTc5LmtxJN5AEAacJu9wiLwcuLeW6uj2afzWKHQczc1dWG"
 	)
 
 	bytes, err := hex.DecodeString(testKeyECDSA)
@@ -69,7 +69,7 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 		validationResultAddUser(t, stub, resp, s)
 	})
 
-	t.Run("[negative] add user with ecdsa key again", func(t *testing.T) {
+	t.Run("[negative] add user with secp256k1 key again", func(t *testing.T) {
 		s := &seriesAddUser{
 			testPubKey:     userPublicKey,
 			testAddress:    testAddress,
@@ -78,36 +78,6 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 			testPubKeyType: common.KeyTypeSecp256k1,
 			respStatus:     int32(shim.ERROR),
 			errorMsg:       "already exists",
-		}
-
-		resp := addUserWithPublicKeyType(stub, s)
-		validationResultAddUser(t, stub, resp, s)
-	})
-}
-
-func TestAddUserSecp256k1WithPrefixPublicKey(t *testing.T) {
-	t.Parallel()
-
-	const (
-		testKeyECDSA = "04dcbf4f2914fdb419fc92cd86383c137fec5dfa3c9f1befed67da16f3bcd9ea09ceb43f49e77549496ca2ca60bba3bb09f8dac72a6fd12ac3b8bac8b51f2c5ee3"
-		testAddress  = "HfqBDFi6uQFGENqLVLfmR1LKmo8Ghzpd9NhjMZbVqmLknyBTg"
-	)
-
-	bytes, err := hex.DecodeString(testKeyECDSA)
-	require.NoError(t, err)
-	userPublicKey := base58.Encode(bytes)
-
-	stub := common.StubCreateAndInit(t)
-
-	t.Run("add user with secp256k1 key with 0x04 prefix", func(t *testing.T) {
-		s := &seriesAddUser{
-			testPubKey:     userPublicKey,
-			testAddress:    testAddress,
-			kycHash:        kycHash,
-			testUserID:     testUserID,
-			testPubKeyType: common.KeyTypeSecp256k1,
-			respStatus:     int32(shim.OK),
-			errorMsg:       "",
 		}
 
 		resp := addUserWithPublicKeyType(stub, s)

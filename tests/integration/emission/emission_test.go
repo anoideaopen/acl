@@ -8,6 +8,7 @@ import (
 	"time"
 
 	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
+	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/anoideaopen/foundation/test/integration/cmn/fabricnetwork"
@@ -171,14 +172,14 @@ var _ = Describe("ACL emission tests", func() {
 		skiRobot, err = cmn.ReadSKI(pathToPrivateKeyRobot)
 		Expect(err).NotTo(HaveOccurred())
 
-		admin = client.NewUserFoundation()
-		Expect(admin.PrivateKey).NotTo(Equal(nil))
-		feeSetter = client.NewUserFoundation()
-		Expect(feeSetter.PrivateKey).NotTo(Equal(nil))
-		feeAddressSetter = client.NewUserFoundation()
-		Expect(feeAddressSetter.PrivateKey).NotTo(Equal(nil))
+		admin = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		Expect(admin.PrivateKeyBytes).NotTo(Equal(nil))
+		feeSetter = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		Expect(feeSetter.PrivateKeyBytes).NotTo(Equal(nil))
+		feeAddressSetter = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		Expect(feeAddressSetter.PrivateKeyBytes).NotTo(Equal(nil))
 
-		cmn.DeployACL(network, components, peer, testDir, skiBackend, admin.PublicKeyBase58)
+		cmn.DeployACL(network, components, peer, testDir, skiBackend, admin.PublicKeyBase58, admin.PublicKeyType)
 	})
 	BeforeEach(func() {
 		By("start robot")
@@ -199,7 +200,7 @@ var _ = Describe("ACL emission tests", func() {
 		client.AddUser(network, peer, network.Orderers[0], admin)
 
 		By("add user to acl")
-		user = client.NewUserFoundation()
+		user = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
 		client.AddUser(network, peer, network.Orderers[0], user)
 
 		By("deploying fiat channel")
@@ -210,7 +211,7 @@ var _ = Describe("ACL emission tests", func() {
 		emitAmount := "1000"
 		client.TxInvokeWithSign(network, peer, network.Orderers[0],
 			cmn.ChannelFiat, cmn.ChannelFiat, admin,
-			FnEmit, "", client.NewNonceByTime().Get(), user.AddressBase58Check, emitAmount)
+			FnEmit, "", client.NewNonceByTime().Get(), nil, user.AddressBase58Check, emitAmount)
 
 		By("emit check")
 		client.Query(network, peer, cmn.ChannelFiat, cmn.ChannelFiat,
@@ -239,7 +240,7 @@ var _ = Describe("ACL emission tests", func() {
 			multisigUser.AddressBase58Check, feeSetter.AddressBase58Check, feeAddressSetter.AddressBase58Check)
 
 		By("add user to acl")
-		user = client.NewUserFoundation()
+		user = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
 		client.AddUser(network, peer, network.Orderers[0], user)
 
 		By("emit tokens")
@@ -275,7 +276,7 @@ var _ = Describe("ACL emission tests", func() {
 			multisigUser.AddressBase58Check, feeSetter.AddressBase58Check, feeAddressSetter.AddressBase58Check)
 
 		By("creating new user for multisig")
-		newUser := client.NewUserFoundation()
+		newUser := client.NewUserFoundation(pbfound.KeyType_ed25519.String())
 
 		By("adding new user to ACL")
 		client.AddUser(network, peer, network.Orderers[0], newUser)
@@ -288,7 +289,7 @@ var _ = Describe("ACL emission tests", func() {
 		aclclient.ChangeMultisigPublicKey(network, peer, network.Orderers[0], multisigUser, oldUser.PublicKeyBase58, newUser.PublicKeyBase58, "reason", "0", admin)
 
 		By("add user to acl")
-		user = client.NewUserFoundation()
+		user = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
 		client.AddUser(network, peer, network.Orderers[0], user)
 
 		By("emit tokens")
