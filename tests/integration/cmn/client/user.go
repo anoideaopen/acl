@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/sha3"
@@ -25,9 +26,9 @@ func NewUserFoundationMultisigned(n int) *UserFoundationMultisigned {
 		UserID: "testUserMultisigned",
 	}
 	for i := 0; i < n; i++ {
-		user := client.NewUserFoundation()
+		user := client.NewUserFoundation(pbfound.KeyType_ed25519.String())
 		userMultisigned.Users = append(userMultisigned.Users, user)
-		pKeys = append(pKeys, user.PublicKey)
+		pKeys = append(pKeys, user.PublicKeyBytes)
 	}
 
 	binPubKeys := make([][]byte, len(pKeys))
@@ -55,8 +56,8 @@ func (u *UserFoundationMultisigned) Sign(args ...string) (publicKeysBase58 []str
 	bytesToSign := sha3.Sum256([]byte(strings.Join(msg, "")))
 
 	for _, user := range u.Users {
-		sMsg := signMessage(user.PrivateKey, bytesToSign[:])
-		err = verifyEd25519(user.PublicKey, bytesToSign[:], sMsg)
+		sMsg := signMessage(user.PrivateKeyBytes, bytesToSign[:])
+		err = verifyEd25519(user.PublicKeyBytes, bytesToSign[:], sMsg)
 		if err != nil {
 			return nil, nil, err
 		}

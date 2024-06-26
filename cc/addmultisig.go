@@ -136,7 +136,8 @@ func checkSignatures(keys []PublicKey, message string, signatures [][]byte) erro
 			return fmt.Errorf(
 				"the signature %s does not match the public key %s",
 				hex.EncodeToString(signatures[i]),
-				key.InBase58)
+				key.InBase58,
+			)
 		}
 	}
 	return nil

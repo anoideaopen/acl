@@ -21,5 +21,5 @@ func TxInvokeWithMultisign(network *nwo.Network, peer *nwo.Peer, orderer *nwo.Or
 	}
 
 	ctorArgs = append(append(ctorArgs, pubKey...), sMsgsStr...)
-	return client.TxInvoke(network, peer, orderer, channel, ccName, ctorArgs...)
+	return client.TxInvoke(network, peer, orderer, channel, ccName, nil, ctorArgs...)
 }
