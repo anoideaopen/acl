@@ -153,7 +153,8 @@ var _ = Describe("ACL config tests", func() {
 
 		peer = network.Peer("Org1", "peer0")
 
-		admin = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		admin, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
 		Expect(admin.PrivateKeyBytes).NotTo(Equal(nil))
 	})
 

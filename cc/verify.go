@@ -17,12 +17,15 @@ func verifyValidatorSignature(
 	message []byte,
 	signature []byte,
 ) bool {
-	decodedKey := base58.Decode(validator.GetPublicKey())
-	switch validator.GetKeyType() {
+	keyType := validator.GetPublicKey()
+	decodedKey := base58.Decode(keyType)
+	switch keyType {
+	case pb.KeyType_ed25519.String():
+		return verifyEd25519Signature(decodedKey, message, signature)
 	case pb.KeyType_secp256k1.String():
 		return verifySecp256k1Signature(decodedKey, message, signature)
 	default:
-		return verifyEd25519Signature(decodedKey, message, signature)
+		return false
 	}
 }
 
