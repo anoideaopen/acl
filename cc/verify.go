@@ -2,7 +2,6 @@ package cc
 
 import (
 	"crypto/ed25519"
-
 	aclproto "github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/keys/eth"
 	pb "github.com/anoideaopen/foundation/proto"
