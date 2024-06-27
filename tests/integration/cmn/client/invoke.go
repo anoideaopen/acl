@@ -8,9 +8,18 @@ import (
 )
 
 // TxInvokeWithMultisign invokes transaction to foundation fabric with multisign
-func TxInvokeWithMultisign(network *nwo.Network, peer *nwo.Peer, orderer *nwo.Orderer,
-	channel string, ccName string, user *UserFoundationMultisigned,
-	fn string, requestID string, nonce string, args ...string) (txId string) {
+func TxInvokeWithMultisign(
+	network *nwo.Network,
+	peer *nwo.Peer,
+	orderer *nwo.Orderer,
+	channel string,
+	ccName string,
+	user *UserFoundationMultisigned,
+	fn string,
+	requestID string,
+	nonce string,
+	args ...string,
+) (txId string) {
 	ctorArgs := append(append([]string{fn, requestID, channel, ccName}, args...), nonce)
 	pubKey, sMsgsByte, err := user.Sign(ctorArgs...)
 	Expect(err).NotTo(HaveOccurred())

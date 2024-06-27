@@ -172,11 +172,11 @@ var _ = Describe("ACL emission tests", func() {
 		skiRobot, err = cmn.ReadSKI(pathToPrivateKeyRobot)
 		Expect(err).NotTo(HaveOccurred())
 
-		admin = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		admin = client.NewUserFoundation(pbfound.KeyType_secp256k1.String())
 		Expect(admin.PrivateKeyBytes).NotTo(Equal(nil))
-		feeSetter = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		feeSetter = client.NewUserFoundation(pbfound.KeyType_secp256k1.String())
 		Expect(feeSetter.PrivateKeyBytes).NotTo(Equal(nil))
-		feeAddressSetter = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		feeAddressSetter = client.NewUserFoundation(pbfound.KeyType_secp256k1.String())
 		Expect(feeAddressSetter.PrivateKeyBytes).NotTo(Equal(nil))
 
 		cmn.DeployACL(network, components, peer, testDir, skiBackend, admin.PublicKeyBase58, admin.PublicKeyType)
@@ -200,7 +200,7 @@ var _ = Describe("ACL emission tests", func() {
 		client.AddUser(network, peer, network.Orderers[0], admin)
 
 		By("add user to acl")
-		user = client.NewUserFoundation(pbfound.KeyType_ed25519.String())
+		user = client.NewUserFoundation(pbfound.KeyType_secp256k1.String())
 		client.AddUser(network, peer, network.Orderers[0], user)
 
 		By("deploying fiat channel")
@@ -225,7 +225,7 @@ var _ = Describe("ACL emission tests", func() {
 
 		By("creating multisigned user")
 		const usersPolicy = 3
-		multisigUser := aclclient.NewUserFoundationMultisigned(usersPolicy)
+		multisigUser := aclclient.NewUserFoundationMultisigned(pbfound.KeyType_ed25519.String(), usersPolicy)
 
 		By("adding users to ACL")
 		for _, user := range multisigUser.Users {
@@ -261,7 +261,7 @@ var _ = Describe("ACL emission tests", func() {
 
 		By("creating multisigned user")
 		const usersPolicy = 3
-		multisigUser := aclclient.NewUserFoundationMultisigned(usersPolicy)
+		multisigUser := aclclient.NewUserFoundationMultisigned(pbfound.KeyType_ed25519.String(), usersPolicy)
 
 		By("adding users to ACL")
 		for _, user := range multisigUser.Users {
