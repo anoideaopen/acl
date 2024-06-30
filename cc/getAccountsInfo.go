@@ -38,21 +38,28 @@ func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) peer
 		var response peer.Response
 		switch item.Method {
 		case "getAccountInfo":
-			response = c.GetAccountInfo(stub, item.Args)
+			for _, address := range item.Args {
+				response = c.GetAccountInfo(stub, []string{address})
+				responses = append(responses, response)
+			}
 		case "checkAddress":
-			response = c.CheckAddress(stub, item.Args)
+			for _, addressBase58Check := range item.Args {
+				response = c.CheckAddress(stub, []string{addressBase58Check})
+				responses = append(responses, response)
+			}
 		case "checkKeys":
-			response = c.CheckKeys(stub, item.Args)
-		case "getAccountOperationRight":
-			response = c.CheckKeys(stub, item.Args)
+			for _, publicKey := range item.Args {
+				response = c.CheckKeys(stub, []string{publicKey})
+				responses = append(responses, response)
+			}
+		default:
+			responses = append(responses, shim.Error(fmt.Sprintf("failed get accountInfo: unknown method %s", item.Method)))
 		}
-		responses = append(responses, response)
 	}
 
 	bytes, err := json.Marshal(GetAccountsInfoResponse{Responses: responses})
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to marshal GetAccountsInfoResponse: %s", err))
 	}
-
 	return shim.Success(bytes)
 }

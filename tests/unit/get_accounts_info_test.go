@@ -32,7 +32,7 @@ func TestGetAccountsInfo(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		items = append(items, cc.GetAccountsInfoItem{
 			Method: common.FnGetAccInfoFn,
-			Args:   []string{s.testAddress},
+			Args:   []string{s.testAddress, s.testAddress},
 		})
 	}
 	for i := 0; i < 5; i++ {
@@ -54,9 +54,9 @@ func TestGetAccountsInfo(t *testing.T) {
 	getAccountsInfoResponse := cc.GetAccountsInfoResponse{}
 	err = json.Unmarshal(resp.Payload, &getAccountsInfoResponse)
 	require.NoError(t, err)
-	require.Equal(t, 10, len(getAccountsInfoResponse.Responses))
+	require.Equal(t, 15, len(getAccountsInfoResponse.Responses))
 
-	for _, response := range getAccountsInfoResponse.Responses[:5] {
+	for _, response := range getAccountsInfoResponse.Responses[:10] {
 		expectedResponse := &seriesGetAccountInfo{
 			testAddress: common.TestAddr,
 			respStatus:  int32(shim.OK),
@@ -66,7 +66,7 @@ func TestGetAccountsInfo(t *testing.T) {
 		require.Equal(t, int32(shim.OK), response.Status)
 	}
 
-	for _, response := range getAccountsInfoResponse.Responses[5:] {
+	for _, response := range getAccountsInfoResponse.Responses[10:] {
 		require.Equal(t, int32(shim.OK), response.Status)
 		require.Empty(t, response.Message)
 		aclResponse := &pb.AclResponse{}
