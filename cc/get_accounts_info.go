@@ -53,7 +53,7 @@ func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) peer
 				responses = append(responses, response)
 			}
 		default:
-			responses = append(responses, shim.Error(fmt.Sprintf("failed get accountInfo: unknown method %s", item.Method)))
+			responses = append(responses, shim.Error(fmt.Sprintf("failed get accountInfo: unknown method '%s'", item.Method)))
 		}
 	}
 
