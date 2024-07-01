@@ -3,7 +3,7 @@ module github.com/anoideaopen/acl
 go 1.18
 
 require (
-	github.com/anoideaopen/foundation v0.0.3-0.20240625135101-49d8541502df
+	github.com/anoideaopen/foundation v0.0.3-0.20240627131814-b8f7a49ce8ec
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/golang/protobuf v1.5.4
