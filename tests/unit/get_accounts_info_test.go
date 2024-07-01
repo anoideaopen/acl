@@ -64,7 +64,7 @@ func TestGetAccountsInfoWrongMethodName(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, responses, 1)
 	require.Equal(t, int32(500), responses[0].GetStatus())
-	require.Equal(t, "failed get accounts info: unknown method 'tesst'", responses[0].GetMessage())
+	require.Equal(t, "failed get accounts info: unknown method 'tesst' in tx 0", responses[0].GetMessage())
 }
 
 func TestGetAccountsInfoOkAndErrResp(t *testing.T) {
@@ -100,7 +100,7 @@ func TestGetAccountsInfoOkAndErrResp(t *testing.T) {
 	require.Len(t, responses, 2)
 
 	require.Equal(t, int32(500), responses[0].GetStatus())
-	require.Equal(t, "failed get accounts info: unknown method 'tesst'", responses[0].GetMessage())
+	require.Equal(t, "failed get accounts info: unknown method 'tesst' in tx 0", responses[0].GetMessage())
 	expectedResponse := &seriesGetAccountInfo{
 		testAddress: common.TestAddr,
 		respStatus:  int32(shim.OK),
