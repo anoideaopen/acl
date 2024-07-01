@@ -20,6 +20,7 @@ type (
 	ACL struct {
 		adminSKI []byte
 		config   *proto.ACLConfig
+		methods  map[string]ccFunc
 	}
 	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
 )
@@ -81,6 +82,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 			}
 		}
 	}
+	c.methods = methods
 
 	ccInvoke, ok := methods[fn]
 	if !ok {

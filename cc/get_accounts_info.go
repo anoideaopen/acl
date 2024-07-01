@@ -4,23 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/anoideaopen/acl/cc/querystub"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 )
-
-var getAccountInfoMethodHandlersMap map[string]func(shim.ChaincodeStubInterface, []string) peer.Response
-
-func (c *ACL) getAccountInfoHandlers() map[string]func(shim.ChaincodeStubInterface, []string) peer.Response {
-	if getAccountInfoMethodHandlersMap != nil {
-		return getAccountInfoMethodHandlersMap
-	}
-	getAccountInfoMethodHandlersMap = map[string]func(shim.ChaincodeStubInterface, []string) peer.Response{
-		"getAccountInfo": c.GetAccountInfo,
-		"checkAddress":   c.CheckAddress,
-		"checkKeys":      c.CheckKeys,
-	}
-	return getAccountInfoMethodHandlersMap
-}
 
 func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) peer.Response {
 	responses := make([]peer.Response, 0)
@@ -47,11 +34,14 @@ func (c *ACL) handleGetAccountsInfoItem(stub shim.ChaincodeStubInterface, b []by
 		return shim.Error(fmt.Sprintf("not enough arguments '%s'", string(b)))
 	}
 
-	method := args[0]
+	fn := args[0]
 	methodArgs := args[1:]
-	handler, ok := c.getAccountInfoHandlers()[method]
+	ccInvoke, ok := c.methods[fn]
 	if !ok {
-		return shim.Error(fmt.Sprintf("failed get accounts info: unknown method '%s'", method))
+		return shim.Error(fmt.Sprintf("failed get accounts info: unknown method '%s' in tx %s", fn, stub.GetTxID()))
 	}
-	return handler(stub, methodArgs)
+
+	stub = querystub.NewQueryStub(stub, args...)
+
+	return ccInvoke(stub, methodArgs)
 }

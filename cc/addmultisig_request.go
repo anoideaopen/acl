@@ -106,7 +106,7 @@ func (r *AddMultisigRequest) parseArguments(
 		}
 	}
 
-	r.Message = message(operation, args[:len(args)-len(r.PublicKeys)]...)
+	r.Message = msgAddMultisigRequest(operation, args[:len(args)-len(r.PublicKeys)]...)
 	r.SignedTx = append(
 		[]string{operation},
 		args...,
@@ -161,7 +161,7 @@ func (r *AddMultisigRequest) parseKeysAndSignatures(
 	return nil
 }
 
-func message(op string, args ...string) string {
+func msgAddMultisigRequest(op string, args ...string) string {
 	const (
 		messageSeparator = ""
 	)
