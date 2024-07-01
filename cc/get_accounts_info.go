@@ -8,6 +8,20 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer"
 )
 
+var getAccountInfoMethodHandlersMap map[string]func(shim.ChaincodeStubInterface, []string) peer.Response
+
+func (c *ACL) getAccountInfoHandlers() map[string]func(shim.ChaincodeStubInterface, []string) peer.Response {
+	if getAccountInfoMethodHandlersMap != nil {
+		return getAccountInfoMethodHandlersMap
+	}
+	getAccountInfoMethodHandlersMap = map[string]func(shim.ChaincodeStubInterface, []string) peer.Response{
+		"getAccountInfo": c.GetAccountInfo,
+		"checkAddress":   c.CheckAddress,
+		"checkKeys":      c.CheckKeys,
+	}
+	return getAccountInfoMethodHandlersMap
+}
+
 func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) peer.Response {
 	responses := make([]peer.Response, 0)
 	for _, b := range stub.GetArgs()[1:] {
@@ -21,26 +35,14 @@ func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) peer
 			return shim.Error(fmt.Sprintf("not enough arguments '%s'", string(b)))
 		}
 
-		var response peer.Response
-		switch args[0] {
-		case "getAccountInfo":
-			for _, address := range args[1:] {
-				response = c.GetAccountInfo(stub, []string{address})
-				responses = append(responses, response)
-			}
-		case "checkAddress":
-			for _, addressBase58Check := range args[1:] {
-				response = c.CheckAddress(stub, []string{addressBase58Check})
-				responses = append(responses, response)
-			}
-		case "checkKeys":
-			for _, publicKey := range args[1:] {
-				response = c.CheckKeys(stub, []string{publicKey})
-				responses = append(responses, response)
-			}
-		default:
-			responses = append(responses, shim.Error(fmt.Sprintf("failed get accounts info: unknown method '%s'", args[0])))
+		method := args[0]
+		methodArgs := args[1:]
+		handler, ok := c.getAccountInfoHandlers()[method]
+		if !ok {
+			responses = append(responses, shim.Error(fmt.Sprintf("failed get accounts info: unknown method '%s'", method)))
 		}
+		response := handler(stub, methodArgs)
+		responses = append(responses, response)
 	}
 
 	bytes, err := json.Marshal(responses)
