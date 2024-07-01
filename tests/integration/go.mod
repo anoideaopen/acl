@@ -9,6 +9,7 @@ require (
 	github.com/anoideaopen/foundation/test/integration v0.0.0-20240627131814-b8f7a49ce8ec
 	github.com/anoideaopen/robot v0.0.2-0.20240605153321-0e09032227bf
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
+	github.com/ethereum/go-ethereum v1.14.5
 	github.com/fsouza/go-dockerclient v1.10.0
 	github.com/golang/protobuf v1.5.4
 	github.com/hyperledger/fabric v1.4.0-rc1.0.20240406053308-22aaf3468497
@@ -57,7 +58,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.2 // indirect
-	github.com/ethereum/go-ethereum v1.14.5 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/flowchartsman/swaggerui v0.0.0-20221017034628-909ed4f3701b // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
