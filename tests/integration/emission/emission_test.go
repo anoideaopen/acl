@@ -233,7 +233,6 @@ var _ = Describe("ACL emission tests", func() {
 		client.AddUser(network, peer, network.Orderers[0], admin)
 
 		By("creating multisigned user")
-		var err error
 		multisigUser, err := client.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
 		Expect(err).NotTo(HaveOccurred())
 
