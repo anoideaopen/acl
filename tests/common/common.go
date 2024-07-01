@@ -33,6 +33,7 @@ const (
 	FnDelFromList                    = "delFromList"
 	FnCheckKeys                      = "checkKeys"
 	FnGetAccInfoFn                   = "getAccountInfo"
+	FnGetAccountsInfo                = "getAccountsInfo"
 	FnChangePublicKey                = "changePublicKey"
 	FnChangeMultisigPublicKey        = "changeMultisigPublicKey"
 	FnSetKYC                         = "setkyc"
