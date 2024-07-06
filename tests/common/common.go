@@ -24,20 +24,21 @@ import (
 
 // ACL API Functions
 const (
-	FnAddUser                        = "addUser"
-	FnAddUserWithPublicKeyType       = "addUserWithPublicKeyType"
-	FnGetUser                        = "getUser"
-	FnAddMultisig                    = "addMultisig"
-	FnAddMultisigWithBase58Signature = "addMultisigWithBase58Signature"
-	FnAddToList                      = "addToList"
-	FnDelFromList                    = "delFromList"
-	FnCheckKeys                      = "checkKeys"
-	FnGetAccInfoFn                   = "getAccountInfo"
-	FnChangePublicKey                = "changePublicKey"
-	FnChangeMultisigPublicKey        = "changeMultisigPublicKey"
-	FnSetKYC                         = "setkyc"
-	FnAddAdditionalKey               = "addAdditionalKey"
-	FnRemoveAdditionalKey            = "removeAdditionalKey"
+	FnAddUser                            = "addUser"
+	FnAddUserWithPublicKeyType           = "addUserWithPublicKeyType"
+	FnGetUser                            = "getUser"
+	FnAddMultisig                        = "addMultisig"
+	FnAddMultisigWithBase58Signature     = "addMultisigWithBase58Signature"
+	FnAddToList                          = "addToList"
+	FnDelFromList                        = "delFromList"
+	FnCheckKeys                          = "checkKeys"
+	FnGetAccInfoFn                       = "getAccountInfo"
+	FnChangePublicKey                    = "changePublicKey"
+	FnChangePublicKeyWithBase58Signature = "changePublicKeyWithBase58Signature"
+	FnChangeMultisigPublicKey            = "changeMultisigPublicKey"
+	FnSetKYC                             = "setkyc"
+	FnAddAdditionalKey                   = "addAdditionalKey"
+	FnRemoveAdditionalKey                = "removeAdditionalKey"
 )
 
 // Access Matrix ACL API Functions
