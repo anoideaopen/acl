@@ -1,7 +1,12 @@
 package old
 
 import (
+	"encoding/json"
 	"fmt"
+	"slices"
+	"strings"
+
+	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -76,6 +81,15 @@ func checkAddress(etalon *pb.SignedAddress) func([]byte) string {
 		}
 		return ""
 
+	}
+}
+
+func checkAddressGraylisted(message string) func([]byte) string {
+	return func(out []byte) string {
+		if strings.Contains(string(out), message) {
+			return fmt.Sprintf("out string %s not contains message: %s", string(out), message)
+		}
+		return ""
 	}
 }
 
@@ -192,5 +206,45 @@ func checkGetOperationAllRights(etalon *pb.OperationRights) func([]byte) string 
 		}
 
 		return checkRights(etalon.Rights, aclRes.Rights)
+	}
+}
+
+func checkAccountInfo(etalon *pb.AccountInfo) func([]byte) string {
+	return func(out []byte) string {
+		var aclRes pb.AccountInfo
+		if err := json.Unmarshal(out, &aclRes); err != nil {
+			return "cannot unmarshal acl response"
+		}
+
+		if aclRes.GetKycHash() != etalon.GetKycHash() {
+			return fmt.Sprintf("kycHash not equals to etalon - expected %s, got %s", etalon.GetKycHash(), aclRes.GetKycHash())
+		}
+
+		if aclRes.GetGrayListed() != etalon.GetGrayListed() {
+			return "gray listed not equals to etalon"
+		}
+
+		if aclRes.GetBlackListed() != etalon.GetBlackListed() {
+			return "black listed not equals to etalon"
+		}
+
+		return ""
+	}
+}
+
+func checkAddresses(users ...*client.UserFoundation) func([]byte) string {
+	return func(out []byte) string {
+		var aclRes cc.AddrsWithPagination
+		if err := json.Unmarshal(out, &aclRes); err != nil {
+			return "cannot unmarshal acl response"
+		}
+
+		for _, user := range users {
+			if !slices.Contains(aclRes.Addrs, user.AddressBase58Check) {
+				return "user not found"
+			}
+		}
+
+		return ""
 	}
 }

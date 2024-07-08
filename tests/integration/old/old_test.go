@@ -31,6 +31,8 @@ const (
 	FnGetAccountOperationRight = "getAccountOperationRight"
 	FnGetAccountAllRights      = "getAccountAllRights"
 	FnGetOperationAllRights    = "getOperationAllRights"
+	FnGetAccountInfo           = "getAccountInfo"
+	FnGetAddresses             = "getAddresses"
 
 	usersPolicy = 3
 )
@@ -191,21 +193,6 @@ var _ = Describe("ACL old tests", func() {
 
 		cmn.DeployACL(network, components, peer, testDir, skiBackend, admin.PublicKeyBase58, admin.KeyType)
 	})
-	/*
-		BeforeEach(func() {
-			By("start robot")
-			robotRunner := networkFound.RobotRunner()
-			robotProc = ifrit.Invoke(robotRunner)
-			Eventually(robotProc.Ready(), network.EventuallyTimeout).Should(BeClosed())
-		})
-		AfterEach(func() {
-			By("stop robot")
-			if robotProc != nil {
-				robotProc.Signal(syscall.SIGTERM)
-				Eventually(robotProc.Wait(), network.EventuallyTimeout).Should(Receive())
-			}
-		})
-	*/
 	It("Check keys test", func() {
 		By("add user to acl")
 		var err error
@@ -265,7 +252,6 @@ var _ = Describe("ACL old tests", func() {
 		}
 
 		By("adding right")
-		// client.TxInvoke(network, peer, network.Orderers[0], cmn.ChannelAcl, cmn.ChannelAcl, nil, FnAddRight, cmn.ChannelAcl, cmn.ChannelAcl, "testRole", "testOperation", user.AddressBase58Check)
 		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
 
 		By("checking result")
@@ -539,6 +525,337 @@ var _ = Describe("ACL old tests", func() {
 
 		By("checking address")
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAddress(etalonAddress), nil), FnCheckAddress, user.AddressBase58Check)
+
+		By("add user to gray list")
+		aclclient.AddToGrayList(network, peer, network.Orderers[0], user)
+
+		By("checking address")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(nil, checkAddressGraylisted(user.AddressBase58Check+"is graylisted")), FnCheckAddress, user.AddressBase58Check)
 	})
 
+	It("Del from list test", func() {
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		By("extracting address")
+		address, err := addressFromUser(user)
+		Expect(err).NotTo(HaveOccurred())
+
+		etalonKeys := &pbfound.AclResponse{
+			Account: testAccountGraylisted,
+			Address: &pbfound.SignedAddress{
+				Address: address,
+			},
+		}
+
+		By("adding user to GrayList")
+		aclclient.AddToGrayList(network, peer, network.Orderers[0], user)
+
+		By("sending query & checking result")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+
+		By("adding user to BlackList")
+		aclclient.AddToBlackList(network, peer, network.Orderers[0], user)
+		etalonKeys.Account = testAccountBothLists
+
+		By("sending query & checking result")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+
+		By("deleting from GrayList")
+		aclclient.DelFromGrayList(network, peer, network.Orderers[0], user)
+
+		By("sending query & checking result")
+		etalonKeys.Account = testAccountBlacklisted
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+
+		By("deleting from BlackList")
+		aclclient.DelFromBlackList(network, peer, network.Orderers[0], user)
+
+		By("sending query & checking result")
+		etalonKeys.Account = testAccountNotListed
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+	})
+
+	It("Get Account Info test", func() {
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		etalonAccountInfo := &pbfound.AccountInfo{
+			KycHash:     "kycHash2",
+			GrayListed:  true,
+			BlackListed: true,
+		}
+
+		By("setting account info")
+		aclclient.SetAccountInfo(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), etalonAccountInfo.GetGrayListed(), etalonAccountInfo.GetBlackListed())
+
+		By("getting account info")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
+	})
+
+	It("Get Account Operation Right test", func() {
+		var (
+			channelName   = cmn.ChannelAcl
+			chaincodeName = cmn.ChannelAcl
+			roleName      = "roleName"
+			operationName = "operationName"
+		)
+
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		By("adding right")
+		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
+
+		By("checking getAccountOperationRight")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
+
+		By("removing right")
+		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
+
+		By("checking getAccountOperationRight")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveNoRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
+	})
+
+	It("Get Addresses test", func() {
+		By("adding users to acl")
+		user1, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+		user2, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+		user3, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user1)
+		client.AddUser(network, peer, network.Orderers[0], user2)
+		client.AddUser(network, peer, network.Orderers[0], user3)
+
+		By("checking users")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAddresses(user1, user2, user3), nil), FnGetAddresses, "100", "")
+	})
+
+	It("Get Operation All Rights test", func() {
+		var (
+			channelName   = cmn.ChannelAcl
+			chaincodeName = cmn.ChannelAcl
+			roleName      = "roleName"
+			operationName = "operationName"
+		)
+
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		By("extracting address")
+		address, err := addressFromUser(user)
+		Expect(err).NotTo(HaveOccurred())
+
+		etalonRights := []*pbfound.Right{
+			{
+				ChannelName:   channelName,
+				ChaincodeName: chaincodeName,
+				RoleName:      roleName,
+				OperationName: operationName,
+				Address:       address,
+				HaveRight:     testHaveRight,
+			},
+		}
+
+		etalonOperationHaveRights := &pbfound.OperationRights{
+			OperationName: operationName,
+			Rights:        etalonRights,
+		}
+
+		By("adding right")
+		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
+
+		By("checking getOperationAllRights")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
+
+		By("removing right")
+		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
+		etalonOperationHaveRights.Rights = nil
+
+		By("checking getOperationAllRights")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
+	})
+
+	It("Remove rights test", func() {
+		var (
+			channelName   = cmn.ChannelAcl
+			chaincodeName = cmn.ChannelAcl
+			roleName      = "roleName"
+			operationName = "operationName"
+		)
+
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		By("extracting address")
+		address, err := addressFromUser(user)
+		Expect(err).NotTo(HaveOccurred())
+
+		etalonRights := []*pbfound.Right{
+			{
+				ChannelName:   channelName,
+				ChaincodeName: chaincodeName,
+				RoleName:      roleName,
+				OperationName: operationName,
+				Address:       address,
+				HaveRight:     testHaveRight,
+			},
+		}
+
+		etalonAccountHaveRights := &pbfound.AccountRights{
+			Address: address,
+			Rights:  etalonRights,
+		}
+
+		By("adding right")
+		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
+
+		By("checking getAccountAllRights")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+
+		By("checking getAccountOperationRight")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
+
+		By("removing right")
+		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
+		etalonAccountHaveRights.Rights = nil
+
+		By("checking getAccountOperationRight")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveNoRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
+
+		By("checking getAccountAllRights")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+
+		By("removing rights again")
+		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
+
+		By("checking getAccountOperationRight")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveNoRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
+
+		By("checking getAccountAllRights")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+	})
+
+	It("Set Account Info test", func() {
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		By("extracting address")
+		address, err := addressFromUser(user)
+		Expect(err).NotTo(HaveOccurred())
+
+		etalonAccountInfo := &pbfound.AccountInfo{
+			KycHash:     "kycHash2",
+			GrayListed:  true,
+			BlackListed: true,
+		}
+
+		etalonKeys := &pbfound.AclResponse{
+			Account: etalonAccountInfo,
+			Address: &pbfound.SignedAddress{
+				Address: address,
+			},
+		}
+
+		By("setting account info")
+		aclclient.SetAccountInfo(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), etalonAccountInfo.GetGrayListed(), etalonAccountInfo.GetBlackListed())
+
+		By("getting account info")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
+
+		By("getting account info with checkKeys function")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+
+		etalonAccountInfo.GrayListed = false
+
+		By("setting account info")
+		aclclient.SetAccountInfo(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), etalonAccountInfo.GetGrayListed(), etalonAccountInfo.GetBlackListed())
+
+		By("getting account info")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
+
+		By("getting account info with checkKeys function")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+
+		etalonAccountInfo.BlackListed = false
+
+		By("setting account info")
+		aclclient.SetAccountInfo(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), etalonAccountInfo.GetGrayListed(), etalonAccountInfo.GetBlackListed())
+
+		By("getting account info")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
+
+		By("getting account info with checkKeys function")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+
+		etalonAccountInfo.GrayListed = true
+
+		By("setting account info")
+		aclclient.SetAccountInfo(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), etalonAccountInfo.GetGrayListed(), etalonAccountInfo.GetBlackListed())
+
+		By("getting account info")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
+
+		By("getting account info with checkKeys function")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+	})
+
+	It("Set KYC test", func() {
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		By("extracting address")
+		address, err := addressFromUser(user)
+		Expect(err).NotTo(HaveOccurred())
+
+		etalonAccountInfo := &pbfound.AccountInfo{
+			KycHash:     "kycHash2",
+			GrayListed:  false,
+			BlackListed: false,
+		}
+
+		etalonKeys := &pbfound.AclResponse{
+			Account: etalonAccountInfo,
+			Address: &pbfound.SignedAddress{
+				Address: address,
+			},
+		}
+
+		By("setting account info")
+		aclclient.SetKYC(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), admin)
+
+		By("getting account info with checkKeys function")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+	})
 })
