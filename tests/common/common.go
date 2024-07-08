@@ -39,6 +39,7 @@ const (
 	FnSetKYC                             = "setkyc"
 	FnAddAdditionalKey                   = "addAdditionalKey"
 	FnRemoveAdditionalKey                = "removeAdditionalKey"
+	FnGetAccountsInfo                    = "getAccountsInfo"
 )
 
 // Access Matrix ACL API Functions
