@@ -7,11 +7,9 @@ import (
 	"strings"
 
 	"github.com/anoideaopen/acl/cc"
-	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -44,39 +42,23 @@ var (
 	testHaveNoRight = &pb.HaveRight{HaveRight: false}
 )
 
-func addressFromUser(user *client.UserFoundation) (*pb.Address, error) {
-	bytes, err := helpers.DecodeBase58PublicKey(user.PublicKeyBase58)
-	if err != nil {
-		return nil, fmt.Errorf("failed decoding public key: %w", err)
-	}
-	hashed := sha3.Sum256(bytes)
-	address := hashed[:]
-
-	return &pb.Address{
-		UserID:       user.UserID,
-		Address:      address,
-		IsIndustrial: true,
-		IsMultisig:   false,
-	}, nil
-}
-
-func checkAddress(etalon *pb.SignedAddress) func([]byte) string {
+func checkAddress(etalon *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes pb.Address
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
 			return "cannot unmarshal acl response"
 		}
 
-		if aclRes.AddrString() != etalon.Address.AddrString() {
+		if aclRes.AddrString() != etalon.AddressBase58Check {
 			return "address not equals to etalon"
 		}
-		if aclRes.UserID != etalon.Address.UserID {
+		if aclRes.UserID != etalon.UserID {
 			return "user id not equals to etalon"
 		}
-		if aclRes.IsIndustrial != etalon.Address.IsIndustrial {
+		if aclRes.IsIndustrial != true {
 			return "IsIndustrial not equals to etalon"
 		}
-		if aclRes.IsMultisig != etalon.Address.IsMultisig {
+		if aclRes.IsMultisig != false {
 			return "IsMultisig not equals to etalon"
 		}
 		return ""
@@ -93,7 +75,7 @@ func checkAddressGraylisted(message string) func([]byte) string {
 	}
 }
 
-func checkKeys(etalon *pb.AclResponse) func([]byte) string {
+func checkKeys(account *pb.AccountInfo, user *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes pb.AclResponse
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
@@ -106,25 +88,25 @@ func checkKeys(etalon *pb.AclResponse) func([]byte) string {
 		if aclRes.Account == nil {
 			return "account is nil"
 		}
-		if aclRes.Account.KycHash != etalon.Account.GetKycHash() {
+		if aclRes.Account.KycHash != account.GetKycHash() {
 			return "kyc hash not equals to etalon"
 		}
-		if aclRes.Account.GrayListed != etalon.Account.GetGrayListed() {
+		if aclRes.Account.GrayListed != account.GetGrayListed() {
 			return "graylisted not equals to etalon"
 		}
-		if aclRes.Account.BlackListed != etalon.Account.GetBlackListed() {
+		if aclRes.Account.BlackListed != account.GetBlackListed() {
 			return "blacklisted not equals to etalon"
 		}
-		if aclRes.Address.Address.AddrString() != etalon.Address.Address.AddrString() {
+		if aclRes.Address.Address.AddrString() != user.AddressBase58Check {
 			return "address not equals to etalon"
 		}
-		if aclRes.Address.Address.UserID != etalon.Address.Address.UserID {
+		if aclRes.Address.Address.UserID != user.UserID {
 			return "user id not equals to etalon"
 		}
-		if aclRes.Address.Address.IsIndustrial != etalon.Address.Address.IsIndustrial {
+		if aclRes.Address.Address.IsIndustrial != true {
 			return "IsIndustrial not equals to etalon"
 		}
-		if aclRes.Address.Address.IsMultisig != etalon.Address.Address.IsMultisig {
+		if aclRes.Address.Address.IsMultisig != false {
 			return "IsMultisig not equals to etalon"
 		}
 		return ""
@@ -146,7 +128,7 @@ func checkGetAccountOperationRight(etalon *pb.HaveRight) func([]byte) string {
 	}
 }
 
-func checkRights(etalonRightsSet []*pb.Right, aclRightsSet []*pb.Right) string {
+func checkRights(etalonRightsSet []*pb.Right, aclRightsSet []*pb.Right, user *client.UserFoundation) string {
 	etalonRights := make([]*pb.Right, len(etalonRightsSet))
 	for i, right := range etalonRightsSet {
 		etalonRights[i] = right
@@ -157,7 +139,7 @@ func checkRights(etalonRightsSet []*pb.Right, aclRightsSet []*pb.Right) string {
 				rightRes.ChaincodeName == rightEtalon.ChaincodeName &&
 				rightRes.RoleName == rightEtalon.RoleName &&
 				rightRes.OperationName == rightEtalon.OperationName &&
-				rightRes.Address.AddrString() == rightEtalon.Address.AddrString() &&
+				rightRes.Address.AddrString() == user.AddressBase58Check &&
 				rightRes.HaveRight.HaveRight == rightEtalon.HaveRight.HaveRight {
 				etalonRights = append(etalonRights[:i], etalonRights[i+1:]...)
 				break
@@ -172,7 +154,7 @@ func checkRights(etalonRightsSet []*pb.Right, aclRightsSet []*pb.Right) string {
 	return ""
 }
 
-func checkGetAccountAllRights(etalon *pb.AccountRights) func([]byte) string {
+func checkGetAccountAllRights(accountRights []*pb.Right, user *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes pb.AccountRights
 		if err := protojson.Unmarshal(out, &aclRes); err != nil {
@@ -181,21 +163,21 @@ func checkGetAccountAllRights(etalon *pb.AccountRights) func([]byte) string {
 		if aclRes.Address == nil {
 			return "address is nil"
 		}
-		if etalon.Rights != nil && aclRes.Rights == nil {
+		if len(accountRights) > 0 && aclRes.Rights == nil {
 			return "rights are nil"
 		}
-		if aclRes.Address.AddrString() != etalon.Address.AddrString() {
+		if aclRes.Address.AddrString() != user.AddressBase58Check {
 			return "address not equals to etalon"
 		}
-		if aclRes.Address.UserID != etalon.Address.UserID {
+		if aclRes.Address.UserID != user.UserID {
 			return "user id not equals to etalon"
 		}
 
-		return checkRights(etalon.Rights, aclRes.Rights)
+		return checkRights(accountRights, aclRes.Rights, user)
 	}
 }
 
-func checkGetOperationAllRights(etalon *pb.OperationRights) func([]byte) string {
+func checkGetOperationAllRights(etalon *pb.OperationRights, user *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes pb.OperationRights
 		if err := protojson.Unmarshal(out, &aclRes); err != nil {
@@ -205,7 +187,7 @@ func checkGetOperationAllRights(etalon *pb.OperationRights) func([]byte) string 
 			return "operation name not equals to etalon"
 		}
 
-		return checkRights(etalon.Rights, aclRes.Rights)
+		return checkRights(etalon.Rights, aclRes.Rights, user)
 	}
 }
 

@@ -80,15 +80,13 @@ var _ = Describe("ACL old tests", func() {
 	})
 
 	var (
-		channels       = []string{cmn.ChannelAcl, cmn.ChannelFiat}
-		ordererRunners []*ginkgomon.Runner
-		redisProcess   ifrit.Process
-		redisDB        *runner.RedisDB
-		networkFound   *cmn.NetworkFoundation
-		peer           *nwo.Peer
-		// robotProc      ifrit.Process
-		skiBackend string
-		// skiRobot         string
+		channels         = []string{cmn.ChannelAcl, cmn.ChannelFiat}
+		ordererRunners   []*ginkgomon.Runner
+		redisProcess     ifrit.Process
+		redisDB          *runner.RedisDB
+		networkFound     *cmn.NetworkFoundation
+		peer             *nwo.Peer
+		skiBackend       string
 		admin            *client.UserFoundation
 		user             *client.UserFoundation
 		feeSetter        *client.UserFoundation
@@ -175,10 +173,6 @@ var _ = Describe("ACL old tests", func() {
 		skiBackend, err = cmn.ReadSKI(pathToPrivateKeyBackend)
 		Expect(err).NotTo(HaveOccurred())
 
-		// pathToPrivateKeyRobot := network.PeerUserKey(peer, "User2")
-		// skiRobot, err = cmn.ReadSKI(pathToPrivateKeyRobot)
-		// Expect(err).NotTo(HaveOccurred())
-
 		admin, err = client.NewUserFoundation(pbfound.KeyType_secp256k1)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(admin.PrivateKeyBytes).NotTo(Equal(nil))
@@ -201,19 +195,10 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
-		etalonKeys := &pbfound.AclResponse{
-			Account: testAccountNotListed,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
-		}
+		etalonAccount := testAccountNotListed
 
 		By("sending query & checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccount, user), nil), FnCheckKeys, user.PublicKeyBase58)
 	})
 
 	It("Get Account All Rights test", func() {
@@ -231,38 +216,27 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
 		etalonRights := []*pbfound.Right{
 			{
 				ChannelName:   channelName,
 				ChaincodeName: chaincodeName,
 				RoleName:      roleName,
 				OperationName: operationName,
-				Address:       address,
 				HaveRight:     testHaveRight,
 			},
-		}
-
-		etalonAccountHaveRights := &pbfound.AccountRights{
-			Address: address,
-			Rights:  etalonRights,
 		}
 
 		By("adding right")
 		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
 
 		By("checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonRights, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 
 		By("removing right")
 		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
 
 		By("checking result")
-		etalonAccountHaveRights.Rights = nil
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(nil, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 	})
 
 	It("Add multisigned user test", func() {
@@ -294,24 +268,14 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
 		etalonRights := []*pbfound.Right{
 			{
 				ChannelName:   channelName,
 				ChaincodeName: chaincodeName,
 				RoleName:      roleName,
 				OperationName: operationName,
-				Address:       address,
 				HaveRight:     testHaveRight,
 			},
-		}
-
-		etalonAccountHaveRights := &pbfound.AccountRights{
-			Address: address,
-			Rights:  etalonRights,
 		}
 
 		etalonOperationHaveRights := &pbfound.OperationRights{
@@ -323,27 +287,27 @@ var _ = Describe("ACL old tests", func() {
 		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
 
 		By("checking getAccountAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonRights, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 
 		By("checking getAccountOperationRight")
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
 
 		By("checking getOperationAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights, user), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
 
 		By("removing right")
 		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
-		etalonAccountHaveRights.Rights = nil
+		etalonRights = nil
 		etalonOperationHaveRights.Rights = nil
 
 		By("checking getAccountOperationRight")
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveNoRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
 
 		By("checking getOperationAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights, user), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
 
 		By("checking getAccountAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonRights, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 	})
 
 	It("Black & Gray lists test", func() {
@@ -354,29 +318,17 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
-		etalonKeys := &pbfound.AclResponse{
-			Account: testAccountGraylisted,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
-		}
-
 		By("adding user to GrayList")
 		aclclient.AddToGrayList(network, peer, network.Orderers[0], user)
 
 		By("sending query & checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountGraylisted, user), nil), FnCheckKeys, user.PublicKeyBase58)
 
 		By("adding user to BlackList")
 		aclclient.AddToBlackList(network, peer, network.Orderers[0], user)
-		etalonKeys.Account = testAccountBothLists
 
 		By("sending query & checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountBothLists, user), nil), FnCheckKeys, user.PublicKeyBase58)
 	})
 
 	It("Add user test", func() {
@@ -387,19 +339,8 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
-		etalonKeys := &pbfound.AclResponse{
-			Account: testAccountNotListed,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
-		}
-
 		By("checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountNotListed, user), nil), FnCheckKeys, user.PublicKeyBase58)
 	})
 
 	It("Change multisigned user public key", func() {
@@ -451,22 +392,11 @@ var _ = Describe("ACL old tests", func() {
 		By("adding new user to ACL")
 		client.AddUser(network, peer, network.Orderers[0], newUser)
 
-		By("extracting address")
-		address, err := addressFromUser(oldUser)
-		Expect(err).NotTo(HaveOccurred())
-
-		etalonKeys := &pbfound.AclResponse{
-			Account: testAccountNotListed,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
-		}
-
 		By("changing user public key")
 		aclclient.ChangePublicKeyBase58signed(network, peer, network.Orderers[0], oldUser, "0", cmn.ChannelAcl, cmn.ChannelAcl, newUser.PublicKeyBase58, "reason", "0", admin)
 
 		By("checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, newUser.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountNotListed, oldUser), nil), FnCheckKeys, newUser.PublicKeyBase58)
 	})
 
 	It("Change public key with hex encoded key", func() {
@@ -485,22 +415,11 @@ var _ = Describe("ACL old tests", func() {
 		By("adding new user to ACL")
 		client.AddUser(network, peer, network.Orderers[0], newUser)
 
-		By("extracting address")
-		address, err := addressFromUser(oldUser)
-		Expect(err).NotTo(HaveOccurred())
-
-		etalonKeys := &pbfound.AclResponse{
-			Account: testAccountNotListed,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
-		}
-
 		By("changing user public key")
 		aclclient.ChangePublicKey(network, peer, network.Orderers[0], oldUser, newUser.PublicKeyBase58, "0", "0", admin)
 
 		By("checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, newUser.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountNotListed, oldUser), nil), FnCheckKeys, newUser.PublicKeyBase58)
 	})
 
 	It("Check address test", func() {
@@ -515,16 +434,8 @@ var _ = Describe("ACL old tests", func() {
 		By("adding old user to ACL")
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
-		etalonAddress := &pbfound.SignedAddress{
-			Address: address,
-		}
-
 		By("checking address")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAddress(etalonAddress), nil), FnCheckAddress, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAddress(user), nil), FnCheckAddress, user.AddressBase58Check)
 
 		By("add user to gray list")
 		aclclient.AddToGrayList(network, peer, network.Orderers[0], user)
@@ -541,43 +452,29 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
-		etalonKeys := &pbfound.AclResponse{
-			Account: testAccountGraylisted,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
-		}
-
 		By("adding user to GrayList")
 		aclclient.AddToGrayList(network, peer, network.Orderers[0], user)
 
 		By("sending query & checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountGraylisted, user), nil), FnCheckKeys, user.PublicKeyBase58)
 
 		By("adding user to BlackList")
 		aclclient.AddToBlackList(network, peer, network.Orderers[0], user)
-		etalonKeys.Account = testAccountBothLists
 
 		By("sending query & checking result")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountBothLists, user), nil), FnCheckKeys, user.PublicKeyBase58)
 
 		By("deleting from GrayList")
 		aclclient.DelFromGrayList(network, peer, network.Orderers[0], user)
 
 		By("sending query & checking result")
-		etalonKeys.Account = testAccountBlacklisted
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountBlacklisted, user), nil), FnCheckKeys, user.PublicKeyBase58)
 
 		By("deleting from BlackList")
 		aclclient.DelFromBlackList(network, peer, network.Orderers[0], user)
 
 		By("sending query & checking result")
-		etalonKeys.Account = testAccountNotListed
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(testAccountNotListed, user), nil), FnCheckKeys, user.PublicKeyBase58)
 	})
 
 	It("Get Account Info test", func() {
@@ -661,17 +558,12 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
 		etalonRights := []*pbfound.Right{
 			{
 				ChannelName:   channelName,
 				ChaincodeName: chaincodeName,
 				RoleName:      roleName,
 				OperationName: operationName,
-				Address:       address,
 				HaveRight:     testHaveRight,
 			},
 		}
@@ -685,14 +577,14 @@ var _ = Describe("ACL old tests", func() {
 		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
 
 		By("checking getOperationAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights, user), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
 
 		By("removing right")
 		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
 		etalonOperationHaveRights.Rights = nil
 
 		By("checking getOperationAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetOperationAllRights(etalonOperationHaveRights, user), nil), FnGetOperationAllRights, channelName, chaincodeName, roleName, operationName)
 	})
 
 	It("Remove rights test", func() {
@@ -710,44 +602,33 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
 		etalonRights := []*pbfound.Right{
 			{
 				ChannelName:   channelName,
 				ChaincodeName: chaincodeName,
 				RoleName:      roleName,
 				OperationName: operationName,
-				Address:       address,
 				HaveRight:     testHaveRight,
 			},
-		}
-
-		etalonAccountHaveRights := &pbfound.AccountRights{
-			Address: address,
-			Rights:  etalonRights,
 		}
 
 		By("adding right")
 		client.AddRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
 
 		By("checking getAccountAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonRights, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 
 		By("checking getAccountOperationRight")
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
 
 		By("removing right")
 		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
-		etalonAccountHaveRights.Rights = nil
 
 		By("checking getAccountOperationRight")
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveNoRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
 
 		By("checking getAccountAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(nil, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 
 		By("removing rights again")
 		client.RemoveRights(network, peer, network.Orderers[0], channelName, chaincodeName, roleName, operationName, user)
@@ -756,7 +637,7 @@ var _ = Describe("ACL old tests", func() {
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountOperationRight(testHaveNoRight), nil), FnGetAccountOperationRight, channelName, chaincodeName, roleName, operationName, user.AddressBase58Check)
 
 		By("checking getAccountAllRights")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(etalonAccountHaveRights), nil), FnGetAccountAllRights, user.AddressBase58Check)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(nil, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 	})
 
 	It("Set Account Info test", func() {
@@ -767,21 +648,10 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
 		etalonAccountInfo := &pbfound.AccountInfo{
 			KycHash:     "kycHash2",
 			GrayListed:  true,
 			BlackListed: true,
-		}
-
-		etalonKeys := &pbfound.AclResponse{
-			Account: etalonAccountInfo,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
 		}
 
 		By("setting account info")
@@ -791,7 +661,7 @@ var _ = Describe("ACL old tests", func() {
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
 
 		By("getting account info with checkKeys function")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
 
 		etalonAccountInfo.GrayListed = false
 
@@ -802,7 +672,7 @@ var _ = Describe("ACL old tests", func() {
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
 
 		By("getting account info with checkKeys function")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
 
 		etalonAccountInfo.BlackListed = false
 
@@ -813,7 +683,7 @@ var _ = Describe("ACL old tests", func() {
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
 
 		By("getting account info with checkKeys function")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
 
 		etalonAccountInfo.GrayListed = true
 
@@ -824,7 +694,7 @@ var _ = Describe("ACL old tests", func() {
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
 
 		By("getting account info with checkKeys function")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
 	})
 
 	It("Set KYC test", func() {
@@ -835,27 +705,16 @@ var _ = Describe("ACL old tests", func() {
 
 		client.AddUser(network, peer, network.Orderers[0], user)
 
-		By("extracting address")
-		address, err := addressFromUser(user)
-		Expect(err).NotTo(HaveOccurred())
-
 		etalonAccountInfo := &pbfound.AccountInfo{
 			KycHash:     "kycHash2",
 			GrayListed:  false,
 			BlackListed: false,
 		}
 
-		etalonKeys := &pbfound.AclResponse{
-			Account: etalonAccountInfo,
-			Address: &pbfound.SignedAddress{
-				Address: address,
-			},
-		}
-
 		By("setting account info")
 		aclclient.SetKYC(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), admin)
 
 		By("getting account info with checkKeys function")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonKeys), nil), FnCheckKeys, user.PublicKeyBase58)
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
 	})
 })
