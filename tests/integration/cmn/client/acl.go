@@ -4,6 +4,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/tests/common"
 	pb "github.com/anoideaopen/foundation/proto"
@@ -16,8 +19,6 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/protobuf/proto"
-	"strconv"
-	"time"
 )
 
 // AddToBlackList adds user to a black list
@@ -128,7 +129,8 @@ func CheckUserInList(
 			return fmt.Sprintf("Error: expected %s, received %s", user.AddressBase58Check, addr)
 		}
 
-		if !((resp.Account.GetBlackListed() && listType == cc.BlackList) || (resp.Account.GetGrayListed() && listType == cc.GrayList)) {
+		account := resp.GetAccount()
+		if !((account.GetBlackListed() && listType == cc.BlackList) || (account.GetGrayListed() && listType == cc.GrayList)) {
 			return fmt.Sprintf("Error: expected %s to be added to %s", user.AddressBase58Check, listType.String())
 		}
 
@@ -166,7 +168,8 @@ func CheckUserNotInList(
 			return fmt.Sprintf("Error: expected %s, received %s", user.AddressBase58Check, addr)
 		}
 
-		if !((!resp.Account.GetBlackListed() && listType == cc.BlackList) || (!resp.Account.GetGrayListed() && listType == cc.GrayList)) {
+		account := resp.GetAccount()
+		if !((!account.GetBlackListed() && listType == cc.BlackList) || (!account.GetGrayListed() && listType == cc.GrayList)) {
 			return fmt.Sprintf("Error: expected %s to be deleted from %s", user.AddressBase58Check, listType.String())
 		}
 
@@ -193,7 +196,7 @@ func ChangePublicKey(
 	pKeys, sMsgsByte, err := validatorMultisignedUser.Sign(ctorArgs...)
 	Expect(err).NotTo(HaveOccurred())
 
-	var sMsgsStr []string
+	sMsgsStr := []string{}
 	for _, sMsgByte := range sMsgsByte {
 		sMsgsStr = append(sMsgsStr, hex.EncodeToString(sMsgByte))
 	}
@@ -239,7 +242,7 @@ func ChangePublicKeyBase58signed(
 	pKeys, sMsgsByte, err := validatorMultisignedUser.Sign(ctorArgs...)
 	Expect(err).NotTo(HaveOccurred())
 
-	var sMsgsStr []string
+	sMsgsStr := []string{}
 	for _, sMsgByte := range sMsgsByte {
 		sMsgsStr = append(sMsgsStr, base58.Encode(sMsgByte))
 	}
@@ -386,7 +389,7 @@ func SetKYC(
 	pKeys, sMsgsByte, err := validatorMultisignedUser.Sign(ctorArgs...)
 	Expect(err).NotTo(HaveOccurred())
 
-	var sMsgsStr []string
+	sMsgsStr := []string{}
 	for _, sMsgByte := range sMsgsByte {
 		sMsgsStr = append(sMsgsStr, hex.EncodeToString(sMsgByte))
 	}

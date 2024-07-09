@@ -15,7 +15,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.31.0
 	github.com/tedsuo/ifrit v0.0.0-20220120221754-dd274de71113
-	golang.org/x/crypto v0.22.0
 	google.golang.org/protobuf v1.33.0
 )
 
@@ -139,6 +138,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect

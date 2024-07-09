@@ -1,4 +1,4 @@
-package old
+package basic
 
 import (
 	"encoding/json"
@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestOldIntegation(t *testing.T) {
+func TestIntegrationBasic(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ACL old integration suite")
+	RunSpecs(t, "ACL basic integration suite")
 }
 
 var (
@@ -43,5 +43,5 @@ var _ = SynchronizedAfterSuite(func() {
 })
 
 func StartPort() int {
-	return integration.LedgerPort.StartPortForNode()
+	return integration.DevModePort.StartPortForNode()
 }
