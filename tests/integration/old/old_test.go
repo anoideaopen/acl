@@ -373,7 +373,7 @@ var _ = Describe("ACL old tests", func() {
 		By("changing multisigned user public key")
 		client.ChangeMultisigPublicKey(network, peer, network.Orderers[0], multisignedUser, oldUser.PublicKeyBase58, newUser.PublicKeyBase58, "reason", "0", admin)
 
-		//ToDo add check for getting the old address providing the new key
+		// ToDo add check for getting the old address providing the new key
 	})
 
 	It("Change public key with base58 signature test", func() {
@@ -640,6 +640,27 @@ var _ = Describe("ACL old tests", func() {
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkGetAccountAllRights(nil, user), nil), FnGetAccountAllRights, user.AddressBase58Check)
 	})
 
+	It("Set KYC test", func() {
+		By("add user to acl")
+		var err error
+		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		client.AddUser(network, peer, network.Orderers[0], user)
+
+		etalonAccountInfo := &pbfound.AccountInfo{
+			KycHash:     "kycHash2",
+			GrayListed:  false,
+			BlackListed: false,
+		}
+
+		By("setting account info")
+		aclclient.SetKYC(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), admin)
+
+		By("getting account info with checkKeys function")
+		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
+	})
+
 	It("Set Account Info test", func() {
 		By("add user to acl")
 		var err error
@@ -692,27 +713,6 @@ var _ = Describe("ACL old tests", func() {
 
 		By("getting account info")
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkAccountInfo(etalonAccountInfo), nil), FnGetAccountInfo, user.AddressBase58Check)
-
-		By("getting account info with checkKeys function")
-		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
-	})
-
-	It("Set KYC test", func() {
-		By("add user to acl")
-		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
-		Expect(err).NotTo(HaveOccurred())
-
-		client.AddUser(network, peer, network.Orderers[0], user)
-
-		etalonAccountInfo := &pbfound.AccountInfo{
-			KycHash:     "kycHash2",
-			GrayListed:  false,
-			BlackListed: false,
-		}
-
-		By("setting account info")
-		aclclient.SetKYC(network, peer, network.Orderers[0], user, etalonAccountInfo.GetKycHash(), admin)
 
 		By("getting account info with checkKeys function")
 		client.Query(network, peer, cmn.ChannelAcl, cmn.ChannelAcl, fabricnetwork.CheckResult(checkKeys(etalonAccountInfo, user), nil), FnCheckKeys, user.PublicKeyBase58)
