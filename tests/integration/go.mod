@@ -8,7 +8,9 @@ require (
 	github.com/anoideaopen/foundation v0.0.3-0.20240627131814-b8f7a49ce8ec
 	github.com/anoideaopen/foundation/test/integration v0.0.0-20240627131814-b8f7a49ce8ec
 	github.com/anoideaopen/robot v0.0.2-0.20240605153321-0e09032227bf
+	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/fsouza/go-dockerclient v1.10.0
+	github.com/golang/protobuf v1.5.4
 	github.com/hyperledger/fabric v1.4.0-rc1.0.20240406053308-22aaf3468497
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.31.0
@@ -36,7 +38,6 @@ require (
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
-	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/cfssl v1.4.1 // indirect
@@ -67,7 +68,6 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/certificate-transparency-go v1.0.21 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect

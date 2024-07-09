@@ -13,8 +13,13 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func DeployACLWithError(network *nwo.Network, components *nwo.Components,
-	testDir string, aclCfg *aclpb.ACLConfig, errorMsg string) {
+func DeployACLWithError(
+	network *nwo.Network,
+	components *nwo.Components,
+	testDir string,
+	aclCfg *aclpb.ACLConfig,
+	errorMsg string,
+) {
 	By("Deploying chaincode acl")
 	cfgBytesACL, err := protojson.Marshal(aclCfg)
 	Expect(err).NotTo(HaveOccurred())
