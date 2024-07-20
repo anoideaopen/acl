@@ -3,7 +3,7 @@
 ###############################################################################
 
 ARG UBUNTU_VER
-FROM ubuntu:${UBUNTU_VER} as builder
+FROM ubuntu:${UBUNTU_VER:-20.04} AS builder
 
 ARG TARGETARCH
 ARG TARGETOS
@@ -28,7 +28,7 @@ RUN CGO_ENABLED=0 go build -v -o /go/bin/chaincode
 ###############################################################################
 
 ARG UBUNTU_VER
-FROM ubuntu:${UBUNTU_VER}
+FROM ubuntu:${UBUNTU_VER:-20.04}
 
 ARG APP_VER
 
@@ -37,8 +37,8 @@ ARG APP_VER
 # - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
 RUN echo 'hosts: files dns' > /etc/nsswitch.conf
 
-ENV     APP_VER      ${APP_VER}
-ENV CHAINCODE_EXEC_MODE server
+ENV APP_VER=${APP_VER}
+ENV CHAINCODE_EXEC_MODE=server
 
 COPY    --chown=65534:65534 --from=builder /go/bin/chaincode /
 USER 65534
