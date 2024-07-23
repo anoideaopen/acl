@@ -10,7 +10,6 @@ import (
 	mstub "github.com/anoideaopen/foundation/mock/stub"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/unit/fixtures_test"
-	"github.com/anoideaopen/foundation/token"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -274,7 +273,7 @@ func TestAclCalledFromChaincode(t *testing.T) {
 
 	cfgBytes, _ := protojson.Marshal(cfg)
 
-	init := ledgerMock.NewCC("fiat", common.NewFiatToken(token.BaseToken{}), string(cfgBytes))
+	init := ledgerMock.NewCC("fiat", common.NewFiatToken(), string(cfgBytes))
 	require.Empty(t, init)
 
 	owner.Invoke("acl", "addUser", base58.Encode(owner.PubKey()), "123", "testuser", "true")

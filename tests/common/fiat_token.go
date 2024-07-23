@@ -15,8 +15,10 @@ type FiatToken struct {
 }
 
 // NewFiatToken creates fiat token
-func NewFiatToken(bt token.BaseToken) *FiatToken {
-	return &FiatToken{bt}
+func NewFiatToken() *FiatToken {
+	return &FiatToken{
+		BaseToken: token.BaseToken{},
+	}
 }
 
 // TxEmit - emits fiat token
