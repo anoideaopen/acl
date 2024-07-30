@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VER: 1.22.4
+  GO_VER: 1.22.5
   GO_VER_OLD: 1.18.7
-  GINKGO_VER: 2.13.2
+  GINKGO_VER: 2.19.1
 
 jobs:
   check-cyrillic-comments:
@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version:
-          - '1.22.4'
+          - '1.22.5'
           - '1.18.7'
     runs-on: 'ubuntu-20.04'
     steps:
