@@ -9,7 +9,7 @@ import (
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
