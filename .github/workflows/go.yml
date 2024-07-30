@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VER: 1.22.5
-  GO_VER_OLD: 1.18.7
+  GO_VER: 1.23.0
+  GO_VER_OLD: 1.20.3
   GINKGO_VER: 2.19.1
 
 jobs:
@@ -57,7 +57,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.59
+          version: v1.60
           args: --out-format=colored-line-number
           skip-cache: true
           problem-matchers: true
@@ -69,8 +69,8 @@ jobs:
       fail-fast: false
       matrix:
         go-version:
-          - '1.22.5'
-          - '1.18.7'
+          - '1.23.0'
+          - '1.20.3'
     runs-on: 'ubuntu-20.04'
     steps:
       - uses: actions/checkout@v4

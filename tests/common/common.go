@@ -13,7 +13,7 @@ import (
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/keys/eth"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck

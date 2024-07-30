@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/anoideaopen/acl/tests/common"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/require"
 )

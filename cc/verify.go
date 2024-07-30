@@ -6,7 +6,7 @@ import (
 	aclproto "github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/keys/eth"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 )
 
 func verifyValidatorSignature(

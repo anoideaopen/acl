@@ -11,7 +11,7 @@ import (
 
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/tests/common"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest"
 	"github.com/stretchr/testify/require"
