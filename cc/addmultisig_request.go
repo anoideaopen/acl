@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/anoideaopen/acl/helpers"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
 

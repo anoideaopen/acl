@@ -4,7 +4,6 @@ package cc
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
@@ -20,7 +19,7 @@ import (
 	"github.com/anoideaopen/acl/helpers"
 	aclproto "github.com/anoideaopen/acl/proto"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/msp"
@@ -851,14 +850,11 @@ func (c *ACL) verifyAccess(stub shim.ChaincodeStubInterface) error {
 
 	hash := sha256.New()
 
-	// ToDo - need to remove deprecated elliptic.Marshal to when Go version will be updated to 1.20
-	// ToDo right way to create hash is as follows:
-	// ecdhPk, err := pk.ECDH()
-	// if err != nil {
-	// 	return fmt.Errorf("public key transition failed: %w", err)
-	// }
-	// hash.Write(ecdhPk.Bytes())
-	hash.Write(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
+	ecdhPk, err := pk.ECDH()
+	if err != nil {
+		return fmt.Errorf("public key transition failed: %w", err)
+	}
+	hash.Write(ecdhPk.Bytes())
 	hashed := sha3.Sum256(cert)
 	if !bytes.Equal(hashed[:], c.adminSKI) &&
 		!bytes.Equal(hash.Sum(nil), c.adminSKI) {
