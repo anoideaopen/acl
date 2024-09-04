@@ -16,7 +16,7 @@ import (
 const (
 	ErrUserIDNotEtalon         = "user id not equals to etalon"
 	ErrAddressNotEtalon        = "address not equals to etalon"
-	ErrCannotUnmarshalResponse = "cannot unmarshal acl response"
+	ErrCannotUnmarshalResponse = "cannot unmarshal acl response: %v"
 )
 
 var (
@@ -50,9 +50,10 @@ var (
 
 func CheckAddress(etalon *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
+		out = out[:len(out)-1] // skip line feed
 		var aclRes pb.Address
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
-			return ErrCannotUnmarshalResponse
+			return fmt.Sprintf(ErrCannotUnmarshalResponse, err)
 		}
 
 		if aclRes.AddrString() != etalon.AddressBase58Check {
@@ -83,9 +84,10 @@ func CheckAddressGraylisted(message string) func([]byte) string {
 
 func CheckKeys(account *pb.AccountInfo, user *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
-		var aclRes pb.AclResponse
+		out = out[:len(out)-1] // skip line feed
+		aclRes := pb.AclResponse{}
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
-			return ErrCannotUnmarshalResponse
+			return fmt.Sprintf(ErrCannotUnmarshalResponse, err)
 		}
 
 		if aclRes.GetAddress() == nil {
@@ -124,9 +126,10 @@ func CheckKeys(account *pb.AccountInfo, user *client.UserFoundation) func([]byte
 
 func CheckGetAccountOperationRight(etalon *pb.HaveRight) func([]byte) string {
 	return func(out []byte) string {
+		out = out[:len(out)-1] // skip line feed
 		var aclRes pb.HaveRight
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
-			return ErrCannotUnmarshalResponse
+			return fmt.Sprintf(ErrCannotUnmarshalResponse, err)
 		}
 
 		if aclRes.GetHaveRight() != etalon.GetHaveRight() {
@@ -165,7 +168,7 @@ func CheckGetAccountAllRights(accountRights []*pb.Right, user *client.UserFounda
 	return func(out []byte) string {
 		var aclRes pb.AccountRights
 		if err := protojson.Unmarshal(out, &aclRes); err != nil {
-			return ErrCannotUnmarshalResponse
+			return fmt.Sprintf(ErrCannotUnmarshalResponse, err)
 		}
 		aclResAddress := aclRes.GetAddress()
 		if aclResAddress == nil {
@@ -190,7 +193,7 @@ func CheckGetOperationAllRights(etalon *pb.OperationRights, user *client.UserFou
 	return func(out []byte) string {
 		var aclRes pb.OperationRights
 		if err := protojson.Unmarshal(out, &aclRes); err != nil {
-			return ErrCannotUnmarshalResponse
+			return fmt.Sprintf(ErrCannotUnmarshalResponse, err)
 		}
 		if aclRes.GetOperationName() != etalon.GetOperationName() {
 			return "operation name not equals to etalon"
@@ -204,7 +207,7 @@ func CheckAccountInfo(etalon *pb.AccountInfo) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes pb.AccountInfo
 		if err := json.Unmarshal(out, &aclRes); err != nil {
-			return ErrCannotUnmarshalResponse
+			return fmt.Sprintf(ErrCannotUnmarshalResponse, err)
 		}
 
 		if aclRes.GetKycHash() != etalon.GetKycHash() {
@@ -227,7 +230,7 @@ func CheckAddresses(users ...*client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes cc.AddrsWithPagination
 		if err := json.Unmarshal(out, &aclRes); err != nil {
-			return ErrCannotUnmarshalResponse
+			return fmt.Sprintf(ErrCannotUnmarshalResponse, err)
 		}
 
 		for _, user := range users {

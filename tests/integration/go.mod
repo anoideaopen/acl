@@ -31,16 +31,13 @@ require (
 	github.com/ale-linux/aries-framework-go/component/kmscrypto v0.0.0-20230817163708-4b3de6d91874 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
-	github.com/anoideaopen/channel-transfer v0.0.5 // indirect
 	github.com/anoideaopen/common-component v0.0.6 // indirect
 	github.com/anoideaopen/glog v0.0.3 // indirect
 	github.com/avast/retry-go/v4 v4.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
-	github.com/btcsuite/btcd v0.23.5-0.20231215221805-96c9fd8078fd // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
-	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/cfssl v1.4.1 // indirect
@@ -64,7 +61,6 @@ require (
 	github.com/flowchartsman/swaggerui v0.0.0-20221017034628-909ed4f3701b // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
-	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -73,7 +69,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.22.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.4 // indirect
-	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -114,7 +109,6 @@ require (
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc6 // indirect
-	github.com/opencontainers/runc v1.1.12 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -131,7 +125,6 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
@@ -147,7 +140,6 @@ require (
 	go.etcd.io/etcd/raft/v3 v3.5.14 // indirect
 	go.etcd.io/etcd/server/v3 v3.5.14 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.15.0-rc.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.28.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
@@ -164,7 +156,6 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
-	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240725223205-93522f1f2a9f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240725223205-93522f1f2a9f // indirect
 	google.golang.org/grpc v1.65.0 // indirect
