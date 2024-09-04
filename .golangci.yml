@@ -1,6 +1,6 @@
 run:
   # The default concurrency value is the number of available CPU.
-  go: '1.18'
+  go: '1.23'
   concurrency: 4
   timeout: 5m
   tests: false
@@ -17,7 +17,7 @@ linters:
     - bodyclose
     - dogsled
     - errorlint
-    - exportloopref
+    - copyloopvar
     - misspell
     - nestif
     - noctx
@@ -96,6 +96,7 @@ linters-settings:
       - 'G107'
       - 'G402'
       - 'G404'
+      - 'G115'
   revive:
     ignore-generated-header: true
     rules:
