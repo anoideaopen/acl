@@ -9,7 +9,7 @@ import (
 	"github.com/anoideaopen/acl/cc"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -50,6 +50,7 @@ var (
 
 func CheckAddress(etalon *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
+		out = out[:len(out)-1] // skip line feed
 		var aclRes pb.Address
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
 			return ErrCannotUnmarshalResponse
@@ -83,6 +84,7 @@ func CheckAddressGraylisted(message string) func([]byte) string {
 
 func CheckKeys(account *pb.AccountInfo, user *client.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
+		out = out[:len(out)-1] // skip line feed
 		var aclRes pb.AclResponse
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
 			return ErrCannotUnmarshalResponse
@@ -124,6 +126,7 @@ func CheckKeys(account *pb.AccountInfo, user *client.UserFoundation) func([]byte
 
 func CheckGetAccountOperationRight(etalon *pb.HaveRight) func([]byte) string {
 	return func(out []byte) string {
+		out = out[:len(out)-1] // skip line feed
 		var aclRes pb.HaveRight
 		if err := proto.Unmarshal(out, &aclRes); err != nil {
 			return ErrCannotUnmarshalResponse
