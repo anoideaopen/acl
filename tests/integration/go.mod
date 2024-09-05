@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	github.com/IBM/idemix v0.0.2-0.20231011101252-a4feda90f3f7
 	github.com/anoideaopen/acl v0.0.4-0.20240709131543-bf642c53380c
-	github.com/anoideaopen/foundation v0.0.5
-	github.com/anoideaopen/foundation/test/integration v0.0.0-20240724152103-d3687fbe8235
-	github.com/anoideaopen/robot v0.0.3-0.20240730145328-bc561367aff8
+	github.com/anoideaopen/foundation v0.0.6-0.20240809062346-4a18d95a349b
+	github.com/anoideaopen/foundation/test/integration v0.0.0-20240903083613-925228974a3c
+	github.com/anoideaopen/robot v0.0.3-0.20240814133021-25a749a95916
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/fsouza/go-dockerclient v1.11.1
 	github.com/golang/protobuf v1.5.4
@@ -31,6 +31,7 @@ require (
 	github.com/ale-linux/aries-framework-go/component/kmscrypto v0.0.0-20230817163708-4b3de6d91874 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
+	github.com/anoideaopen/channel-transfer v0.0.5 // indirect
 	github.com/anoideaopen/common-component v0.0.6 // indirect
 	github.com/anoideaopen/glog v0.0.3 // indirect
 	github.com/avast/retry-go/v4 v4.6.0 // indirect
@@ -57,10 +58,13 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.2 // indirect
 	github.com/ethereum/go-ethereum v1.14.5 // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/flowchartsman/swaggerui v0.0.0-20221017034628-909ed4f3701b // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
-	github.com/go-logfmt/logfmt v0.5.1 // indirect
+	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -77,7 +81,9 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.21.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/hyperledger-labs/SmartBFT v0.0.0-20240616160543-3f61a410b8c1 // indirect
@@ -89,7 +95,7 @@ require (
 	github.com/hyperledger/fabric-sdk-go v1.0.1-0.20210927191040-3e3a3c6aeec9 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kilic/bls12-381 v0.1.0 // indirect
-	github.com/klauspost/compress v1.17.6 // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
@@ -108,13 +114,14 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
-	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
-	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/prometheus/client_model v0.6.1 // indirect
+	github.com/prometheus/common v0.53.0 // indirect
+	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/redis/go-redis/v9 v9.6.1 // indirect
-	github.com/sagikazarmark/locafero v0.4.0 // indirect
+	github.com/sagikazarmark/locafero v0.6.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/slok/go-http-metrics v0.12.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
@@ -140,6 +147,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
@@ -149,6 +157,7 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
+	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240725223205-93522f1f2a9f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240725223205-93522f1f2a9f // indirect
 	google.golang.org/grpc v1.65.0 // indirect
