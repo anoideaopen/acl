@@ -6,9 +6,8 @@ require (
 	github.com/IBM/idemix v0.0.2-0.20231011101252-a4feda90f3f7
 	github.com/anoideaopen/acl v0.0.4-0.20240709131543-bf642c53380c
 	github.com/anoideaopen/foundation v0.0.6-0.20240809062346-4a18d95a349b
-	github.com/anoideaopen/foundation/test/integration v0.0.0-20240903083613-925228974a3c
+	github.com/anoideaopen/foundation/test/integration v0.0.0-20240909081609-af8e7ac3d816
 	github.com/anoideaopen/robot v0.0.3-0.20240814133021-25a749a95916
-	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/fsouza/go-dockerclient v1.11.1
 	github.com/golang/protobuf v1.5.4
 	github.com/hyperledger/fabric v1.4.0-rc1.0.20240729123800-908b9655d423
@@ -37,6 +36,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
+	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -87,6 +87,7 @@ require (
 	github.com/hyperledger/fabric-protos-go v0.3.3 // indirect
 	github.com/hyperledger/fabric-sdk-go v1.0.1-0.20210927191040-3e3a3c6aeec9 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/kilic/bls12-381 v0.1.0 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect

@@ -2,12 +2,10 @@ package account
 
 import (
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
-	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/hyperledger/fabric/integration"
-	"github.com/hyperledger/fabric/integration/nwo"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -21,10 +19,6 @@ const (
 var _ = Describe("ACL basic tests", func() {
 	var (
 		ts client.TestSuite
-
-		network *nwo.Network
-		peer    *nwo.Peer
-		orderer *nwo.Orderer
 	)
 
 	BeforeEach(func() {
@@ -49,10 +43,6 @@ var _ = Describe("ACL basic tests", func() {
 	BeforeEach(func() {
 		ts.InitNetwork(channels, integration.DiscoveryBasePort)
 		ts.DeployChaincodes()
-
-		network = ts.Network()
-		peer = ts.Peer()
-		orderer = network.Orderers[0]
 	})
 
 	It("Get Account Info test", func() {
@@ -70,10 +60,7 @@ var _ = Describe("ACL basic tests", func() {
 		}
 
 		By("setting account info")
-		aclclient.SetAccountInfo(
-			network,
-			peer,
-			orderer,
+		ts.SetAccountInfo(
 			user,
 			etalonAccountInfo.GetKycHash(),
 			etalonAccountInfo.GetGrayListed(),
@@ -100,7 +87,7 @@ var _ = Describe("ACL basic tests", func() {
 		}
 
 		By("setting account info")
-		aclclient.SetKYC(network, peer, orderer, user, etalonAccountInfo.GetKycHash(), ts.Admin())
+		ts.SetKYC(user, etalonAccountInfo.GetKycHash(), ts.Admin())
 
 		By("getting account info with checkKeys function")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
@@ -122,10 +109,7 @@ var _ = Describe("ACL basic tests", func() {
 		}
 
 		By("setting account info")
-		aclclient.SetAccountInfo(
-			network,
-			peer,
-			orderer,
+		ts.SetAccountInfo(
 			user,
 			etalonAccountInfo.GetKycHash(),
 			etalonAccountInfo.GetGrayListed(),
@@ -143,10 +127,7 @@ var _ = Describe("ACL basic tests", func() {
 		etalonAccountInfo.GrayListed = false
 
 		By("setting account info")
-		aclclient.SetAccountInfo(
-			network,
-			peer,
-			orderer,
+		ts.SetAccountInfo(
 			user,
 			etalonAccountInfo.GetKycHash(),
 			etalonAccountInfo.GetGrayListed(),
@@ -164,10 +145,7 @@ var _ = Describe("ACL basic tests", func() {
 		etalonAccountInfo.BlackListed = false
 
 		By("setting account info")
-		aclclient.SetAccountInfo(
-			network,
-			peer,
-			orderer,
+		ts.SetAccountInfo(
 			user,
 			etalonAccountInfo.GetKycHash(),
 			etalonAccountInfo.GetGrayListed(),
@@ -185,10 +163,7 @@ var _ = Describe("ACL basic tests", func() {
 		etalonAccountInfo.GrayListed = true
 
 		By("setting account info")
-		aclclient.SetAccountInfo(
-			network,
-			peer,
-			orderer,
+		ts.SetAccountInfo(
 			user,
 			etalonAccountInfo.GetKycHash(),
 			etalonAccountInfo.GetGrayListed(),
