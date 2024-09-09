@@ -116,7 +116,7 @@ var _ = Describe("ACL config tests", func() {
 			},
 		)
 
-		networkFound = cmn.New(network, channels)
+		networkFound = cmn.New(network, channels, cmn.RobotCfgDefault, cmn.ChannelTransferCfgDefault)
 		networkFound.Robot.RedisAddresses = []string{redisDB.Address()}
 		networkFound.ChannelTransfer.RedisAddresses = []string{redisDB.Address()}
 

@@ -657,8 +657,8 @@ github.com/anoideaopen/fabric-sdk-go v0.0.2 h1:8Nm1jpaCxtgphFtc1GuQoQxREz6Y7TrsC
 github.com/anoideaopen/fabric-sdk-go v0.0.2/go.mod h1:L8ECPqpdBc/ObG4PDH4wHTsYLoi74UcSPgI0hLR/vHc=
 github.com/anoideaopen/foundation v0.0.6-0.20240809062346-4a18d95a349b h1:Dx0tPe30Xtph9BwGabFnBzoE7cAC67FdsuDxcCMXq7Q=
 github.com/anoideaopen/foundation v0.0.6-0.20240809062346-4a18d95a349b/go.mod h1:5dkuaC4WuhkzRz2D/2067dwQ7L7XBeLmo21Ln5CDYFI=
-github.com/anoideaopen/foundation/test/integration v0.0.0-20240903083613-925228974a3c h1:keB7W+f36SicWwdVFLZPoYPiDq8uXQIWvMsXG3oNH6Q=
-github.com/anoideaopen/foundation/test/integration v0.0.0-20240903083613-925228974a3c/go.mod h1:d5lDv+K24jP2flzQ+foSW5AMWegWgbqnt80P8Viw+CI=
+github.com/anoideaopen/foundation/test/integration v0.0.0-20240909081609-af8e7ac3d816 h1:ydWDSgxhHH+XP98bRoZ4UnlZUY3I/LBc8OikJlZvJao=
+github.com/anoideaopen/foundation/test/integration v0.0.0-20240909081609-af8e7ac3d816/go.mod h1:/fdDnOw52YjraodgrBY+euSV3IYT0ojg4nCAv1XntWs=
 github.com/anoideaopen/glog v0.0.3 h1:vsWM5QvHzTMbrDy3cydkNPFpfdWrxeC8ne02f//qNaA=
 github.com/anoideaopen/glog v0.0.3/go.mod h1:8J4509ClNmF/kvvPA8XFKZ7OX+860JaFH3+nXVD+R3k=
 github.com/anoideaopen/robot v0.0.3-0.20240814133021-25a749a95916 h1:QNzQ/3+nvoiQqPCdfaFgPShr/fQcttTQikHIjHlkND0=
