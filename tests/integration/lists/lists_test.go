@@ -2,12 +2,10 @@ package lists
 
 import (
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
-	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/hyperledger/fabric/integration"
-	"github.com/hyperledger/fabric/integration/nwo"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -32,10 +30,6 @@ var _ = Describe("ACL lists tests", func() {
 	var (
 		channels = []string{cmn.ChannelAcl}
 		user     *client.UserFoundation
-
-		network *nwo.Network
-		peer    *nwo.Peer
-		orderer *nwo.Orderer
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -48,10 +42,6 @@ var _ = Describe("ACL lists tests", func() {
 	BeforeEach(func() {
 		ts.InitNetwork(channels, integration.LedgerPort)
 		ts.DeployChaincodes()
-
-		network = ts.Network()
-		peer = ts.Peer()
-		orderer = network.Orderers[0]
 	})
 
 	It("Black & Gray lists test", func() {
@@ -63,14 +53,14 @@ var _ = Describe("ACL lists tests", func() {
 		ts.AddUser(user)
 
 		By("adding user to GrayList")
-		aclclient.AddToGrayList(network, peer, orderer, user)
+		ts.AddToGrayList(user)
 
 		By("sending query & checking result")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountGraylisted, user))
 
 		By("adding user to BlackList")
-		aclclient.AddToBlackList(network, peer, orderer, user)
+		ts.AddToBlackList(user)
 
 		By("sending query & checking result")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
@@ -86,28 +76,28 @@ var _ = Describe("ACL lists tests", func() {
 		ts.AddUser(user)
 
 		By("adding user to GrayList")
-		aclclient.AddToGrayList(network, peer, orderer, user)
+		ts.AddToGrayList(user)
 
 		By("sending query & checking result")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountGraylisted, user))
 
 		By("adding user to BlackList")
-		aclclient.AddToBlackList(network, peer, orderer, user)
+		ts.AddToBlackList(user)
 
 		By("sending query & checking result")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountBothLists, user))
 
 		By("deleting from GrayList")
-		aclclient.DelFromGrayList(network, peer, orderer, user)
+		ts.DelFromGrayList(user)
 
 		By("sending query & checking result")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountBlacklisted, user))
 
 		By("deleting from BlackList")
-		aclclient.DelFromBlackList(network, peer, orderer, user)
+		ts.DelFromBlackList(user)
 
 		By("sending query & checking result")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).

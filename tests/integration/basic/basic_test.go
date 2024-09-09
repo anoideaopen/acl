@@ -4,12 +4,10 @@ import (
 	"slices"
 
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
-	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/hyperledger/fabric/integration"
-	"github.com/hyperledger/fabric/integration/nwo"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -38,9 +36,6 @@ var _ = Describe("ACL basic tests", func() {
 	var (
 		channels = []string{cmn.ChannelAcl}
 		user     *client.UserFoundation
-
-		network *nwo.Network
-		peer    *nwo.Peer
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -53,9 +48,6 @@ var _ = Describe("ACL basic tests", func() {
 	BeforeEach(func() {
 		ts.InitNetwork(channels, integration.DevModePort)
 		ts.DeployChaincodes()
-
-		network = ts.Network()
-		peer = ts.Peer()
 	})
 
 	It("Add user test & check keys test", func() {
@@ -104,10 +96,7 @@ var _ = Describe("ACL basic tests", func() {
 		ts.AddUser(newUser)
 
 		By("changing user public key")
-		aclclient.ChangePublicKey(
-			network,
-			peer,
-			network.Orderers[0],
+		ts.ChangePublicKey(
 			oldUser,
 			newUser.PublicKeyBase58,
 			"0",
@@ -137,10 +126,7 @@ var _ = Describe("ACL basic tests", func() {
 		ts.AddUser(newUser)
 
 		By("changing user public key")
-		aclclient.ChangePublicKeyBase58signed(
-			network,
-			peer,
-			network.Orderers[0],
+		ts.ChangePublicKeyBase58signed(
 			oldUser,
 			"0",
 			cmn.ChannelAcl,
@@ -213,7 +199,7 @@ var _ = Describe("ACL basic tests", func() {
 			CheckResponseWithFunc(aclcmn.CheckAddress(user))
 
 		By("add user to gray list")
-		aclclient.AddToGrayList(network, peer, network.Orderers[0], user)
+		ts.AddToGrayList(user)
 
 		By("checking address")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckAddress, user.AddressBase58Check).
