@@ -3,7 +3,7 @@ module github.com/anoideaopen/acl
 go 1.20
 
 require (
-	github.com/anoideaopen/foundation v0.0.5
+	github.com/anoideaopen/foundation v0.0.7
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/golang/protobuf v1.5.4
@@ -18,7 +18,6 @@ require (
 require (
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
-	github.com/btcsuite/btcutil v1.0.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
