@@ -300,7 +300,7 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 func (c *ACL) tryCheckAdditionalKey(
 	stub shim.ChaincodeStubInterface,
 	args []string,
-) ([]byte, error) {
+) (resp []byte, err error) {
 	const (
 		argsLen            = 1
 		multisignSeparator = "/"
@@ -308,7 +308,7 @@ func (c *ACL) tryCheckAdditionalKey(
 
 	// Checking that the argument is the only one needed for the extra key case.
 	if len(args) != argsLen {
-		return nil, nil
+		return
 	}
 
 	// Query Parameters.
@@ -316,7 +316,7 @@ func (c *ACL) tryCheckAdditionalKey(
 
 	// Check if the argument is a multisignature.
 	if strings.Count(publicKey, multisignSeparator) > 0 {
-		return nil, nil
+		return
 	}
 
 	// Attempting to get the user's address by an additional public key.
@@ -327,7 +327,7 @@ func (c *ACL) tryCheckAdditionalKey(
 
 	// If no parent is found, the key is normal and control is passed to the higher handler.
 	if parentAddress == "" {
-		return nil, nil
+		return
 	}
 
 	// Retrieving information about a user by their additional key.
