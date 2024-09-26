@@ -25,68 +25,68 @@ func (lt ListType) String() string {
 // AddToList sets address to 'gray list' or 'black list'
 // arg[0] - address
 // arg[1] - "gray" of "black"
-func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) error {
 	const requiredArgsCount = 2
 
 	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		return nil, fmt.Errorf("incorrect number of arguments: %d, but this method expects: address, attribute ('gray' or 'black')", argsNum)
+		return fmt.Errorf("incorrect number of arguments: %d, but this method expects: address, attribute ('gray' or 'black')", argsNum)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	if len(args[0]) == 0 {
-		return nil, errors.New(errs.ErrEmptyAddress)
+		return errors.New(errs.ErrEmptyAddress)
 	}
 
 	if args[1] != GrayList.String() && args[1] != BlackList.String() {
-		return nil, fmt.Errorf("%s is not valid list type, accepted 'black' or 'gray' only", args[1])
+		return fmt.Errorf("%s is not valid list type, accepted 'black' or 'gray' only", args[1])
 	}
 
 	addrArg := args[0]
 	color := ListType(args[1])
 
 	if err := updateListStatus(stub, addrArg, color, true); err != nil {
-		return nil, fmt.Errorf("failed to update list status: %w", err)
+		return fmt.Errorf("failed to update list status: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // DelFromList removes address from gray list or black list
 // arg[0] - address
 // arg[1] - "gray" of "black"
-func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) error {
 	const requiredArgsCount = 2
 
 	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		return nil, fmt.Errorf("incorrect number of arguments: %d, but this method expects: address, "+
+		return fmt.Errorf("incorrect number of arguments: %d, but this method expects: address, "+
 			"attribute ('gray' or 'black')", argsNum)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	if len(args[0]) == 0 {
-		return nil, errors.New(errs.ErrEmptyAddress)
+		return errors.New(errs.ErrEmptyAddress)
 	}
 
 	if args[1] != GrayList.String() && args[1] != BlackList.String() {
-		return nil, fmt.Errorf("%s is not valid list type, accepted 'black' only", args[0])
+		return fmt.Errorf("%s is not valid list type, accepted 'black' only", args[0])
 	}
 
 	addrArg := args[0]
 	color := ListType(args[1])
 
 	if err := updateListStatus(stub, addrArg, color, false); err != nil {
-		return nil, fmt.Errorf("failed to update list status: %w", err)
+		return fmt.Errorf("failed to update list status: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // changeListStatus updates the grayList or blacklist status of an address in the account information.

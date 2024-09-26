@@ -43,23 +43,23 @@ type AddrsWithPagination struct {
 // args[1] - Know Your Client (KYC) hash
 // args[2] - user identifier
 // args[3] - user can do industrial operation or not (boolean)
-func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) error {
 	const withoutPublicKeyType = false
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	request, err := addUserRequestFromArguments(args, withoutPublicKeyType)
 	if err != nil {
-		return nil, fmt.Errorf("failed parsing arguments: %w", err)
+		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
 	if err = addUser(stub, request); err != nil {
-		return nil, fmt.Errorf("failed adding new user: %w", err)
+		return fmt.Errorf("failed adding new user: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // AddUserWithPublicKeyType adds user by public key to the ACL
@@ -69,23 +69,23 @@ func (c *ACL) AddUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, 
 // args[2] - user identifier
 // args[3] - user can do industrial operation or not (boolean)
 // args[4] - key type: ed25519, ecdsa, gost
-func (c *ACL) AddUserWithPublicKeyType(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) AddUserWithPublicKeyType(stub shim.ChaincodeStubInterface, args []string) error {
 	const withPublicKeyType = true
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	request, err := addUserRequestFromArguments(args, withPublicKeyType)
 	if err != nil {
-		return nil, fmt.Errorf("failed parsing arguments: %w", err)
+		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
 	if err = addUser(stub, request); err != nil {
-		return nil, fmt.Errorf("failed adding new user: %w", err)
+		return fmt.Errorf("failed adding new user: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // GetUser returns user by address
@@ -255,16 +255,16 @@ func (c *ACL) updateSignedAddress(
 // arg[1] - KYC hash
 // arg[2] - nonce
 // arg[3:] - public keys and signatures of validators
-func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) error {
 	const argsCount = 5
 
 	argsNum := len(args)
 	if argsNum < argsCount {
-		return nil, fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
+		return fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	var (
@@ -276,19 +276,19 @@ func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) ([]byte, e
 	)
 
 	if len(address) == 0 {
-		return nil, errors.New(errs.ErrEmptyAddress)
+		return errors.New(errs.ErrEmptyAddress)
 	}
 	if len(newKyc) == 0 {
-		return nil, errors.New("empty KYC hash string")
+		return errors.New("empty KYC hash string")
 	}
 	if len(nonce) == 0 {
-		return nil, errors.New("empty nonce")
+		return errors.New("empty nonce")
 	}
 	if lenPksAndSignatures == 0 {
-		return nil, errors.New("no public keys and signatures provided")
+		return errors.New("no public keys and signatures provided")
 	}
 	if lenPksAndSignatures%2 != 0 {
-		return nil, fmt.Errorf("uneven number of public keys and signatures provided: %d", lenPksAndSignatures)
+		return fmt.Errorf("uneven number of public keys and signatures provided: %d", lenPksAndSignatures)
 	}
 
 	var (
@@ -299,40 +299,40 @@ func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) ([]byte, e
 	)
 
 	if err := checkNonce(stub, address, nonce); err != nil {
-		return nil, fmt.Errorf("failed checking nonce: %w", err)
+		return fmt.Errorf("failed checking nonce: %w", err)
 	}
 
 	if err := c.verifyValidatorSignatures(message[:], pks, signatures); err != nil {
-		return nil, fmt.Errorf("failed verifying validators signtatures: %w", err)
+		return fmt.Errorf("failed verifying validators signtatures: %w", err)
 	}
 
 	cKey, err := compositekey.AccountInfo(stub, address)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating account info composite key: %w", err)
+		return fmt.Errorf("failed creating account info composite key: %w", err)
 	}
 
 	infoData, err := checkIfAccountInfoExistsAndGetData(stub, cKey, address)
 	if err != nil {
-		return nil, fmt.Errorf("failed checking account info: %w", err)
+		return fmt.Errorf("failed checking account info: %w", err)
 	}
 
 	var info pb.AccountInfo
 	if err = proto.Unmarshal(infoData, &info); err != nil {
-		return nil, fmt.Errorf("failed unmarshalling account info: %w", err)
+		return fmt.Errorf("failed unmarshalling account info: %w", err)
 	}
 
 	info.KycHash = newKyc
 
 	newAccInfo, err := proto.Marshal(&info)
 	if err != nil {
-		return nil, fmt.Errorf("failed marshalling account info: %w", err)
+		return fmt.Errorf("failed marshalling account info: %w", err)
 	}
 
 	if err = stub.PutState(cKey, newAccInfo); err != nil {
-		return nil, fmt.Errorf("failed storing account info: %w", err)
+		return fmt.Errorf("failed storing account info: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // GetAddresses reads and returns addresses from state by given page size and bookmark
@@ -411,16 +411,16 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) ([]b
 // - 6: New key (base58)
 // - 7: Nonce
 // - 8 and onwards: List of validators' public keys and their corresponding signatures
-func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) error {
 	const argsCount = 10
 
 	argsNum := len(args)
 	if argsNum < argsCount {
-		return nil, fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
+		return fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	// args[0] is request id
@@ -428,59 +428,59 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 
 	chaincodeNameFromArgs := args[1]
 	if chaincodeNameFromArgs != ACLChaincodeName {
-		return nil, errors.New("incorrect chaincode name")
+		return errors.New("incorrect chaincode name")
 	}
 
 	channelID := args[2]
 	if channelID != stub.GetChannelID() {
-		return nil, errors.New("incorrect channel")
+		return errors.New("incorrect channel")
 	}
 
 	forAddrOrig := args[3]
 	if err := helpers.CheckAddress(forAddrOrig); err != nil {
-		return nil, fmt.Errorf("the user's address is not valid: %w", err)
+		return fmt.Errorf("the user's address is not valid: %w", err)
 	}
 
 	reason := args[4]
 	if len(reason) == 0 {
-		return nil, errors.New("reason not provided")
+		return errors.New("reason not provided")
 	}
 
 	if len(args[5]) == 0 {
-		return nil, errors.New("reason ID not provided")
+		return errors.New("reason ID not provided")
 	}
 
 	reasonID, err := strconv.ParseInt(args[5], base10, bitSize32)
 	if err != nil {
-		return nil, fmt.Errorf("failed parsing reason ID: %w", err)
+		return fmt.Errorf("failed parsing reason ID: %w", err)
 	}
 
 	if len(args[6]) == 0 {
-		return nil, errors.New("empty new key")
+		return errors.New("empty new key")
 	}
 
 	strKeys := strings.Split(args[6], "/")
 	if err = helpers.CheckKeysArr(strKeys); err != nil {
-		return nil, fmt.Errorf("failed checking keys '%s': %w", args[3], err)
+		return fmt.Errorf("failed checking keys '%s': %w", args[3], err)
 	}
 
 	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
-		return nil, fmt.Errorf("failed converting new key to sorted hashed hex: %w", err)
+		return fmt.Errorf("failed converting new key to sorted hashed hex: %w", err)
 	}
 
 	nonce := args[7]
 	if len(nonce) == 0 {
-		return nil, errors.New("empty nonce")
+		return errors.New("empty nonce")
 	}
 
 	pksAndSignatures := args[8:]
 	lenPksAndSignatures := len(pksAndSignatures)
 	if lenPksAndSignatures == 0 {
-		return nil, errors.New("no public keys and signatures provided")
+		return errors.New("no public keys and signatures provided")
 	}
 	if lenPksAndSignatures%2 != 0 {
-		return nil, errors.New("uneven number of public keys and signatures provided")
+		return errors.New("uneven number of public keys and signatures provided")
 	}
 	var (
 		validatorsCount = lenPksAndSignatures / 2
@@ -492,65 +492,65 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	message := sha3.Sum256([]byte(fn + strings.Join(args[:8+validatorsCount], "")))
 
 	if err = checkNonce(stub, forAddrOrig, nonce); err != nil {
-		return nil, fmt.Errorf("failed checking nonce: %w", err)
+		return fmt.Errorf("failed checking nonce: %w", err)
 	}
 
 	if err = c.checkValidatorsSignedWithBase58Signature(message[:], pks, signatures); err != nil {
-		return nil, fmt.Errorf("failed checking signatures: %w", err)
+		return fmt.Errorf("failed checking signatures: %w", err)
 	}
 
 	addrToPkCompositeKey, err := compositekey.PublicKey(stub, forAddrOrig)
 	if err != nil {
-		return nil, fmt.Errorf("failed making new public key composite key: %w", err)
+		return fmt.Errorf("failed making new public key composite key: %w", err)
 	}
 
 	// check that we have pub key for such address
 	keys, err := stub.GetState(addrToPkCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting keys from state: %w", err)
+		return fmt.Errorf("failed getting keys from state: %w", err)
 	}
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("failed getting keys from state: no public keys for address %s", forAddrOrig)
+		return fmt.Errorf("failed getting keys from state: no public keys for address %s", forAddrOrig)
 	}
 	if bytes.Equal(keys, []byte(newKey)) {
-		return nil, errors.New("the new key is equivalent to an existing one")
+		return errors.New("the new key is equivalent to an existing one")
 	}
 
 	// del old pub key -> pb.Address mapping
 	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(keys))
 	if err != nil {
-		return nil, fmt.Errorf("failed making new address composite key: %w", err)
+		return fmt.Errorf("failed making new address composite key: %w", err)
 	}
 	// firstly get pb.SignedAddress to re-create it later in new mapping
 	signedAddrBytes, err := stub.GetState(pkToAddrCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting signed address from state: %w", err)
+		return fmt.Errorf("failed getting signed address from state: %w", err)
 	}
 	if len(signedAddrBytes) == 0 {
-		return nil, fmt.Errorf("no SignedAddress msg for address %s", forAddrOrig)
+		return fmt.Errorf("no SignedAddress msg for address %s", forAddrOrig)
 	}
 
 	signedAddr := &pb.SignedAddress{}
 	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
-		return nil, fmt.Errorf("failed unmarshalling signed address: %w", err)
+		return fmt.Errorf("failed unmarshalling signed address: %w", err)
 	}
 
 	// and delete
 	err = stub.DelState(pkToAddrCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed deleting signed address from state: %w", err)
+		return fmt.Errorf("failed deleting signed address from state: %w", err)
 	}
 
 	// del old addr -> pub key mapping
 	err = stub.DelState(addrToPkCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed deleting public key from state: %w", err)
+		return fmt.Errorf("failed deleting public key from state: %w", err)
 	}
 
 	// set new key -> pb.SignedAddress mapping
 	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed making new public key composite key: %w", err)
+		return fmt.Errorf("failed making new public key composite key: %w", err)
 	}
 
 	signedAddr.SignedTx = append(append(append([]string{fn}, args[0:5]...), pks...), signatures...)
@@ -558,19 +558,19 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	signedAddr.ReasonId = int32(reasonID)
 	addrChangeMsg, err := proto.Marshal(signedAddr)
 	if err != nil {
-		return nil, fmt.Errorf("failed marshalling signed address: %w", err)
+		return fmt.Errorf("failed marshalling signed address: %w", err)
 	}
 
 	if err = stub.PutState(newPkToAddrCompositeKey, addrChangeMsg); err != nil {
-		return nil, fmt.Errorf("failed putting new signed address to state: %w", err)
+		return fmt.Errorf("failed putting new signed address to state: %w", err)
 	}
 
 	// set new address -> key mapping
 	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
-		return nil, fmt.Errorf("failed putting new public key to state: %w", err)
+		return fmt.Errorf("failed putting new public key to state: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // ChangePublicKey changes public key of user
@@ -580,63 +580,63 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 // arg[3] - new key (base58)
 // arg[4] - nonce
 // arg[5:] - public keys and signatures of validators
-func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) error {
 	const argsCount = 7
 
 	argsNum := len(args)
 	if argsNum < argsCount {
-		return nil, fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
+		return fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	forAddrOrig := args[0]
 
 	if len(forAddrOrig) == 0 {
-		return nil, errors.New(errs.ErrEmptyAddress)
+		return errors.New(errs.ErrEmptyAddress)
 	}
 
 	reason := args[1]
 	if len(reason) == 0 {
-		return nil, errors.New("reason not provided")
+		return errors.New("reason not provided")
 	}
 
 	if len(args[2]) == 0 {
-		return nil, errors.New("reason ID not provided")
+		return errors.New("reason ID not provided")
 	}
 	reasonID, err := strconv.ParseInt(args[2], base10, bitSize32)
 	if err != nil {
-		return nil, fmt.Errorf("failed parsing reason ID: %w", err)
+		return fmt.Errorf("failed parsing reason ID: %w", err)
 	}
 
 	if len(args[3]) == 0 {
-		return nil, errors.New("empty new key")
+		return errors.New("empty new key")
 	}
 
 	nonce := args[4]
 	if len(nonce) == 0 {
-		return nil, errors.New("empty nonce")
+		return errors.New("empty nonce")
 	}
 
 	pksAndSignatures := args[5:]
 	lenPksAndSignatures := len(pksAndSignatures)
 	if lenPksAndSignatures == 0 {
-		return nil, errors.New("no public keys and signatures provided")
+		return errors.New("no public keys and signatures provided")
 	}
 
 	strKeys := strings.Split(args[3], "/")
 	if err = helpers.CheckKeysArr(strKeys); err != nil {
-		return nil, fmt.Errorf("failed checking public keys: %w", err)
+		return fmt.Errorf("failed checking public keys: %w", err)
 	}
 	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
 	if err != nil {
-		return nil, fmt.Errorf("failed converting public key into sorted hashed hex: %w", err)
+		return fmt.Errorf("failed converting public key into sorted hashed hex: %w", err)
 	}
 
 	if lenPksAndSignatures%2 != 0 {
-		return nil, errors.New("uneven number of public keys and signatures provided")
+		return errors.New("uneven number of public keys and signatures provided")
 	}
 
 	var (
@@ -649,61 +649,61 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) (
 	message := sha3.Sum256([]byte(strings.Join(append([]string{fn, forAddrOrig, reason, args[2], args[3], nonce}, pks...), "")))
 
 	if err = checkNonce(stub, forAddrOrig, nonce); err != nil {
-		return nil, fmt.Errorf("failed checking nonce: %w", err)
+		return fmt.Errorf("failed checking nonce: %w", err)
 	}
 
 	if err = c.verifyValidatorSignatures(message[:], pks, signatures); err != nil {
-		return nil, fmt.Errorf("failed checking signatures: %w", err)
+		return fmt.Errorf("failed checking signatures: %w", err)
 	}
 
 	addrToPkCompositeKey, err := compositekey.PublicKey(stub, forAddrOrig)
 	if err != nil {
-		return nil, fmt.Errorf("failed making a public key composite key: %w", err)
+		return fmt.Errorf("failed making a public key composite key: %w", err)
 	}
 
 	// check that we have pub key for such address
 	keys, err := stub.GetState(addrToPkCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting keys from state: %w", err)
+		return fmt.Errorf("failed getting keys from state: %w", err)
 	}
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("failed getting keys from state: no public keys for address %s", forAddrOrig)
+		return fmt.Errorf("failed getting keys from state: no public keys for address %s", forAddrOrig)
 	}
 
 	// del old pub key -> pb.Address mapping
 	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(keys))
 	if err != nil {
-		return nil, fmt.Errorf("failed making signed address composite key: %w", err)
+		return fmt.Errorf("failed making signed address composite key: %w", err)
 	}
 	// firstly get pb.SignedAddress to re-create it later in new mapping
 	signedAddrBytes, err := stub.GetState(pkToAddrCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting signed address from state: %w", err)
+		return fmt.Errorf("failed getting signed address from state: %w", err)
 	}
 	if len(signedAddrBytes) == 0 {
-		return nil, errors.New("empty signed address bytes in state")
+		return errors.New("empty signed address bytes in state")
 	}
 	signedAddr := &pb.SignedAddress{}
 	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
-		return nil, fmt.Errorf("failed unmarshalling signed address: %w", err)
+		return fmt.Errorf("failed unmarshalling signed address: %w", err)
 	}
 
 	// and delete
 	err = stub.DelState(pkToAddrCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed deleting signed address from state: %w", err)
+		return fmt.Errorf("failed deleting signed address from state: %w", err)
 	}
 
 	// del old addr -> pub key mapping
 	err = stub.DelState(addrToPkCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed deleting public key from state: %w", err)
+		return fmt.Errorf("failed deleting public key from state: %w", err)
 	}
 
 	// set new key -> pb.SignedAddress mapping
 	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed making new signed address composite key: %w", err)
+		return fmt.Errorf("failed making new signed address composite key: %w", err)
 	}
 
 	signedAddr.SignedTx = append(append(append([]string{fn}, args[0:5]...), pks...), signatures...)
@@ -711,19 +711,19 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) (
 	signedAddr.ReasonId = int32(reasonID)
 	addrChangeMsg, err := proto.Marshal(signedAddr)
 	if err != nil {
-		return nil, fmt.Errorf("failed marshalling signed address: %w", err)
+		return fmt.Errorf("failed marshalling signed address: %w", err)
 	}
 
 	if err = stub.PutState(newPkToAddrCompositeKey, addrChangeMsg); err != nil {
-		return nil, fmt.Errorf("failed putting new signed address to state: %w", err)
+		return fmt.Errorf("failed putting new signed address to state: %w", err)
 	}
 
 	// set new address -> key mapping
 	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
-		return nil, fmt.Errorf("failed putting new public key to state: %w", err)
+		return fmt.Errorf("failed putting new public key to state: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 func checkNonce(stub shim.ChaincodeStubInterface, sender, nonceStr string) error {

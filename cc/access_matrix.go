@@ -24,17 +24,17 @@ const (
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) { //nolint:funlen,gocognit,gocyclo
+func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) error { //nolint:funlen,gocognit,gocyclo
 	const requiredArgsCount = 5
 
 	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
+		return fmt.Errorf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	var (
@@ -45,41 +45,41 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) ([]byte
 		addressEncoded = args[4]
 	)
 	if len(channelName) == 0 {
-		return nil, errors.New(errs.ErrEmptyChannelName)
+		return errors.New(errs.ErrEmptyChannelName)
 	}
 
 	if len(chaincodeName) == 0 {
-		return nil, errors.New(errs.ErrEmptyChaincodeName)
+		return errors.New(errs.ErrEmptyChaincodeName)
 	}
 
 	if len(roleName) == 0 {
-		return nil, errors.New(errs.ErrEmptyRoleName)
+		return errors.New(errs.ErrEmptyRoleName)
 	}
 
 	if len(addressEncoded) == 0 {
-		return nil, errors.New(errs.ErrEmptyAddress)
+		return errors.New(errs.ErrEmptyAddress)
 	}
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
-		return nil, fmt.Errorf("failed retrieving signed address: %w", err)
+		return fmt.Errorf("failed retrieving signed address: %w", err)
 	}
 
 	// adding operation right
 	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
-		return nil, fmt.Errorf("failed creating composite key: %w", err)
+		return fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed reading address from state: %w", err)
+		return fmt.Errorf("failed reading address from state: %w", err)
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
 		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
 			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
-				return nil, fmt.Errorf("failed unmarshalling address: %w", err)
+				return fmt.Errorf("failed unmarshalling address: %w", err)
 			}
 		}
 	}
@@ -96,23 +96,23 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) ([]byte
 		addresses.Addresses = append(addresses.Addresses, address)
 		rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(addresses)
 		if err != nil {
-			return nil, fmt.Errorf("failed marshalling addresses: %w", err)
+			return fmt.Errorf("failed marshalling addresses: %w", err)
 		}
 		err = stub.PutState(operationCompositeKey, rawAddresses)
 		if err != nil {
-			return nil, fmt.Errorf("failed putting address to state: %w", err)
+			return fmt.Errorf("failed putting address to state: %w", err)
 		}
 	}
 
 	// adding account right
 	accountCompositeKey, err := stub.CreateCompositeKey(addressKey, []string{address.AddrString()})
 	if err != nil {
-		return nil, fmt.Errorf("failed creating composite key: %w", err)
+		return fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAccountRights, err := stub.GetState(accountCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed reading account rights: %w", err)
+		return fmt.Errorf("failed reading account rights: %w", err)
 	}
 
 	accountRights := &pb.AccountRights{
@@ -122,7 +122,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) ([]byte
 	if len(rawAccountRights) != 0 {
 		if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
 			if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
-				return nil, fmt.Errorf("failed unmarshalling account rights: %w", err)
+				return fmt.Errorf("failed unmarshalling account rights: %w", err)
 			}
 		}
 	}
@@ -150,15 +150,15 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) ([]byte
 		})
 		rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 		if err != nil {
-			return nil, fmt.Errorf("failed marshalling account rights: %w", err)
+			return fmt.Errorf("failed marshalling account rights: %w", err)
 		}
 		err = stub.PutState(accountCompositeKey, rawAccountRights)
 		if err != nil {
-			return nil, fmt.Errorf("failed putting account rights to state: %w", err)
+			return fmt.Errorf("failed putting account rights to state: %w", err)
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 // RemoveRights removes rights from the access matrix
@@ -167,17 +167,17 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) ([]byte
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) { //nolint:funlen,gocognit
+func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) error { //nolint:funlen,gocognit
 	const requiredArgsCount = 5
 
 	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
+		return fmt.Errorf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	channelName := args[0]
@@ -188,24 +188,24 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) ([]b
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
-		return nil, fmt.Errorf("failed retrieving signed address: %w", err)
+		return fmt.Errorf("failed retrieving signed address: %w", err)
 	}
 
 	// removing operation right
 	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
-		return nil, fmt.Errorf("failed creating composite key: %w", err)
+		return fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed reading address from state: %w", err)
+		return fmt.Errorf("failed reading address from state: %w", err)
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
 		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
 			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
-				return nil, fmt.Errorf("failed unmarshalling address: %w", err)
+				return fmt.Errorf("failed unmarshalling address: %w", err)
 			}
 		}
 	}
@@ -215,11 +215,11 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) ([]b
 			addresses.Addresses = append(addresses.Addresses[:i], addresses.GetAddresses()[i+1:]...)
 			rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(addresses)
 			if err != nil {
-				return nil, fmt.Errorf("failed marshalling addresses: %w", err)
+				return fmt.Errorf("failed marshalling addresses: %w", err)
 			}
 			err = stub.PutState(operationCompositeKey, rawAddresses)
 			if err != nil {
-				return nil, fmt.Errorf("failed putting address to state: %w", err)
+				return fmt.Errorf("failed putting address to state: %w", err)
 			}
 			break
 		}
@@ -228,12 +228,12 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) ([]b
 	// removing account right
 	accountCompositeKey, err := stub.CreateCompositeKey(addressKey, []string{address.AddrString()})
 	if err != nil {
-		return nil, fmt.Errorf("failed creating composite key: %w", err)
+		return fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAccountRights, err := stub.GetState(accountCompositeKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed reading account rights: %w", err)
+		return fmt.Errorf("failed reading account rights: %w", err)
 	}
 
 	accountRights := &pb.AccountRights{
@@ -243,7 +243,7 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) ([]b
 	if len(rawAccountRights) != 0 {
 		if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
 			if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
-				return nil, fmt.Errorf("failed unmarshalling account rights: %w", err)
+				return fmt.Errorf("failed unmarshalling account rights: %w", err)
 			}
 		}
 	}
@@ -255,17 +255,17 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) ([]b
 			accountRights.Rights = append(accountRights.Rights[:i], accountRights.GetRights()[i+1:]...)
 			rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 			if err != nil {
-				return nil, fmt.Errorf("failed marshalling account rights: %w", err)
+				return fmt.Errorf("failed marshalling account rights: %w", err)
 			}
 			err = stub.PutState(accountCompositeKey, rawAccountRights)
 			if err != nil {
-				return nil, fmt.Errorf("failed putting account rights to state: %w", err)
+				return fmt.Errorf("failed putting account rights to state: %w", err)
 			}
 			break
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 // GetAccountOperationRight checks address have rights for the operation

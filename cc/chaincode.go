@@ -23,10 +23,14 @@ type (
 	ACL struct {
 		adminSKI []byte
 		config   *proto.ACLConfig
-		methods  map[string]ccFunc
+		methods  map[string]ACLMethod
 		logger   *logging.Logger
 	}
-	ccFunc func(stub shim.ChaincodeStubInterface, args []string) ([]byte, error)
+
+	Account struct {
+		Address string   `json:"address"`
+		Balance *big.Int `json:"balance"`
+	}
 )
 
 func New() *ACL {
@@ -50,9 +54,56 @@ func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
 	return shim.Success(nil)
 }
 
-type Account struct {
-	Address string   `json:"address"`
-	Balance *big.Int `json:"balance"`
+func (c *ACL) method(name string) (ACLMethod, error) {
+	if c.methods == nil {
+		methods := make(map[string]ACLMethod)
+
+		t := reflect.TypeOf(c)
+		for i := 0; i < t.NumMethod(); i++ {
+			method := t.Method(i)
+			if skipMethod(method.Name) {
+				continue
+			}
+
+			if qMethod, ok := c.queryFunc(method.Name); ok {
+				methods[helpers.ToLowerFirstLetter(method.Name)] = NewQueryMethod(qMethod)
+			} else if iMethod, ok := c.invokeFunc(method.Name); ok {
+				methods[helpers.ToLowerFirstLetter(method.Name)] = NewInvokeMethod(iMethod)
+			} else {
+				return nil, fmt.Errorf("unknown signature of method %s", method.Name)
+			}
+		}
+		c.methods = methods
+	}
+
+	if method, ok := c.methods[name]; ok {
+		return method, nil
+	}
+
+	return nil, fmt.Errorf("unknown method %s", name)
+}
+
+func (c *ACL) queryFunc(name string) (queryFunc, bool) {
+	if function, ok := reflect.ValueOf(c).MethodByName(name).Interface().(func(shim.ChaincodeStubInterface, []string) ([]byte, error)); ok {
+		return function, true
+	}
+	return nil, false
+}
+
+func (c *ACL) invokeFunc(name string) (invokeFunc, bool) {
+	if function, ok := reflect.ValueOf(c).MethodByName(name).Interface().(func(shim.ChaincodeStubInterface, []string) error); ok {
+		return function, true
+	}
+	return nil, false
+}
+
+func skipMethod(name string) bool {
+	switch name {
+	case "Init", "Invoke", "Start":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
@@ -110,30 +161,14 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	c.adminSKI = adminSKI
 	// init config end
 
-	methods := make(map[string]ccFunc)
-	t := reflect.TypeOf(c)
-	var ok bool
-	for i := 0; i < t.NumMethod(); i++ {
-		method := t.Method(i)
-		if method.Name != "Init" && method.Name != "Invoke" && method.Name != "Start" {
-			name := helpers.ToLowerFirstLetter(method.Name)
-			if methods[name], ok = reflect.ValueOf(c).MethodByName(method.Name).Interface().(func(shim.ChaincodeStubInterface, []string) ([]byte, error)); !ok {
-				errMsg := fmt.Sprintf("chaincode initialization failure: cc method %s does not satisfy signature func(stub shim.ChaincodeStubInterface, args []string) ([]byte, error)", method.Name)
-				lg.Errorf(logMessage, errMsg)
-				return shim.Error(errMsg)
-			}
-		}
-	}
-	c.methods = methods
-
-	ccInvoke, ok := methods[fn]
-	if !ok {
-		errMsg := "unknown method: " + fn
+	method, err := c.method(fn)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to invoke method %s: %s", fn, err.Error())
 		lg.Errorf(logMessage, errMsg)
 		return shim.Error(errMsg)
 	}
 
-	payload, err := ccInvoke(stub, args)
+	payload, err := method.Call(stub, args)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed invoking method %s: %s", fn, err.Error())
 		lg.Errorf(logMessage, errMsg)

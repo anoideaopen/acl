@@ -44,12 +44,12 @@ func (c *ACL) handleGetAccountsInfoItem(stub shim.ChaincodeStubInterface, b []by
 		methodArgs = args[1:]
 	)
 
-	ccInvoke, ok := c.methods[fn]
-	if !ok {
-		return nil, fmt.Errorf("failed get accounts info: unknown method '%s' in tx %s", fn, stub.GetTxID())
+	ccInvoke, err := c.method(fn)
+	if err != nil {
+		return nil, fmt.Errorf("failed get accounts info: %w", err)
 	}
 
 	stub = querystub.NewQueryStub(stub, args...)
 
-	return ccInvoke(stub, methodArgs)
+	return ccInvoke.Call(stub, methodArgs)
 }

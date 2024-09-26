@@ -82,7 +82,7 @@ func TestBlackListWrongParameterList(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "kek is not valid list type, accepted 'black' or 'gray' only"
+	errorMsg := s.list + " is not valid list type, accepted 'black' or 'gray' only"
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
