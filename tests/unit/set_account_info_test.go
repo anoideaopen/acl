@@ -128,7 +128,7 @@ func TestSetAccountInfoWrongAddressString(t *testing.T) {
 		respStatus:    int32(shim.ERROR),
 		isGrayListed:  "false",
 		isBlackListed: "false",
-		errorMsg:      "invalid address, checksum error",
+		errorMsg:      "invalid address: checksum error",
 	}
 
 	stub := common.StubCreateAndInit(t)
@@ -144,7 +144,7 @@ func TestSetAccountInfoWrongAddressNumeric(t *testing.T) {
 		respStatus:    int32(shim.ERROR),
 		isGrayListed:  "false",
 		isBlackListed: "false",
-		errorMsg:      "invalid address, checksum error",
+		errorMsg:      "invalid address: checksum error",
 	}
 
 	stub := common.StubCreateAndInit(t)
@@ -170,7 +170,7 @@ func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *seriesSetAccount
 
 func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesSetAccountInfo) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return

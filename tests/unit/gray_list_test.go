@@ -127,7 +127,7 @@ func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *series
 
 func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return
@@ -171,7 +171,7 @@ func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *serie
 
 func validationResultRemoveAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return

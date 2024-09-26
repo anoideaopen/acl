@@ -8,12 +8,15 @@ import (
 	"os"
 	"reflect"
 	"runtime/debug"
+	"time"
 
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/proto"
+	"github.com/anoideaopen/foundation/core/logger"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/op/go-logging"
 )
 
 type (
@@ -21,12 +24,20 @@ type (
 		adminSKI []byte
 		config   *proto.ACLConfig
 		methods  map[string]ccFunc
+		logger   *logging.Logger
 	}
-	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
+	ccFunc func(stub shim.ChaincodeStubInterface, args []string) ([]byte, error)
 )
 
 func New() *ACL {
 	return &ACL{}
+}
+
+func (c *ACL) log() *logging.Logger {
+	if c.logger == nil {
+		c.logger = logger.Logger()
+	}
+	return c.logger
 }
 
 // Init - method for initialize chaincode
@@ -45,27 +56,56 @@ type Account struct {
 }
 
 func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
+	var (
+		fn, args   = stub.GetFunctionAndParameters()
+		lg         = c.log()
+		logMessage = "txID: " + stub.GetTxID() + ": %s"
+		start      = time.Now()
+	)
+
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("panic invoke\n" + string(debug.Stack()))
+			lg.Criticalf("panic invoke\n%s", string(debug.Stack()))
 		}
 	}()
-	fn, args := stub.GetFunctionAndParameters()
+
+	defer func() {
+		lg.Infof(logMessage, fmt.Sprintf("elapsed: %s", time.Since(start)))
+	}()
 
 	// Need to always read the config to assure there will be no determinism while executing the transaction
 	// init config begin
 	cfg, err := config.GetConfig(stub)
 	if err != nil {
-		return shim.Error(err.Error())
+		errMsg := "failed getting chaincode config: " + err.Error()
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 	if cfg == nil {
-		return shim.Error("ACL chaincode not initialized, please invoke Init with init args first")
+		errMsg := "ACL chaincode not initialized, please invoke Init with init args first"
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 	c.config = cfg
 
+	ccName, err := helpers.ParseCCName(stub)
+	if err != nil {
+		errMsg := "failed parsing chaincode name: " + err.Error()
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
+	}
+
+	if ccName != c.config.GetCcName() {
+		lg.Infof(logMessage, fmt.Sprintf("invoke method %s from chaincode %s", fn, ccName))
+	} else {
+		lg.Infof(logMessage, "invoke method "+fn)
+	}
+
 	adminSKI, err := hex.DecodeString(cfg.GetAdminSKIEncoded())
 	if err != nil {
-		return shim.Error(fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.GetAdminSKIEncoded()))
+		errMsg := fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.GetAdminSKIEncoded())
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 	c.adminSKI = adminSKI
 	// init config end
@@ -77,8 +117,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		method := t.Method(i)
 		if method.Name != "Init" && method.Name != "Invoke" && method.Name != "Start" {
 			name := helpers.ToLowerFirstLetter(method.Name)
-			if methods[name], ok = reflect.ValueOf(c).MethodByName(method.Name).Interface().(func(shim.ChaincodeStubInterface, []string) peer.Response); !ok {
-				return shim.Error(fmt.Sprintf("Chaincode initialization failure: cc method %s does not satisfy signature func(stub shim.ChaincodeStubInterface, args []string) peer.Response", method.Name))
+			if methods[name], ok = reflect.ValueOf(c).MethodByName(method.Name).Interface().(func(shim.ChaincodeStubInterface, []string) ([]byte, error)); !ok {
+				errMsg := fmt.Sprintf("chaincode initialization failure: cc method %s does not satisfy signature func(stub shim.ChaincodeStubInterface, args []string) ([]byte, error)", method.Name)
+				lg.Errorf(logMessage, errMsg)
+				return shim.Error(errMsg)
 			}
 		}
 	}
@@ -86,10 +128,19 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 
 	ccInvoke, ok := methods[fn]
 	if !ok {
-		return shim.Error(fmt.Sprintf("unknown method %s in tx %s", fn, stub.GetTxID()))
+		errMsg := "unknown method: " + fn
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 
-	return ccInvoke(stub, args)
+	payload, err := ccInvoke(stub, args)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed invoking method %s: %s", fn, err.Error())
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
+	}
+
+	return shim.Success(payload)
 }
 
 func (c *ACL) Start() error {

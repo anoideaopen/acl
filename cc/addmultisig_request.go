@@ -74,7 +74,7 @@ func (r *AddMultisigRequest) parseArguments(
 
 	if index := indexOf(argChaincodeID, argOrder); index != indexNotFound {
 		r.ChaincodeName = args[index]
-		if r.ChaincodeName != chaincodeName {
+		if r.ChaincodeName != ACLChaincodeName {
 			return errors.New("incorrect chaincode name")
 		}
 	}
@@ -102,7 +102,7 @@ func (r *AddMultisigRequest) parseArguments(
 
 	if index := indexOf(argKeysAndSignatures, argOrder); index != indexNotFound {
 		if err = r.parseKeysAndSignatures(stub, args[index:], signaturesInBase58); err != nil {
-			return fmt.Errorf("failed parsing keys and signatures from arguments: %w", err)
+			return fmt.Errorf("failed parsing keys and signatures: %w", err)
 		}
 	}
 

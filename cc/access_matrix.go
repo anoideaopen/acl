@@ -9,7 +9,6 @@ import (
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -25,61 +24,62 @@ const (
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen,gocognit,gocyclo
-	argsNum := len(args)
+func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) { //nolint:funlen,gocognit,gocyclo
 	const requiredArgsCount = 5
+
+	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum,
+		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
-		return shim.Error(errMsg)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(errs.ErrUnauthorized+": %s", err.Error()))
+		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
-	channelName := args[0]
-	chaincodeName := args[1]
-	roleName := args[2]
-	operationName := args[3]
-	addressEncoded := args[4]
-
+	var (
+		channelName    = args[0]
+		chaincodeName  = args[1]
+		roleName       = args[2]
+		operationName  = args[3]
+		addressEncoded = args[4]
+	)
 	if len(channelName) == 0 {
-		return shim.Error(errs.ErrEmptyChannelName)
+		return nil, errors.New(errs.ErrEmptyChannelName)
 	}
 
 	if len(chaincodeName) == 0 {
-		return shim.Error(errs.ErrEmptyChaincodeName)
+		return nil, errors.New(errs.ErrEmptyChaincodeName)
 	}
 
 	if len(roleName) == 0 {
-		return shim.Error(errs.ErrEmptyRoleName)
+		return nil, errors.New(errs.ErrEmptyRoleName)
 	}
 
 	if len(addressEncoded) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
+		return nil, errors.New(errs.ErrEmptyAddress)
 	}
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed retrieving signed address: %w", err)
 	}
 
 	// adding operation right
 	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed reading address from state: %w", err)
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
 		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
 			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed unmarshalling address: %w", err)
 			}
 		}
 	}
@@ -96,23 +96,23 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 		addresses.Addresses = append(addresses.Addresses, address)
 		rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(addresses)
 		if err != nil {
-			return shim.Error(err.Error())
+			return nil, fmt.Errorf("failed marshalling addresses: %w", err)
 		}
 		err = stub.PutState(operationCompositeKey, rawAddresses)
 		if err != nil {
-			return shim.Error(err.Error())
+			return nil, fmt.Errorf("failed putting address to state: %w", err)
 		}
 	}
 
 	// adding account right
 	accountCompositeKey, err := stub.CreateCompositeKey(addressKey, []string{address.AddrString()})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAccountRights, err := stub.GetState(accountCompositeKey)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed reading account rights: %w", err)
 	}
 
 	accountRights := &pb.AccountRights{
@@ -122,7 +122,7 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 	if len(rawAccountRights) != 0 {
 		if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
 			if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed unmarshalling account rights: %w", err)
 			}
 		}
 	}
@@ -150,15 +150,15 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 		})
 		rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 		if err != nil {
-			return shim.Error(err.Error())
+			return nil, fmt.Errorf("failed marshalling account rights: %w", err)
 		}
 		err = stub.PutState(accountCompositeKey, rawAccountRights)
 		if err != nil {
-			return shim.Error(err.Error())
+			return nil, fmt.Errorf("failed putting account rights to state: %w", err)
 		}
 	}
 
-	return shim.Success(nil)
+	return nil, nil
 }
 
 // RemoveRights removes rights from the access matrix
@@ -167,17 +167,17 @@ func (c *ACL) AddRights(stub shim.ChaincodeStubInterface, args []string) peer.Re
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer.Response { //nolint:funlen,gocognit
-	argsNum := len(args)
+func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) { //nolint:funlen,gocognit
 	const requiredArgsCount = 5
+
+	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum,
+		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
 			"channel name, chaincode name, role name, operation name and user address")
-		return shim.Error(errMsg)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(errs.ErrUnauthorized+": %s", err.Error()))
+		return nil, fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	channelName := args[0]
@@ -188,24 +188,24 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed retrieving signed address: %w", err)
 	}
 
 	// removing operation right
 	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed reading address from state: %w", err)
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
 		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
 			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed unmarshalling address: %w", err)
 			}
 		}
 	}
@@ -215,11 +215,11 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 			addresses.Addresses = append(addresses.Addresses[:i], addresses.GetAddresses()[i+1:]...)
 			rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(addresses)
 			if err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed marshalling addresses: %w", err)
 			}
 			err = stub.PutState(operationCompositeKey, rawAddresses)
 			if err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed putting address to state: %w", err)
 			}
 			break
 		}
@@ -228,12 +228,12 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 	// removing account right
 	accountCompositeKey, err := stub.CreateCompositeKey(addressKey, []string{address.AddrString()})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAccountRights, err := stub.GetState(accountCompositeKey)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed reading account rights: %w", err)
 	}
 
 	accountRights := &pb.AccountRights{
@@ -243,7 +243,7 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 	if len(rawAccountRights) != 0 {
 		if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
 			if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed unmarshalling account rights: %w", err)
 			}
 		}
 	}
@@ -255,17 +255,17 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 			accountRights.Rights = append(accountRights.Rights[:i], accountRights.GetRights()[i+1:]...)
 			rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 			if err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed marshalling account rights: %w", err)
 			}
 			err = stub.PutState(accountCompositeKey, rawAccountRights)
 			if err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed putting account rights to state: %w", err)
 			}
 			break
 		}
 	}
 
-	return shim.Success(nil)
+	return nil, nil
 }
 
 // GetAccountOperationRight checks address have rights for the operation
@@ -274,18 +274,18 @@ func (c *ACL) RemoveRights(stub shim.ChaincodeStubInterface, args []string) peer
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	result, err := c.getAccountOperationRight(stub, args)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed getting operation right: %w", err)
 	}
 
 	rawResult, err := proto.Marshal(result)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed marshalling operation right: %w", err)
 	}
 
-	return shim.Success(rawResult)
+	return rawResult, nil
 }
 
 // GetAccountOperationRightJSON checks address have rights for the operation
@@ -294,18 +294,18 @@ func (c *ACL) GetAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 // args[2] -> roleName
 // args[3] -> operationName
 // args[4] -> addressEncoded
-func (c *ACL) GetAccountOperationRightJSON(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) GetAccountOperationRightJSON(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	result, err := c.getAccountOperationRight(stub, args)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed getting operation right: %w", err)
 	}
 
 	rawResult, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(result)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed marshalling operation right: %w", err)
 	}
 
-	return shim.Success(rawResult)
+	return rawResult, nil
 }
 
 func (c *ACL) getAccountOperationRight(stub shim.ChaincodeStubInterface, args []string) (*pb.HaveRight, error) { //nolint:funlen
@@ -383,40 +383,40 @@ func (c *ACL) getAccountOperationRight(stub shim.ChaincodeStubInterface, args []
 
 // GetAccountAllRights returns all operations specified account have right to execute
 // args[0] -> addressEncoded
-func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	const requiredArgsCount = 1
+
 	argsNum := len(args)
-	const argsCount = 1
-	if argsNum != argsCount {
-		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum, "user address")
-		return shim.Error(errMsg)
+	if argsNum != requiredArgsCount {
+		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum, "user address")
 	}
 
 	canCall, err := c.isCalledFromChaincodeOrAdmin(stub)
 	if err != nil {
-		return shim.Error(fmt.Sprintf(errs.ErrCallAthFailed, err.Error()))
+		return nil, fmt.Errorf(errs.ErrCallAthFailed, err.Error())
 	}
 	if !canCall {
-		return shim.Error(errs.ErrCalledNotCCOrAdmin)
+		return nil, errors.New(errs.ErrCalledNotCCOrAdmin)
 	}
 
 	addressEncoded := args[0]
 	if len(addressEncoded) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
+		return nil, errors.New(errs.ErrEmptyAddress)
 	}
 
 	address, err := c.retrieveAndVerifySignedAddress(stub, addressEncoded)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed retrieving signed address: %w", err)
 	}
 
 	key, err := stub.CreateCompositeKey(addressKey, []string{address.AddrString()})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAccountRights, err := stub.GetState(key)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed reading account rights: %w", err)
 	}
 	accountRights := &pb.AccountRights{
 		Address: address,
@@ -424,15 +424,15 @@ func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []strin
 	}
 	if err = protojson.Unmarshal(rawAccountRights, accountRights); err != nil {
 		if err = proto.Unmarshal(rawAccountRights, accountRights); err != nil {
-			return shim.Error(err.Error())
+			return nil, fmt.Errorf("failed unmarshalling account rights: %w", err)
 		}
 	}
 	rawAccountRights, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(accountRights)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed marshalling account rights: %w", err)
 	}
 
-	return shim.Success(rawAccountRights)
+	return rawAccountRights, nil
 }
 
 // GetOperationAllRights returns all accounts having right to execute specified operation
@@ -440,53 +440,55 @@ func (c *ACL) GetAccountAllRights(stub shim.ChaincodeStubInterface, args []strin
 // args[1] -GetOperationAllRights> chaincodeName
 // args[2] -> roleName
 // args[3] -> operationName
-func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	argsNum := len(args)
+func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	const requiredArgsCount = 4
+
+	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		errMsg := fmt.Sprintf(errs.ErrArgumentsCount, argsNum, "channel name, chaincode name, role name and operation name")
-		return shim.Error(errMsg)
+		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum, "channel name, chaincode name, role name and operation name")
 	}
 
 	canCall, err := c.isCalledFromChaincodeOrAdmin(stub)
 	if err != nil {
-		return shim.Error(fmt.Sprintf(errs.ErrCallAthFailed, err.Error()))
+		return nil, fmt.Errorf(errs.ErrCallAthFailed, err.Error())
 	}
 	if !canCall {
-		return shim.Error(errs.ErrCalledNotCCOrAdmin)
+		return nil, errors.New(errs.ErrCalledNotCCOrAdmin)
 	}
 
-	channelName := args[0]
-	chaincodeName := args[1]
-	roleName := args[2]
-	operationName := args[3]
+	var (
+		channelName   = args[0]
+		chaincodeName = args[1]
+		roleName      = args[2]
+		operationName = args[3]
+	)
 
 	if len(channelName) == 0 {
-		return shim.Error(errs.ErrEmptyChannelName)
+		return nil, errors.New(errs.ErrEmptyChannelName)
 	}
 
 	if len(chaincodeName) == 0 {
-		return shim.Error(errs.ErrEmptyChaincodeName)
+		return nil, errors.New(errs.ErrEmptyChaincodeName)
 	}
 
 	if len(roleName) == 0 {
-		return shim.Error(errs.ErrEmptyRoleName)
+		return nil, errors.New(errs.ErrEmptyRoleName)
 	}
 
 	operationCompositeKey, err := stub.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed creating composite key: %w", err)
 	}
 
 	rawAddresses, err := stub.GetState(operationCompositeKey)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed reading addresses from state: %w", err)
 	}
 	addresses := &pb.Accounts{Addresses: []*pb.Address{}}
 	if len(rawAddresses) != 0 {
 		if err = protojson.Unmarshal(rawAddresses, addresses); err != nil {
 			if err = proto.Unmarshal(rawAddresses, addresses); err != nil {
-				return shim.Error(err.Error())
+				return nil, fmt.Errorf("failed unmarshalling addresses: %w", err)
 			}
 		}
 	}
@@ -505,10 +507,10 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 
 	rawRights, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(&pb.OperationRights{OperationName: operationName, Rights: rights})
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed marshalling operation rights: %w", err)
 	}
 
-	return shim.Success(rawRights)
+	return rawRights, nil
 }
 
 // isCalledFromChaincodeOrAdmin checks that function called from another chaincode or by acl admin

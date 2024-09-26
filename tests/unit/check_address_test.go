@@ -100,7 +100,7 @@ func checkAddress(t *testing.T, stub *shimtest.MockStub, ser *seriesCheckAddress
 
 func validationResultCheckAddress(t *testing.T, resp peer.Response, ser *seriesCheckAddress) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return

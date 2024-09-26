@@ -12,7 +12,7 @@ import (
 
 const failIfExists = false
 
-const chaincodeName = "acl"
+const ACLChaincodeName = "acl"
 
 func saveSignedAddress(
 	stub shim.ChaincodeStubInterface,

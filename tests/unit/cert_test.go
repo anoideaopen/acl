@@ -34,7 +34,7 @@ func TestCert(t *testing.T) {
 			[]byte(stateTrue),
 		})
 		require.Equal(t, int32(shim.ERROR), resp.Status)
-		require.Equal(t, resp.Message, "unauthorized: "+errs.ErrCallerNotAdmin)
+		require.Contains(t, resp.Message, "unauthorized: "+errs.ErrCallerNotAdmin)
 	})
 
 	t.Run("use valid cert", func(t *testing.T) {

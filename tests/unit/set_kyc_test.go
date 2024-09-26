@@ -115,7 +115,7 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *seriesSetKyc) peer.Respo
 
 func validationResultSetKyc(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesSetKyc) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return
