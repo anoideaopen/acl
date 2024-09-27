@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/anoideaopen/acl/cc/methods"
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/proto"
@@ -23,7 +24,7 @@ type (
 	ACL struct {
 		adminSKI []byte
 		config   *proto.ACLConfig
-		methods  map[string]ACLMethod
+		methods  map[string]methods.Method
 		logger   *logging.Logger
 	}
 
@@ -54,26 +55,27 @@ func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
 	return shim.Success(nil)
 }
 
-func (c *ACL) method(name string) (ACLMethod, error) {
+func (c *ACL) method(name string) (methods.Method, error) {
 	if c.methods == nil {
-		methods := make(map[string]ACLMethod)
+		aclMethods := make(map[string]methods.Method)
 
 		t := reflect.TypeOf(c)
 		for i := 0; i < t.NumMethod(); i++ {
-			method := t.Method(i)
+			var (
+				method = t.Method(i)
+				err    error
+			)
+
 			if skipMethod(method.Name) {
 				continue
 			}
 
-			if qMethod, ok := c.queryFunc(method.Name); ok {
-				methods[helpers.ToLowerFirstLetter(method.Name)] = NewQueryMethod(qMethod)
-			} else if iMethod, ok := c.invokeFunc(method.Name); ok {
-				methods[helpers.ToLowerFirstLetter(method.Name)] = NewInvokeMethod(iMethod)
-			} else {
-				return nil, fmt.Errorf("unknown signature of method %s", method.Name)
+			aclMethods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
+			if err != nil {
+				return nil, fmt.Errorf("failed adding method %s", method.Name)
 			}
 		}
-		c.methods = methods
+		c.methods = aclMethods
 	}
 
 	if method, ok := c.methods[name]; ok {
@@ -81,20 +83,6 @@ func (c *ACL) method(name string) (ACLMethod, error) {
 	}
 
 	return nil, fmt.Errorf("unknown method %s", name)
-}
-
-func (c *ACL) queryFunc(name string) (queryFunc, bool) {
-	if function, ok := reflect.ValueOf(c).MethodByName(name).Interface().(func(shim.ChaincodeStubInterface, []string) ([]byte, error)); ok {
-		return function, true
-	}
-	return nil, false
-}
-
-func (c *ACL) invokeFunc(name string) (invokeFunc, bool) {
-	if function, ok := reflect.ValueOf(c).MethodByName(name).Interface().(func(shim.ChaincodeStubInterface, []string) error); ok {
-		return function, true
-	}
-	return nil, false
 }
 
 func skipMethod(name string) bool {

@@ -1,14 +1,15 @@
-package cc
+package methods
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
 
 type (
-	// ACLMethod is a wrapper on methods which can have different signatures
-	ACLMethod interface {
+	// Method is a wrapper on methods which can have different signatures
+	Method interface {
 		Call(stub shim.ChaincodeStubInterface, args []string) (payload []byte, err error)
 	}
 
@@ -24,16 +25,20 @@ type (
 	queryFunc  func(stub shim.ChaincodeStubInterface, args []string) ([]byte, error)
 )
 
-func NewInvokeMethod(method invokeFunc) ACLMethod {
-	return &invokeMethod{
-		Method: method,
+func New(method any) (Method, error) {
+	if qMethod, ok := method.(func(shim.ChaincodeStubInterface, []string) ([]byte, error)); ok {
+		return &queryMethod{
+			Method: qMethod,
+		}, nil
 	}
-}
 
-func NewQueryMethod(method queryFunc) ACLMethod {
-	return &queryMethod{
-		Method: method,
+	if iMethod, ok := method.(func(shim.ChaincodeStubInterface, []string) error); ok {
+		return &invokeMethod{
+			Method: iMethod,
+		}, nil
 	}
+
+	return nil, errors.New("unknown method signature")
 }
 
 func (m *invokeMethod) Call(stub shim.ChaincodeStubInterface, args []string) (payload []byte, err error) {
