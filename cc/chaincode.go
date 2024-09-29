@@ -16,8 +16,8 @@ import (
 	"github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/core/logger"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-lib-go/common/flogging"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/op/go-logging"
 )
 
 type (
@@ -25,7 +25,7 @@ type (
 		adminSKI []byte
 		config   *proto.ACLConfig
 		methods  map[string]methods.Method
-		logger   *logging.Logger
+		logger   *flogging.FabricLogger
 	}
 
 	Account struct {
@@ -38,7 +38,7 @@ func New() *ACL {
 	return &ACL{}
 }
 
-func (c *ACL) log() *logging.Logger {
+func (c *ACL) log() *flogging.FabricLogger {
 	if c.logger == nil {
 		c.logger = logger.Logger()
 	}
