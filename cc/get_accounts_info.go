@@ -9,39 +9,47 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer"
 )
 
-func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) peer.Response {
+func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) ([]byte, error) {
 	responses := make([]peer.Response, 0)
 	for _, bytes := range stub.GetArgs()[1:] {
-		response := c.handleGetAccountsInfoItem(stub, bytes)
-		responses = append(responses, response)
+		payload, err := c.handleGetAccountsInfoItem(stub, bytes)
+		if err != nil {
+			responses = append(responses, shim.Error(err.Error()))
+		} else {
+			responses = append(responses, shim.Success(payload))
+		}
 	}
 
 	bytes, err := json.Marshal(responses)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed get accounts info: marshal GetAccountsInfoResponse: %s", err))
+		return nil, fmt.Errorf("failed get accounts info: marshal GetAccountsInfoResponse: %w", err)
 	}
-	return shim.Success(bytes)
+
+	return bytes, nil
 }
 
-func (c *ACL) handleGetAccountsInfoItem(stub shim.ChaincodeStubInterface, b []byte) peer.Response {
+func (c *ACL) handleGetAccountsInfoItem(stub shim.ChaincodeStubInterface, b []byte) ([]byte, error) {
 	var args []string
-	err := json.Unmarshal(b, &args)
-	if err != nil {
-		return shim.Error(fmt.Sprintf("unmarshal args failed '%s': %s", string(b), err))
+
+	if err := json.Unmarshal(b, &args); err != nil {
+		return nil, fmt.Errorf("failed unmarshalling arguments: %w", err)
 	}
 
 	if len(args) < 2 {
-		return shim.Error(fmt.Sprintf("not enough arguments '%s'", string(b)))
+		return nil, fmt.Errorf("not enough arguments '%s'", string(b))
 	}
 
-	fn := args[0]
-	methodArgs := args[1:]
-	ccInvoke, ok := c.methods[fn]
-	if !ok {
-		return shim.Error(fmt.Sprintf("failed get accounts info: unknown method '%s' in tx %s", fn, stub.GetTxID()))
+	var (
+		fn         = args[0]
+		methodArgs = args[1:]
+	)
+
+	ccInvoke, err := c.method(fn)
+	if err != nil {
+		return nil, fmt.Errorf("failed get accounts info: %w", err)
 	}
 
 	stub = querystub.NewQueryStub(stub, args...)
 
-	return ccInvoke(stub, methodArgs)
+	return ccInvoke.Call(stub, methodArgs)
 }

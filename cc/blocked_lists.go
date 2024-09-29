@@ -1,6 +1,7 @@
 package cc
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
@@ -8,7 +9,6 @@ import (
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
 )
 
 type ListType string
@@ -25,66 +25,68 @@ func (lt ListType) String() string {
 // AddToList sets address to 'gray list' or 'black list'
 // arg[0] - address
 // arg[1] - "gray" of "black"
-func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	argsNum := len(args)
+func (c *ACL) AddToList(stub shim.ChaincodeStubInterface, args []string) error {
 	const requiredArgsCount = 2
+
+	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: address, attribute ('gray' or 'black')", argsNum))
+		return fmt.Errorf("incorrect number of arguments: %d, but this method expects: address, attribute ('gray' or 'black')", argsNum)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error("unauthorized: " + err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	if len(args[0]) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
+		return errors.New(errs.ErrEmptyAddress)
 	}
 
 	if args[1] != GrayList.String() && args[1] != BlackList.String() {
-		return shim.Error("%s is not valid list type, accepted 'black' or 'gray' only")
+		return fmt.Errorf("%s is not valid list type, accepted 'black' or 'gray' only", args[1])
 	}
 
 	addrArg := args[0]
 	color := ListType(args[1])
 
 	if err := updateListStatus(stub, addrArg, color, true); err != nil {
-		return shim.Error(err.Error())
+		return fmt.Errorf("failed to update list status: %w", err)
 	}
 
-	return shim.Success(nil)
+	return nil
 }
 
 // DelFromList removes address from gray list or black list
 // arg[0] - address
 // arg[1] - "gray" of "black"
-func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	argsNum := len(args)
+func (c *ACL) DelFromList(stub shim.ChaincodeStubInterface, args []string) error {
 	const requiredArgsCount = 2
+
+	argsNum := len(args)
 	if argsNum != requiredArgsCount {
-		return shim.Error(fmt.Sprintf("incorrect number of arguments: %d, but this method expects: address, "+
-			"attribute ('gray' or 'black')", argsNum))
+		return fmt.Errorf("incorrect number of arguments: %d, but this method expects: address, "+
+			"attribute ('gray' or 'black')", argsNum)
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
-		return shim.Error("unauthorized: " + err.Error())
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	if len(args[0]) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
+		return errors.New(errs.ErrEmptyAddress)
 	}
 
 	if args[1] != GrayList.String() && args[1] != BlackList.String() {
-		return shim.Error("marker not specified (black or white list)")
+		return fmt.Errorf("%s is not valid list type, accepted 'black' only", args[0])
 	}
 
 	addrArg := args[0]
 	color := ListType(args[1])
 
 	if err := updateListStatus(stub, addrArg, color, false); err != nil {
-		return shim.Error(err.Error())
+		return fmt.Errorf("failed to update list status: %w", err)
 	}
 
-	return shim.Success(nil)
+	return nil
 }
 
 // changeListStatus updates the grayList or blacklist status of an address in the account information.

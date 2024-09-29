@@ -83,10 +83,9 @@ func TestChangePublicKeyMoreThan44Symbols(t *testing.T) {
 	}
 
 	errorMsg := fmt.Sprintf(
-		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		"incorrect len of decoded from base58 public key '%s': '%d'",
 		s.newPubKey,
 		33,
-		s.newPubKey,
 	)
 	s.SetError(errorMsg)
 
@@ -104,10 +103,9 @@ func TestChangePublicKeyLessThan43Symbols(t *testing.T) {
 	}
 
 	errorMsg := fmt.Sprintf(
-		"incorrect len of decoded from base58 public key '%s': '%d', input: '%s'",
+		"incorrect len of decoded from base58 public key '%s': '%d'",
 		s.newPubKey,
 		31,
-		s.newPubKey,
 	)
 	s.SetError(errorMsg)
 
@@ -154,8 +152,7 @@ func TestChangePublicKeyWrongNumericZero(t *testing.T) {
 		respStatus: int32(shim.ERROR),
 	}
 
-	errorMsg := "failed base58 decoding of key " +
-		s.newPubKey + ", input: '" + s.newPubKey + "'"
+	errorMsg := "failed base58 decoding of key " + s.newPubKey
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -171,8 +168,7 @@ func TestChangePublicKeyWithSpecialSymbols(t *testing.T) {
 		respStatus: int32(shim.ERROR),
 	}
 
-	errorMsg := "failed base58 decoding of key " +
-		s.newPubKey + ", input: '" + s.newPubKey + "'"
+	errorMsg := "failed base58 decoding of key " + s.newPubKey
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -245,7 +241,7 @@ func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *seriesChangePub
 
 func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesChangePublicKey) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return
@@ -357,8 +353,7 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 		)
 		respNewKey := stub.MockInvoke("0", invokeArgs)
 		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		require.Equal(t, "uneven number of public keys and signatures provided: 5",
-			respNewKey.Message)
+		require.Contains(t, respNewKey.Message, "uneven number of public keys and signatures provided")
 	})
 
 	t.Run("NEGATIVE. Incorrect new key input", func(t *testing.T) {
@@ -381,6 +376,6 @@ func TestChangePublicKeyNegatives(t *testing.T) {
 		)
 		respNewKey := stub.MockInvoke("0", invokeArgs)
 		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		require.Equal(t, "failed base58 decoding of key blabla, input: 'blabla'", respNewKey.Message)
+		require.Contains(t, respNewKey.Message, "failed base58 decoding of key blabla")
 	})
 }

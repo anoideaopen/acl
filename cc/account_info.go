@@ -14,7 +14,6 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -23,83 +22,92 @@ import (
 // arg[1] - KYC hash
 // arg[2] - is address gray listed? ("true" or "false")
 // arg[3] - is address black listed? ("true" or "false")
-func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	addrEncoded := args[0]
-	if len(addrEncoded) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
+func (c *ACL) SetAccountInfo(stub shim.ChaincodeStubInterface, args []string) error {
+	const argsLen = 4
+
+	if len(args) < argsLen {
+		return fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsLen, len(args))
 	}
 
-	_, _, err := base58.CheckDecode(addrEncoded)
-	if err != nil {
-		return shim.Error(fmt.Sprintf("invalid address, %s", err))
+	addrEncoded := args[0]
+	if len(addrEncoded) == 0 {
+		return errors.New(errs.ErrEmptyAddress)
 	}
+
+	if _, _, err := base58.CheckDecode(addrEncoded); err != nil {
+		return fmt.Errorf("invalid address: %w", err)
+	}
+
 	cKeyInfo, err := compositekey.AccountInfo(stub, addrEncoded)
 	if err != nil {
-		return shim.Error(err.Error())
+		return fmt.Errorf("failed to get account info composite key: %w", err)
 	}
-	_, err = checkIfAccountInfoExistsAndGetData(stub, cKeyInfo, addrEncoded)
-	if err != nil {
-		return shim.Error(err.Error())
+
+	if _, err = checkIfAccountInfoExistsAndGetData(stub, cKeyInfo, addrEncoded); err != nil {
+		return fmt.Errorf("failed checking if account info exists: %w", err)
 	}
 
 	kycHash := args[1]
 
 	grayListed := args[2]
 	if len(grayListed) == 0 {
-		return shim.Error("grayList attribute is not set")
+		return errors.New("grayList attribute is not set")
 	}
 
 	isGrayListed, err := strconv.ParseBool(grayListed)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to parse graylist attribute, %s", err))
+		return fmt.Errorf("failed to parse graylist attribute: %w", err)
 	}
 
 	blacklisted := args[3]
 	if len(blacklisted) == 0 {
-		return shim.Error("blacklist attribute is not set")
+		return errors.New("blacklisted attribute is not set")
 	}
 
 	isBlacklisted, err := strconv.ParseBool(blacklisted)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to parse blacklist attribute, %s", err))
+		return fmt.Errorf("failed to parse blacklist attribute: %w", err)
 	}
 
 	if err = c.verifyAccess(stub); err != nil {
-		return shim.Error(fmt.Sprintf(errs.ErrUnauthorizedMsg, err.Error()))
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
 	infoMsg, err := proto.Marshal(&pb.AccountInfo{KycHash: kycHash, GrayListed: isGrayListed, BlackListed: isBlacklisted})
 	if err != nil {
-		return shim.Error(err.Error())
+		return fmt.Errorf("failed to marshal account info message: %w", err)
 	}
 
 	cKey, err := compositekey.AccountInfo(stub, addrEncoded)
 	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if err = stub.PutState(cKey, infoMsg); err != nil {
-		return shim.Error(err.Error())
+		return fmt.Errorf("failed to get account info composite key: %w", err)
 	}
 
-	return shim.Success(nil)
+	if err = stub.PutState(cKey, infoMsg); err != nil {
+		return fmt.Errorf("failed to put account info message into state: %w", err)
+	}
+
+	return nil
 }
 
 // GetAccountInfo returns json-serialized account info (KYC hash, grayList and blacklist attributes) for address.
 // arg[0] - address
-func (c *ACL) GetAccountInfo(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+func (c *ACL) GetAccountInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	addrEncoded := args[0]
 	if len(addrEncoded) == 0 {
-		return shim.Error(errs.ErrEmptyAddress)
+		return nil, errors.New(errs.ErrEmptyAddress)
 	}
 	accInfo, err := getAccountInfo(stub, addrEncoded)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed to get account info: %w", err)
 	}
+
 	accInfoSerialized, err := json.Marshal(accInfo)
 	if err != nil {
-		return shim.Error(err.Error())
+		return nil, fmt.Errorf("failed to marshal account info: %w", err)
 	}
-	return shim.Success(accInfoSerialized)
+
+	return accInfoSerialized, nil
 }
 
 func getAccountInfo(stub shim.ChaincodeStubInterface, address string) (*pb.AccountInfo, error) {

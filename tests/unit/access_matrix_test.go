@@ -114,7 +114,7 @@ func TestAclAccessMatrix(t *testing.T) {
 			[]byte(addr),
 		})
 		require.Equal(t, int32(shim.ERROR), result.Status)
-		require.Equal(t, errs.ErrCalledNotCCOrAdmin, result.Message)
+		require.Contains(t, result.Message, errs.ErrCalledNotCCOrAdmin)
 	})
 
 	t.Run("Checking operation rights", func(t *testing.T) {

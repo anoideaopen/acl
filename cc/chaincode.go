@@ -8,11 +8,15 @@ import (
 	"os"
 	"reflect"
 	"runtime/debug"
+	"time"
 
+	"github.com/anoideaopen/acl/cc/methods"
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/proto"
+	"github.com/anoideaopen/foundation/core/logger"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-lib-go/common/flogging"
 	"github.com/hyperledger/fabric-protos-go/peer"
 )
 
@@ -20,13 +24,25 @@ type (
 	ACL struct {
 		adminSKI []byte
 		config   *proto.ACLConfig
-		methods  map[string]ccFunc
+		methods  map[string]methods.Method
+		logger   *flogging.FabricLogger
 	}
-	ccFunc func(stub shim.ChaincodeStubInterface, args []string) peer.Response
+
+	Account struct {
+		Address string   `json:"address"`
+		Balance *big.Int `json:"balance"`
+	}
 )
 
 func New() *ACL {
 	return &ACL{}
+}
+
+func (c *ACL) log() *flogging.FabricLogger {
+	if c.logger == nil {
+		c.logger = logger.Logger()
+	}
+	return c.logger
 }
 
 // Init - method for initialize chaincode
@@ -39,57 +55,115 @@ func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
 	return shim.Success(nil)
 }
 
-type Account struct {
-	Address string   `json:"address"`
-	Balance *big.Int `json:"balance"`
+func (c *ACL) method(name string) (methods.Method, error) {
+	if c.methods == nil {
+		aclMethods := make(map[string]methods.Method)
+
+		t := reflect.TypeOf(c)
+		for i := 0; i < t.NumMethod(); i++ {
+			var (
+				method = t.Method(i)
+				err    error
+			)
+
+			if skipMethod(method.Name) {
+				continue
+			}
+
+			aclMethods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
+			if err != nil {
+				return nil, fmt.Errorf("failed adding method %s", method.Name)
+			}
+		}
+		c.methods = aclMethods
+	}
+
+	if method, ok := c.methods[name]; ok {
+		return method, nil
+	}
+
+	return nil, fmt.Errorf("unknown method %s", name)
+}
+
+func skipMethod(name string) bool {
+	switch name {
+	case "Init", "Invoke", "Start":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
+	var (
+		fn, args   = stub.GetFunctionAndParameters()
+		lg         = c.log()
+		logMessage = "txID: " + stub.GetTxID() + ": %s"
+		start      = time.Now()
+	)
+
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("panic invoke\n" + string(debug.Stack()))
+			lg.Criticalf("panic invoke\n%s", string(debug.Stack()))
 		}
 	}()
-	fn, args := stub.GetFunctionAndParameters()
+
+	defer func() {
+		lg.Infof(logMessage, fmt.Sprintf("elapsed: %s", time.Since(start)))
+	}()
 
 	// Need to always read the config to assure there will be no determinism while executing the transaction
 	// init config begin
 	cfg, err := config.GetConfig(stub)
 	if err != nil {
-		return shim.Error(err.Error())
+		errMsg := "failed getting chaincode config: " + err.Error()
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 	if cfg == nil {
-		return shim.Error("ACL chaincode not initialized, please invoke Init with init args first")
+		errMsg := "ACL chaincode not initialized, please invoke Init with init args first"
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 	c.config = cfg
 
+	ccName, err := helpers.ParseCCName(stub)
+	if err != nil {
+		errMsg := "failed parsing chaincode name: " + err.Error()
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
+	}
+
+	if ccName != c.config.GetCcName() {
+		lg.Infof(logMessage, fmt.Sprintf("invoke method %s from chaincode %s", fn, ccName))
+	} else {
+		lg.Infof(logMessage, "invoke method "+fn)
+	}
+
 	adminSKI, err := hex.DecodeString(cfg.GetAdminSKIEncoded())
 	if err != nil {
-		return shim.Error(fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.GetAdminSKIEncoded()))
+		errMsg := fmt.Sprintf(config.ErrInvalidAdminSKI, cfg.GetAdminSKIEncoded())
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 	c.adminSKI = adminSKI
 	// init config end
 
-	methods := make(map[string]ccFunc)
-	t := reflect.TypeOf(c)
-	var ok bool
-	for i := 0; i < t.NumMethod(); i++ {
-		method := t.Method(i)
-		if method.Name != "Init" && method.Name != "Invoke" && method.Name != "Start" {
-			name := helpers.ToLowerFirstLetter(method.Name)
-			if methods[name], ok = reflect.ValueOf(c).MethodByName(method.Name).Interface().(func(shim.ChaincodeStubInterface, []string) peer.Response); !ok {
-				return shim.Error(fmt.Sprintf("Chaincode initialization failure: cc method %s does not satisfy signature func(stub shim.ChaincodeStubInterface, args []string) peer.Response", method.Name))
-			}
-		}
-	}
-	c.methods = methods
-
-	ccInvoke, ok := methods[fn]
-	if !ok {
-		return shim.Error(fmt.Sprintf("unknown method %s in tx %s", fn, stub.GetTxID()))
+	method, err := c.method(fn)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to invoke method %s: %s", fn, err.Error())
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
 	}
 
-	return ccInvoke(stub, args)
+	payload, err := method.Call(stub, args)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed invoking method %s: %s", fn, err.Error())
+		lg.Errorf(logMessage, errMsg)
+		return shim.Error(errMsg)
+	}
+
+	return shim.Success(payload)
 }
 
 func (c *ACL) Start() error {

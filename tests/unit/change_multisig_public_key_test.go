@@ -255,7 +255,7 @@ func changeMultisigPublicKey(t *testing.T, ser *seriesChangeMultisigPublicKey) {
 	require.Equal(t, ser.respStatus, changeResponse.Status)
 
 	if !valid {
-		require.Equal(t, ser.errorMsg, changeResponse.Message)
+		require.Contains(t, changeResponse.Message, ser.errorMsg)
 	}
 
 	if valid {

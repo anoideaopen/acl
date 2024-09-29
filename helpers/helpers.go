@@ -92,15 +92,6 @@ func CheckDuplicates(arr []string) error {
 	return nil
 }
 
-func stringSliceContains(arr []string, item string) bool { //nolint:unused
-	for _, found := range arr {
-		if item == found {
-			return true
-		}
-	}
-	return false
-}
-
 // ToLowerFirstLetter returns string with first letter in lower case
 func ToLowerFirstLetter(in string) string {
 	return string(unicode.ToLower(rune(in[0]))) + in[1:]

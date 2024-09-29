@@ -82,7 +82,7 @@ func TestBlackListWrongParameterList(t *testing.T) {
 		respStatus:  int32(shim.ERROR),
 	}
 
-	errorMsg := "%s is not valid list type, accepted 'black' or 'gray' only"
+	errorMsg := s.list + " is not valid list type, accepted 'black' or 'gray' only"
 	s.SetError(errorMsg)
 
 	stub := common.StubCreateAndInit(t)
@@ -164,7 +164,7 @@ func addAddressToBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBla
 
 func validationResultAddAddressToBlackList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesBlackList) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return
@@ -210,7 +210,7 @@ func validationResultRemoveAddressFromBlackList(
 	ser *seriesBlackList,
 ) {
 	require.Equal(t, ser.respStatus, resp.Status)
-	require.Equal(t, ser.errorMsg, resp.Message)
+	require.Contains(t, resp.Message, ser.errorMsg)
 
 	if resp.Status != int32(shim.OK) {
 		return
