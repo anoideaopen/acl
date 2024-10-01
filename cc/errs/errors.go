@@ -9,7 +9,7 @@ const (
 	ErrEmptyRoleName         = "role name is empty"
 	ErrCalledNotCCOrAdmin    = "unauthorized; should be called via another chaincode or by platform administrator"
 	ErrCallAthFailed         = "call authorization failed, err: %s"
-	ErrEmptyHolderAddress    = "holder address is empty"
+	ErrEmptyNomineeAddress   = "holder address is empty"
 	ErrEmptyPrincipalAddress = "principal address is empty"
 )
 

@@ -14,9 +14,9 @@ import (
 
 // matrix keys
 const (
-	operationKey       = "acl_access_matrix_operation"
-	addressKey         = "acl_access_matrix_address"
-	holderAddressesKey = "acl_access_matrix_principal_addresses"
+	operationKey        = "acl_access_matrix_operation"
+	addressKey          = "acl_access_matrix_address"
+	nomineeAddressesKey = "acl_access_matrix_principal_addresses"
 )
 
 // AddRights adds rights to the access matrix
@@ -514,17 +514,17 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 	return rawRights, nil
 }
 
-// AddAddressForHolder adding principal address for holder
+// AddAddressForNominee adding principal address for nominee
 // args[0] -> channelName
 // args[1] -> chaincodeName
-// args[2] -> holderAddress
+// args[2] -> nomineeAddress
 // args[3] -> principalAddress
-func (c *ACL) AddAddressForHolder(stub shim.ChaincodeStubInterface, args []string) error {
+func (c *ACL) AddAddressForNominee(stub shim.ChaincodeStubInterface, args []string) error {
 	argsNum := len(args)
 	const requiredArgsCount = 4
 	if argsNum != requiredArgsCount {
 		return fmt.Errorf(errs.ErrArgumentsCount, argsNum,
-			"channel name, chaincode name, holder address and principal address required")
+			"channel name, chaincode name, nominee address and principal address required")
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
@@ -533,7 +533,7 @@ func (c *ACL) AddAddressForHolder(stub shim.ChaincodeStubInterface, args []strin
 
 	channelName := args[0]
 	chaincodeName := args[1]
-	holderAddressEncoded := args[2]
+	nomineeAddressEncoded := args[2]
 	principalAddressEncoded := args[3]
 
 	if len(channelName) == 0 {
@@ -544,15 +544,15 @@ func (c *ACL) AddAddressForHolder(stub shim.ChaincodeStubInterface, args []strin
 		return errors.New(errs.ErrEmptyChaincodeName)
 	}
 
-	if len(holderAddressEncoded) == 0 {
-		return errors.New(errs.ErrEmptyHolderAddress)
+	if len(nomineeAddressEncoded) == 0 {
+		return errors.New(errs.ErrEmptyNomineeAddress)
 	}
 
 	if len(principalAddressEncoded) == 0 {
 		return errors.New(errs.ErrEmptyPrincipalAddress)
 	}
 
-	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	nomineeAddress, err := c.retrieveAndVerifySignedAddress(stub, nomineeAddressEncoded)
 	if err != nil {
 		return err
 	}
@@ -563,7 +563,7 @@ func (c *ACL) AddAddressForHolder(stub shim.ChaincodeStubInterface, args []strin
 	}
 
 	// adding address
-	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
 	if err != nil {
 		return err
 	}
@@ -602,17 +602,17 @@ func (c *ACL) AddAddressForHolder(stub shim.ChaincodeStubInterface, args []strin
 	return nil
 }
 
-// RemoveAddressFromHolder adding principal address for holder
+// RemoveAddressFromNominee adding principal address for nominee
 // args[0] -> channelName
 // args[1] -> chaincodeName
-// args[2] -> holderAddress
+// args[2] -> nomineeAddress
 // args[3] -> principalAddress
-func (c *ACL) RemoveAddressFromHolder(stub shim.ChaincodeStubInterface, args []string) error {
+func (c *ACL) RemoveAddressFromNominee(stub shim.ChaincodeStubInterface, args []string) error {
 	argsNum := len(args)
 	const requiredArgsCount = 4
 	if argsNum != requiredArgsCount {
 		return fmt.Errorf(errs.ErrArgumentsCount, argsNum,
-			"channel name, chaincode name, holder address and principal address required")
+			"channel name, chaincode name, nominee address and principal address required")
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
@@ -621,7 +621,7 @@ func (c *ACL) RemoveAddressFromHolder(stub shim.ChaincodeStubInterface, args []s
 
 	channelName := args[0]
 	chaincodeName := args[1]
-	holderAddressEncoded := args[2]
+	nomineeAddressEncoded := args[2]
 	principalAddressEncoded := args[3]
 
 	if len(channelName) == 0 {
@@ -632,15 +632,15 @@ func (c *ACL) RemoveAddressFromHolder(stub shim.ChaincodeStubInterface, args []s
 		return errors.New(errs.ErrEmptyChaincodeName)
 	}
 
-	if len(holderAddressEncoded) == 0 {
-		return errors.New(errs.ErrEmptyHolderAddress)
+	if len(nomineeAddressEncoded) == 0 {
+		return errors.New(errs.ErrEmptyNomineeAddress)
 	}
 
 	if len(principalAddressEncoded) == 0 {
 		return errors.New(errs.ErrEmptyPrincipalAddress)
 	}
 
-	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	nomineeAddress, err := c.retrieveAndVerifySignedAddress(stub, nomineeAddressEncoded)
 	if err != nil {
 		return err
 	}
@@ -651,7 +651,7 @@ func (c *ACL) RemoveAddressFromHolder(stub shim.ChaincodeStubInterface, args []s
 	}
 
 	// removing address
-	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
 	if err != nil {
 		return err
 	}
@@ -685,17 +685,17 @@ func (c *ACL) RemoveAddressFromHolder(stub shim.ChaincodeStubInterface, args []s
 	return nil
 }
 
-// GetAddressRightForHolder return if holder have right to access to principal address
+// GetAddressRightForNominee return if nominee have right to access to principal address
 // args[0] -> channelName
 // args[1] -> chaincodeName
-// args[2] -> holderAddress
+// args[2] -> nomineeAddress
 // args[3] -> principalAddress
-func (c *ACL) GetAddressRightForHolder(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) GetAddressRightForNominee(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	argsNum := len(args)
 	const requiredArgsCount = 4
 	if argsNum != requiredArgsCount {
 		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
-			"channel name, chaincode name, holder address and principal address required")
+			"channel name, chaincode name, nominee address and principal address required")
 	}
 
 	// check if called from admin or chaincode
@@ -709,7 +709,7 @@ func (c *ACL) GetAddressRightForHolder(stub shim.ChaincodeStubInterface, args []
 
 	channelName := args[0]
 	chaincodeName := args[1]
-	holderAddressEncoded := args[2]
+	nomineeAddressEncoded := args[2]
 	principalAddressEncoded := args[3]
 
 	if len(channelName) == 0 {
@@ -720,15 +720,15 @@ func (c *ACL) GetAddressRightForHolder(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New(errs.ErrEmptyChaincodeName)
 	}
 
-	if len(holderAddressEncoded) == 0 {
-		return nil, errors.New(errs.ErrEmptyHolderAddress)
+	if len(nomineeAddressEncoded) == 0 {
+		return nil, errors.New(errs.ErrEmptyNomineeAddress)
 	}
 
 	if len(principalAddressEncoded) == 0 {
 		return nil, errors.New(errs.ErrEmptyPrincipalAddress)
 	}
 
-	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	nomineeAddress, err := c.retrieveAndVerifySignedAddress(stub, nomineeAddressEncoded)
 	if err != nil {
 		return nil, err
 	}
@@ -739,7 +739,7 @@ func (c *ACL) GetAddressRightForHolder(stub shim.ChaincodeStubInterface, args []
 	}
 
 	// retrieving right
-	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
 	if err != nil {
 		return nil, err
 	}
@@ -771,16 +771,16 @@ func (c *ACL) GetAddressRightForHolder(stub shim.ChaincodeStubInterface, args []
 	return rawResult, nil
 }
 
-// GetAllAddressesForHolder returns all principal addresses for specified holder
+// GetAllAddressesForNominee returns all principal addresses for specified nominee
 // args[0] -> channelName
 // args[1] -> chaincodeName
-// args[2] -> holderAddress
-func (c *ACL) GetAllAddressesForHolder(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+// args[2] -> nomineeAddress
+func (c *ACL) GetAllAddressesForNominee(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	argsNum := len(args)
 	const requiredArgsCount = 3
 	if argsNum != requiredArgsCount {
 		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
-			"channel name, chaincode name and holder address required")
+			"channel name, chaincode name and nominee address required")
 	}
 
 	if err := c.verifyAccess(stub); err != nil {
@@ -789,7 +789,7 @@ func (c *ACL) GetAllAddressesForHolder(stub shim.ChaincodeStubInterface, args []
 
 	channelName := args[0]
 	chaincodeName := args[1]
-	holderAddressEncoded := args[2]
+	nomineeAddressEncoded := args[2]
 
 	if len(channelName) == 0 {
 		return nil, errors.New(errs.ErrEmptyChannelName)
@@ -799,17 +799,17 @@ func (c *ACL) GetAllAddressesForHolder(stub shim.ChaincodeStubInterface, args []
 		return nil, errors.New(errs.ErrEmptyChaincodeName)
 	}
 
-	if len(holderAddressEncoded) == 0 {
-		return nil, errors.New(errs.ErrEmptyHolderAddress)
+	if len(nomineeAddressEncoded) == 0 {
+		return nil, errors.New(errs.ErrEmptyNomineeAddress)
 	}
 
-	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	nomineeAddress, err := c.retrieveAndVerifySignedAddress(stub, nomineeAddressEncoded)
 	if err != nil {
 		return nil, err
 	}
 
 	// retrieving addresses
-	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
 	if err != nil {
 		return nil, err
 	}

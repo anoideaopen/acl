@@ -258,11 +258,11 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.Equal(t, int32(shim.OK), resp.Status)
 	})
 
-	t.Run("adding principal address for holder", func(t *testing.T) {
+	t.Run("adding principal address for nominee", func(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnAddAddressForHolder),
+				[]byte(common.FnAddAddressForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -272,11 +272,11 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.Equal(t, int32(shim.OK), result.Status)
 	})
 
-	t.Run("checking holder addresses", func(t *testing.T) {
+	t.Run("checking nominee addresses", func(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnGetAllAddressesForHolder),
+				[]byte(common.FnGetAllAddressesForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -289,7 +289,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.Equal(t, principalAddress, addresses.GetAddresses()[0].AddrString())
 	})
 
-	t.Run("[negative] checking holder right by user", func(t *testing.T) {
+	t.Run("[negative] checking nominee right by user", func(t *testing.T) {
 		uCert, err := common.GetCert(common.UserCertPath)
 		require.NoError(t, err)
 		require.NotNil(t, uCert)
@@ -297,7 +297,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		require.NoError(t, err)
 
 		result := mockStub.MockInvoke("1", [][]byte{
-			[]byte(common.FnGetAddressRightForHolder),
+			[]byte(common.FnGetAddressRightForNominee),
 			[]byte(channelName),
 			[]byte(chaincodeName),
 			[]byte(addr),
@@ -317,7 +317,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnAddAddressForHolder),
+				[]byte(common.FnAddAddressForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -331,7 +331,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnGetAllAddressesForHolder),
+				[]byte(common.FnGetAllAddressesForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -348,7 +348,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnRemoveAddressFromHolder),
+				[]byte(common.FnRemoveAddressFromNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -362,7 +362,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnGetAllAddressesForHolder),
+				[]byte(common.FnGetAllAddressesForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -422,11 +422,10 @@ func TestAclCalledFromChaincode(t *testing.T) {
 		require.Equal(t, "true", result)
 	})
 
-	t.Run("Requesting addresses for holder from fiat", func(t *testing.T) {
-		owner.Invoke("acl", common.FnAddAddressForHolder, "fiat", "fiat", owner.Address(), user.Address())
+	t.Run("Requesting addresses for nominee from fiat", func(t *testing.T) {
+		owner.Invoke("acl", common.FnAddAddressForNominee, "fiat", "fiat", owner.Address(), user.Address())
 
-		result := owner.Invoke("fiat", common.FnGetAddressRightForHolder, "fiat", "fiat", owner.Address(), user.Address())
+		result := owner.Invoke("fiat", common.FnGetAddressRightForNominee, "fiat", "fiat", owner.Address(), user.Address())
 		require.Equal(t, "true", result)
 	})
-
 }
