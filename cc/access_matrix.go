@@ -14,8 +14,9 @@ import (
 
 // matrix keys
 const (
-	operationKey = "acl_access_matrix_operation"
-	addressKey   = "acl_access_matrix_address"
+	operationKey       = "acl_access_matrix_operation"
+	addressKey         = "acl_access_matrix_address"
+	holderAddressesKey = "acl_access_matrix_principal_addresses"
 )
 
 // AddRights adds rights to the access matrix
@@ -511,6 +512,325 @@ func (c *ACL) GetOperationAllRights(stub shim.ChaincodeStubInterface, args []str
 	}
 
 	return rawRights, nil
+}
+
+// AddAddressForHolder adding principal address for holder
+// args[0] -> channelName
+// args[1] -> chaincodeName
+// args[2] -> holderAddress
+// args[3] -> principalAddress
+func (c *ACL) AddAddressForHolder(stub shim.ChaincodeStubInterface, args []string) error {
+	argsNum := len(args)
+	const requiredArgsCount = 4
+	if argsNum != requiredArgsCount {
+		return fmt.Errorf(errs.ErrArgumentsCount, argsNum,
+			"channel name, chaincode name, holder address and principal address required")
+	}
+
+	if err := c.verifyAccess(stub); err != nil {
+		return fmt.Errorf(errs.ErrUnauthorized+": %s", err.Error())
+	}
+
+	channelName := args[0]
+	chaincodeName := args[1]
+	holderAddressEncoded := args[2]
+	principalAddressEncoded := args[3]
+
+	if len(channelName) == 0 {
+		return fmt.Errorf(errs.ErrEmptyChannelName)
+	}
+
+	if len(chaincodeName) == 0 {
+		return fmt.Errorf(errs.ErrEmptyChaincodeName)
+	}
+
+	if len(holderAddressEncoded) == 0 {
+		return fmt.Errorf(errs.ErrEmptyHolderAddress)
+	}
+
+	if len(principalAddressEncoded) == 0 {
+		return fmt.Errorf(errs.ErrEmptyPrincipalAddress)
+	}
+
+	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+
+	principalAddress, err := c.retrieveAndVerifySignedAddress(stub, principalAddressEncoded)
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+
+	// adding address
+	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+
+	rawAddresses, err := stub.GetState(addressesCompositeKey)
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+	principalAddresses := &pb.Accounts{Addresses: []*pb.Address{}}
+	if len(rawAddresses) != 0 {
+		if err = protojson.Unmarshal(rawAddresses, principalAddresses); err != nil {
+			return fmt.Errorf(err.Error())
+		}
+	}
+
+	addressFound := false
+	for _, existedAddr := range principalAddresses.GetAddresses() {
+		if existedAddr.AddrString() == principalAddress.AddrString() {
+			addressFound = true
+			break
+		}
+	}
+
+	if !addressFound {
+		principalAddresses.Addresses = append(principalAddresses.Addresses, principalAddress)
+		rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(principalAddresses)
+		if err != nil {
+			return fmt.Errorf(err.Error())
+		}
+		err = stub.PutState(addressesCompositeKey, rawAddresses)
+		if err != nil {
+			return fmt.Errorf(err.Error())
+		}
+	}
+
+	return nil
+}
+
+// RemoveAddressFromHolder adding principal address for holder
+// args[0] -> channelName
+// args[1] -> chaincodeName
+// args[2] -> holderAddress
+// args[3] -> principalAddress
+func (c *ACL) RemoveAddressFromHolder(stub shim.ChaincodeStubInterface, args []string) error {
+	argsNum := len(args)
+	const requiredArgsCount = 4
+	if argsNum != requiredArgsCount {
+		return fmt.Errorf(errs.ErrArgumentsCount, argsNum,
+			"channel name, chaincode name, holder address and principal address required")
+	}
+
+	if err := c.verifyAccess(stub); err != nil {
+		return fmt.Errorf(errs.ErrUnauthorized+": %s", err.Error())
+	}
+
+	channelName := args[0]
+	chaincodeName := args[1]
+	holderAddressEncoded := args[2]
+	principalAddressEncoded := args[3]
+
+	if len(channelName) == 0 {
+		return fmt.Errorf(errs.ErrEmptyChannelName)
+	}
+
+	if len(chaincodeName) == 0 {
+		return fmt.Errorf(errs.ErrEmptyChaincodeName)
+	}
+
+	if len(holderAddressEncoded) == 0 {
+		return fmt.Errorf(errs.ErrEmptyHolderAddress)
+	}
+
+	if len(principalAddressEncoded) == 0 {
+		return fmt.Errorf(errs.ErrEmptyPrincipalAddress)
+	}
+
+	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+
+	principalAddress, err := c.retrieveAndVerifySignedAddress(stub, principalAddressEncoded)
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+
+	// removing address
+	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+
+	rawAddresses, err := stub.GetState(addressesCompositeKey)
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+	principalAddresses := &pb.Accounts{Addresses: []*pb.Address{}}
+	if len(rawAddresses) != 0 {
+		if err = protojson.Unmarshal(rawAddresses, principalAddresses); err != nil {
+			return fmt.Errorf(err.Error())
+		}
+	}
+
+	for i, existedAddr := range principalAddresses.GetAddresses() {
+		if existedAddr.AddrString() == principalAddress.AddrString() {
+			principalAddresses.Addresses = append(principalAddresses.Addresses[:i], principalAddresses.GetAddresses()[i+1:]...)
+			rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(principalAddresses)
+			if err != nil {
+				return fmt.Errorf(err.Error())
+			}
+			err = stub.PutState(addressesCompositeKey, rawAddresses)
+			if err != nil {
+				return fmt.Errorf(err.Error())
+			}
+			break
+		}
+	}
+
+	return nil
+}
+
+// GetAddressRightForHolder return if holder have right to access to principal address
+// args[0] -> channelName
+// args[1] -> chaincodeName
+// args[2] -> holderAddress
+// args[3] -> principalAddress
+func (c *ACL) GetAddressRightForHolder(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	argsNum := len(args)
+	const requiredArgsCount = 4
+	if argsNum != requiredArgsCount {
+		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
+			"channel name, chaincode name, holder address and principal address required")
+	}
+
+	// check if called from admin or chaincode
+	canCall, err := c.isCalledFromChaincodeOrAdmin(stub)
+	if err != nil {
+		return nil, fmt.Errorf(fmt.Sprintf(errs.ErrCallAthFailed, err.Error()))
+	}
+	if !canCall {
+		return nil, fmt.Errorf(errs.ErrCalledNotCCOrAdmin)
+	}
+
+	channelName := args[0]
+	chaincodeName := args[1]
+	holderAddressEncoded := args[2]
+	principalAddressEncoded := args[3]
+
+	if len(channelName) == 0 {
+		return nil, fmt.Errorf(errs.ErrEmptyChannelName)
+	}
+
+	if len(chaincodeName) == 0 {
+		return nil, fmt.Errorf(errs.ErrEmptyChaincodeName)
+	}
+
+	if len(holderAddressEncoded) == 0 {
+		return nil, fmt.Errorf(errs.ErrEmptyHolderAddress)
+	}
+
+	if len(principalAddressEncoded) == 0 {
+		return nil, fmt.Errorf(errs.ErrEmptyPrincipalAddress)
+	}
+
+	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	principalAddress, err := c.retrieveAndVerifySignedAddress(stub, principalAddressEncoded)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	// retrieving right
+	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	rawAddresses, err := stub.GetState(addressesCompositeKey)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+	principalAddresses := &pb.Accounts{Addresses: []*pb.Address{}}
+	if len(rawAddresses) != 0 {
+		if err = protojson.Unmarshal(rawAddresses, principalAddresses); err != nil {
+			return nil, fmt.Errorf(err.Error())
+		}
+	}
+
+	result := &pb.HaveRight{HaveRight: false}
+	for _, existedAddr := range principalAddresses.GetAddresses() {
+		if existedAddr.AddrString() == principalAddress.AddrString() {
+			result.HaveRight = true
+			break
+		}
+	}
+
+	rawResult, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	return rawResult, nil
+}
+
+// GetAllAddressesForHolder returns all principal addresses for specified holder
+// args[0] -> channelName
+// args[1] -> chaincodeName
+// args[2] -> holderAddress
+func (c *ACL) GetAllAddressesForHolder(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	argsNum := len(args)
+	const requiredArgsCount = 3
+	if argsNum != requiredArgsCount {
+		return nil, fmt.Errorf(errs.ErrArgumentsCount, argsNum,
+			"channel name, chaincode name and holder address required")
+	}
+
+	if err := c.verifyAccess(stub); err != nil {
+		return nil, fmt.Errorf(fmt.Sprintf(errs.ErrUnauthorized+": %s", err.Error()))
+	}
+
+	channelName := args[0]
+	chaincodeName := args[1]
+	holderAddressEncoded := args[2]
+
+	if len(channelName) == 0 {
+		return nil, fmt.Errorf(errs.ErrEmptyChannelName)
+	}
+
+	if len(chaincodeName) == 0 {
+		return nil, fmt.Errorf(errs.ErrEmptyChaincodeName)
+	}
+
+	if len(holderAddressEncoded) == 0 {
+		return nil, fmt.Errorf(errs.ErrEmptyHolderAddress)
+	}
+
+	holderAddress, err := c.retrieveAndVerifySignedAddress(stub, holderAddressEncoded)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	// retrieving addresses
+	addressesCompositeKey, err := stub.CreateCompositeKey(holderAddressesKey, []string{channelName, chaincodeName, holderAddress.String()})
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	rawAddresses, err := stub.GetState(addressesCompositeKey)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+	principalAddresses := &pb.Accounts{Addresses: []*pb.Address{}}
+	if len(rawAddresses) != 0 {
+		if err = protojson.Unmarshal(rawAddresses, principalAddresses); err != nil {
+			return nil, fmt.Errorf(err.Error())
+		}
+	}
+
+	rawAddresses, err = protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(principalAddresses)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	return rawAddresses, nil
 }
 
 // isCalledFromChaincodeOrAdmin checks that function called from another chaincode or by acl admin

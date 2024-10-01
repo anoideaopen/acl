@@ -44,11 +44,15 @@ const (
 
 // Access Matrix ACL API Functions
 const (
-	FnAddRights       = "addRights"
-	FnRemoveRights    = "removeRights"
-	FnGetAccOpRight   = "getAccountOperationRight"
-	FnGetAccAllRights = "getAccountAllRights"
-	FnGetOpAllRights  = "getOperationAllRights"
+	FnAddRights                = "addRights"
+	FnRemoveRights             = "removeRights"
+	FnGetAccOpRight            = "getAccountOperationRight"
+	FnGetAccAllRights          = "getAccountAllRights"
+	FnGetOpAllRights           = "getOperationAllRights"
+	FnAddAddressForHolder      = "addAddressForHolder"
+	FnRemoveAddressFromHolder  = "removeAddressFromHolder"
+	FnGetAddressRightForHolder = "getAddressRightForHolder"
+	FnGetAllAddressesForHolder = "getAllAddressesForHolder"
 )
 
 const (
