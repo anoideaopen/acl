@@ -1,7 +1,6 @@
 package unit
 
 import (
-	"github.com/anoideaopen/foundation/test/unit/fixtures_test"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
@@ -10,6 +9,7 @@ import (
 	"github.com/anoideaopen/foundation/mock"
 	mstub "github.com/anoideaopen/foundation/mock/stub"
 	pb "github.com/anoideaopen/foundation/proto"
+	"github.com/anoideaopen/foundation/test/unit/fixtures_test"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
