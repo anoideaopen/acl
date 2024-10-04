@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
+	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -14,20 +15,22 @@ import (
 
 // Functions names
 const (
-	FnCheckKeys    = "checkKeys"
-	FnCheckAddress = "checkAddress"
-	FnGetAddresses = "getAddresses"
+	FnCheckKeys                  = "checkKeys"
+	FnCheckAddress               = "checkAddress"
+	FnGetAddresses               = "getAddresses"
+	FnGetAddressRightForNominee  = "getAddressRightForNominee"
+	FnGetAddressesListForNominee = "getAddressesListForNominee"
 
 	usersPolicy = 3
 )
 
 var _ = Describe("ACL basic tests", func() {
 	var (
-		ts client.TestSuite
+		ts *aclclient.AclTestSuite
 	)
 
 	BeforeEach(func() {
-		ts = client.NewTestSuite(components)
+		ts = aclclient.NewTestSuite(components)
 	})
 	AfterEach(func() {
 		ts.ShutdownNetwork()
@@ -222,5 +225,82 @@ var _ = Describe("ACL basic tests", func() {
 		By("checking users")
 		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnGetAddresses, "100", "").
 			CheckResponseWithFunc(aclcmn.CheckAddresses(user1, user2, user3))
+	})
+
+	It("nominee methods test", func() {
+		By("adding users to acl")
+		ts.AddAdminToACL()
+
+		nominee, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+		principal, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		Expect(err).NotTo(HaveOccurred())
+
+		ts.AddUser(user)
+		ts.AddUser(nominee)
+		ts.AddUser(principal)
+
+		By("adding address for nominee")
+		ts.AddAddressForNominee(cmn.ChannelAcl, cmn.ChannelAcl, nominee, principal)
+
+		By("checking if address added")
+		ts.Query(
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			FnGetAddressesListForNominee,
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			nominee.AddressBase58Check,
+		).CheckResponseWithFunc(aclcmn.CheckGetAddressesListForNominee([]string{principal.AddressBase58Check}))
+
+		By("[negative] checking right for another user")
+		By("checking address right")
+		ts.Query(
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			FnGetAddressRightForNominee,
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			nominee.AddressBase58Check,
+			user.AddressBase58Check,
+		).CheckResponseWithFunc(aclcmn.CheckAddressRightForNominee(false))
+
+		By("adding same address again")
+		ts.AddAddressForNominee(cmn.ChannelAcl, cmn.ChannelAcl, nominee, principal)
+
+		By("checking if address was not added")
+		ts.Query(
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			FnGetAddressesListForNominee,
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			nominee.AddressBase58Check,
+		).CheckResponseWithFunc(aclcmn.CheckGetAddressesListForNominee([]string{principal.AddressBase58Check}))
+
+		By("checking address right")
+		ts.Query(
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			FnGetAddressRightForNominee,
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			nominee.AddressBase58Check,
+			principal.AddressBase58Check,
+		).CheckResponseWithFunc(aclcmn.CheckAddressRightForNominee(true))
+
+		By("Removing right from nominee")
+		ts.RemoveAddressFromNominee(cmn.ChannelAcl, cmn.ChannelAcl, nominee, principal)
+
+		By("checking address right")
+		ts.Query(
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			FnGetAddressRightForNominee,
+			cmn.ChannelAcl,
+			cmn.ChannelAcl,
+			nominee.AddressBase58Check,
+			principal.AddressBase58Check,
+		).CheckResponseWithFunc(aclcmn.CheckAddressRightForNominee(false))
 	})
 })

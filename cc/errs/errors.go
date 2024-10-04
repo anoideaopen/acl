@@ -2,13 +2,15 @@ package errs
 
 // Access Matrix Errors
 const (
-	ErrUnauthorized       = "unauthorized"
-	ErrArgumentsCount     = "incorrect number of arguments %d, but this method expects: '%s'"
-	ErrEmptyChannelName   = "channel name is empty"
-	ErrEmptyChaincodeName = "chaincode name is empty"
-	ErrEmptyRoleName      = "role name is empty"
-	ErrCalledNotCCOrAdmin = "unauthorized; should be called via another chaincode or by platform administrator"
-	ErrCallAthFailed      = "call authorization failed, err: %s"
+	ErrUnauthorized          = "unauthorized"
+	ErrArgumentsCount        = "incorrect number of arguments %d, but this method expects: '%s'"
+	ErrEmptyChannelName      = "channel name is empty"
+	ErrEmptyChaincodeName    = "chaincode name is empty"
+	ErrEmptyRoleName         = "role name is empty"
+	ErrCalledNotCCOrAdmin    = "unauthorized; should be called via another chaincode or by platform administrator"
+	ErrCallAthFailed         = "call authorization failed, err: %s"
+	ErrEmptyNomineeAddress   = "holder address is empty"
+	ErrEmptyPrincipalAddress = "principal address is empty"
 )
 
 // Errors

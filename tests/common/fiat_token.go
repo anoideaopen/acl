@@ -54,3 +54,21 @@ func (mt *FiatToken) QueryGetRight(channel, chaincode, role, operation, address 
 
 	return false, nil
 }
+
+func (mt *FiatToken) QueryGetAddressRightForNominee(channel, chaincode, nominee, principal string) (bool, error) {
+	stub := mt.GetStub()
+	if stub == nil {
+		return false, errors.New("getting stub failed, stub is nil")
+	}
+
+	params := []string{channel, chaincode, nominee, principal}
+	haveRight, err := acl.GetAddressRightForNominee(stub, params)
+	if err != nil {
+		return false, err
+	}
+	if haveRight.GetHaveRight() {
+		return true, nil
+	}
+
+	return false, nil
+}
