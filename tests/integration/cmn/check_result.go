@@ -242,3 +242,33 @@ func CheckAddresses(users ...*client.UserFoundation) func([]byte) string {
 		return ""
 	}
 }
+
+func CheckGetAddressesListForNominee(addresses []string) func([]byte) string {
+	return func(out []byte) string {
+		out = out[:len(out)-1] // skip line feed
+		var aclRes pb.Accounts
+		if err := protojson.Unmarshal(out, &aclRes); err != nil {
+			return ErrCannotUnmarshalResponse
+		}
+
+		if len(aclRes.GetAddresses()) != len(addresses) {
+			return "addresses count not equals to etalon"
+		}
+
+		qty := 0
+		for _, etalonAddress := range addresses {
+			for _, address := range aclRes.GetAddresses() {
+				if address.AddrString() == etalonAddress {
+					qty++
+					break
+				}
+			}
+		}
+
+		if qty != len(addresses) {
+			return "addresses not equals to etalon"
+		}
+
+		return ""
+	}
+}

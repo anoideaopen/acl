@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
+	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -23,18 +24,18 @@ const (
 
 var _ = Describe("ACL basic tests", func() {
 	var (
-		ts client.TestSuite
+		ts *aclclient.AclTestSuite
 	)
 
 	BeforeEach(func() {
-		ts = client.NewTestSuite(components)
+		ts = aclclient.NewTestSuite(components)
 	})
 	AfterEach(func() {
 		ts.ShutdownNetwork()
 	})
 
 	var (
-		channels = []string{cmn.ChannelAcl}
+		channels = []string{cmn.ChannelAcl, cmn.ChannelCC}
 		user     *client.UserFoundation
 	)
 	BeforeEach(func() {

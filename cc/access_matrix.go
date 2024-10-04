@@ -771,11 +771,11 @@ func (c *ACL) GetAddressRightForNominee(stub shim.ChaincodeStubInterface, args [
 	return rawResult, nil
 }
 
-// GetAllAddressesForNominee returns all principal addresses for specified nominee
+// GetAddressesListForNominee returns all principal addresses for specified nominee
 // args[0] -> channelName
 // args[1] -> chaincodeName
 // args[2] -> nomineeAddress
-func (c *ACL) GetAllAddressesForNominee(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (c *ACL) GetAddressesListForNominee(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	argsNum := len(args)
 	const requiredArgsCount = 3
 	if argsNum != requiredArgsCount {

@@ -276,7 +276,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnGetAllAddressesForNominee),
+				[]byte(common.FnGetAddressesListForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -331,7 +331,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnGetAllAddressesForNominee),
+				[]byte(common.FnGetAddressesListForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
@@ -362,7 +362,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		result := mockStub.MockInvoke(
 			"0",
 			[][]byte{
-				[]byte(common.FnGetAllAddressesForNominee),
+				[]byte(common.FnGetAddressesListForNominee),
 				[]byte(channelName),
 				[]byte(chaincodeName),
 				[]byte(addr),
