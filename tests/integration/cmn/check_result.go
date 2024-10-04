@@ -272,3 +272,19 @@ func CheckGetAddressesListForNominee(addresses []string) func([]byte) string {
 		return ""
 	}
 }
+
+func CheckAddressRightForNominee(haveRight bool) func(b []byte) string {
+	return func(out []byte) string {
+		out = out[:len(out)-1] // skip line feed
+		var aclRes pb.HaveRight
+		if err := protojson.Unmarshal(out, &aclRes); err != nil {
+			return ErrCannotUnmarshalResponse
+		}
+
+		if aclRes.HaveRight != haveRight {
+			return "haveRight not equals to etalon"
+		}
+
+		return ""
+	}
+}
