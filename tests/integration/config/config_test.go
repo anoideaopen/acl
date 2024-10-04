@@ -68,7 +68,7 @@ var _ = Describe("ACL config tests", func() {
 	})
 
 	var (
-		channels       = []string{cmn.ChannelAcl}
+		channelNames   = []string{cmn.ChannelAcl}
 		ordererRunners []*ginkgomon.Runner
 		redisProcess   ifrit.Process
 		redisDB        *runner.RedisDB
@@ -94,8 +94,8 @@ var _ = Describe("ACL config tests", func() {
 		networkConfig := nwo.MultiNodeSmartBFT()
 		networkConfig.Channels = nil
 
-		pchs := make([]*nwo.PeerChannel, 0, cap(channels))
-		for _, ch := range channels {
+		pchs := make([]*nwo.PeerChannel, 0, cap(channelNames))
+		for _, ch := range channelNames {
 			pchs = append(pchs, &nwo.PeerChannel{
 				Name:   ch,
 				Anchor: true,
@@ -116,7 +116,11 @@ var _ = Describe("ACL config tests", func() {
 			},
 		)
 
-		networkFound = cmn.New(network, channels, cmn.RobotCfgDefault, cmn.ChannelTransferCfgDefault)
+		channels := make([]*cmn.Channel, len(channelNames))
+		for i, channelName := range channelNames {
+			channels[i] = &cmn.Channel{Name: channelName}
+		}
+		networkFound = cmn.New(network, channels)
 		networkFound.Robot.RedisAddresses = []string{redisDB.Address()}
 		networkFound.ChannelTransfer.RedisAddresses = []string{redisDB.Address()}
 
@@ -137,7 +141,7 @@ var _ = Describe("ACL config tests", func() {
 		Eventually(peerProcesses.Ready(), network.EventuallyTimeout).Should(BeClosed())
 
 		By("Joining orderers to channels")
-		for _, channel := range channels {
+		for _, channel := range channelNames {
 			fabricnetwork.JoinChannel(network, channel)
 		}
 
@@ -147,7 +151,7 @@ var _ = Describe("ACL config tests", func() {
 		Eventually(ordererRunners[3].Err(), network.EventuallyTimeout, time.Second).Should(gbytes.Say("Message from 1"))
 
 		By("Joining peers to channels")
-		for _, channel := range channels {
+		for _, channel := range channelNames {
 			network.JoinChannel(channel, network.Orderers[0], network.PeersWithChannel(channel)...)
 		}
 
