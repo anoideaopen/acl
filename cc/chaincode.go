@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/anoideaopen/acl/cc/methods"
@@ -15,17 +16,22 @@ import (
 	"github.com/anoideaopen/acl/internal/config"
 	"github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/core/logger"
+	"github.com/anoideaopen/foundation/core/telemetry"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type (
 	ACL struct {
-		adminSKI []byte
-		config   *proto.ACLConfig
-		methods  map[string]methods.Method
-		logger   *flogging.FabricLogger
+		adminSKI  []byte
+		config    *proto.ACLConfig
+		methods   map[string]methods.Method
+		logger    *flogging.FabricLogger
+		isService bool
+		lockTH    sync.RWMutex
+		trHandler *telemetry.TracingHandler
 	}
 
 	Account struct {
@@ -108,10 +114,6 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}()
 
-	defer func() {
-		lg.Infof(logMessage, fmt.Sprintf("elapsed: %s", time.Since(start)))
-	}()
-
 	// Need to always read the config to assure there will be no determinism while executing the transaction
 	// init config begin
 	cfg, err := config.GetConfig(stub)
@@ -134,6 +136,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		return shim.Error(errMsg)
 	}
 
+	// Getting carrier from transient map and creating tracing span
+	traceCtx := c.tracingHandler().ContextFromStub(stub)
+	traceCtx, span := c.tracingHandler().StartNewSpan(traceCtx, "cc.Invoke")
+
 	if ccName != c.config.GetCcName() {
 		lg.Infof(logMessage, fmt.Sprintf("invoke method %s from chaincode %s", fn, ccName))
 	} else {
@@ -149,12 +155,31 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	c.adminSKI = adminSKI
 	// init config end
 
+	// Transaction context.
+	span.AddEvent("get transactionID")
+	transactionID := stub.GetTxID()
+
+	span.SetAttributes(attribute.String("channel", stub.GetChannelID()))
+	span.SetAttributes(attribute.String("tx_id", transactionID))
+	span.SetAttributes(telemetry.MethodType(telemetry.MethodNbTx))
+
+	span.AddEvent("get function")
 	method, err := c.method(fn)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to invoke method %s: %s", fn, err.Error())
 		lg.Errorf(logMessage, errMsg)
 		return shim.Error(errMsg)
 	}
+
+	span.AddEvent(fmt.Sprintf("begin id: %s, method: %s", transactionID, fn))
+	defer func() {
+		span.AddEvent(fmt.Sprintf("end id: %s, method: %s, elapsed: %d",
+			transactionID,
+			fn,
+			time.Since(start),
+		))
+		span.End()
+	}()
 
 	payload, err := method.Call(stub, args)
 	if err != nil {
@@ -191,6 +216,8 @@ func (c *ACL) startAsChaincodeServer() error {
 		chaincodeServerPortEnv     = "CHAINCODE_SERVER_PORT"
 		chaincodeServerDefaultPort = "9999"
 	)
+
+	c.isService = true
 
 	ccID := os.Getenv(chaincodeCcIDEnv)
 	if ccID == "" {
