@@ -8,10 +8,9 @@ import (
 	aclproto "github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/core/telemetry"
 	"github.com/anoideaopen/foundation/mock/stub"
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -28,8 +27,8 @@ type StubWithTrace struct {
 const collectorEndpoint = "172.23.0.6:4318"
 
 var TestInitConfigWithTelemetry = &aclproto.ACLConfig{
-	AdminSKIEncoded: TestInitConfig.AdminSKIEncoded,
-	Validators:      TestInitConfig.Validators,
+	AdminSKIEncoded: TestInitConfig.GetAdminSKIEncoded(),
+	Validators:      TestInitConfig.GetValidators(),
 	TracingCollectorEndpoint: &aclproto.TracingCollectorEndpoint{
 		Endpoint: collectorEndpoint,
 	},
@@ -57,7 +56,7 @@ func (s *StubWithTrace) SetTraceContext(ctx context.Context) {
 	s.ctx = ctx
 }
 
-func (s *StubWithTrace) MockInvokeTraced(uuid string, args ...[]byte) pb.Response {
+func (s *StubWithTrace) MockInvokeTraced(uuid string, args ...[]byte) peer.Response {
 	if s.ctx == nil {
 		return s.MockInvoke(uuid, args)
 	}

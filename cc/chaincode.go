@@ -137,8 +137,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	}
 
 	// Getting carrier from transient map and creating tracing span
-	traceCtx := c.tracingHandler().ContextFromStub(stub)
-	traceCtx, span := c.tracingHandler().StartNewSpan(traceCtx, "cc.Invoke")
+	_, span := c.tracingHandler().StartNewSpan(
+		c.tracingHandler().ContextFromStub(stub),
+		"cc.Invoke",
+	)
 
 	if ccName != c.config.GetCcName() {
 		lg.Infof(logMessage, fmt.Sprintf("invoke method %s from chaincode %s", fn, ccName))
