@@ -114,6 +114,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		}
 	}()
 
+	defer func() {
+		lg.Infof(logMessage, fmt.Sprintf("elapsed: %s", time.Since(start)))
+	}()
+
 	// Need to always read the config to assure there will be no determinism while executing the transaction
 	// init config begin
 	cfg, err := config.GetConfig(stub)
@@ -175,12 +179,10 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 
 	span.AddEvent(fmt.Sprintf("begin id: %s, method: %s", transactionID, fn))
 	defer func() {
-		elapsed := time.Since(start)
-		lg.Infof(logMessage, fmt.Sprintf("elapsed: %s", elapsed))
 		span.AddEvent(fmt.Sprintf("end id: %s, method: %s, elapsed: %d",
 			transactionID,
 			fn,
-			elapsed,
+			time.Since(start),
 		))
 		span.End()
 	}()
