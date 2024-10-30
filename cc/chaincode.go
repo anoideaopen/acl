@@ -175,10 +175,12 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 
 	span.AddEvent(fmt.Sprintf("begin id: %s, method: %s", transactionID, fn))
 	defer func() {
+		elapsed := time.Since(start)
+		lg.Infof(logMessage, fmt.Sprintf("elapsed: %s", elapsed))
 		span.AddEvent(fmt.Sprintf("end id: %s, method: %s, elapsed: %d",
 			transactionID,
 			fn,
-			time.Since(start),
+			elapsed,
 		))
 		span.End()
 	}()
