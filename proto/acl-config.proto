@@ -14,9 +14,18 @@ message ACLConfig {
   string adminSKIEncoded = 2 [(validate.rules).string.pattern = "^[0-9a-f]+$"];
   // validators - set of validators public keys
   repeated ACLValidator validators = 3;
+  // tracingCollectorEndpoint - tracing collector endpoint host & port, e.g. "172.23.0.6:4318"
+  TracingCollectorEndpoint tracingCollectorEndpoint = 5;
 }
 
 message ACLValidator {
   string publicKey = 1;
   string keyType = 2;
+}
+
+message TracingCollectorEndpoint {
+  string endpoint = 1;
+  string authorization_header_key = 2;
+  string authorization_header_value = 3;
+  string tls_ca = 4;
 }
