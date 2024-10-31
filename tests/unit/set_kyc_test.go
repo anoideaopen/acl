@@ -11,7 +11,7 @@ import (
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/common"
 	"github.com/anoideaopen/acl/tests/unit/mock"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"

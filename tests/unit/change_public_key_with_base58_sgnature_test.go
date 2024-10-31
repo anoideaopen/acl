@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/anoideaopen/acl/cc"
-	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/common"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest"
