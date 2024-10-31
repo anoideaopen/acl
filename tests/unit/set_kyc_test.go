@@ -1,92 +1,117 @@
 package unit
 
 import (
-	"encoding/json"
+	"crypto/x509"
+	"encoding/pem"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/mock"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto" //nolint:staticcheck
 )
 
-type seriesSetKyc struct {
-	testAddress string
-	newKYC      string
-	respStatus  int32
-	errorMsg    string
-}
-
-// add dynamic errorMsg in series
-func (s *seriesSetKyc) SetError(errMsg string) {
-	s.errorMsg = errMsg
-}
-
-func TestSetKycTrue(t *testing.T) {
+func TestSetKyc(t *testing.T) {
 	t.Parallel()
 
-	s := &seriesSetKyc{
-		testAddress: common.TestAddr,
-		newKYC:      "newKychash",
-		respStatus:  200,
-		errorMsg:    "",
-	}
+	for _, testCase := range []struct {
+		description string
+		testAddress string
+		newKYC      string
+		respStatus  int32
+		errorMsg    string
+	}{
+		{
+			description: "set kyc true",
+			testAddress: common.TestAddr,
+			newKYC:      "newKychash",
+			respStatus:  200,
+			errorMsg:    "",
+		},
+		{
+			description: "set kyc empty address",
+			testAddress: "",
+			newKYC:      "newKychash",
+			respStatus:  500,
+			errorMsg:    errs.ErrEmptyAddress,
+		},
+		{
+			description: "set kyc wrong address",
+			testAddress: common.TestWrongAddress,
+			newKYC:      "newKychash",
+			respStatus:  500,
+			errorMsg:    "account info for address " + common.TestWrongAddress + " is empty",
+		},
+	} {
+		t.Run(testCase.description, func(t *testing.T) {
+			mockStub := new(mock.ChaincodeStub)
+			mockStub.GetTxIDReturns("0")
+			cfgBytes, err := protojson.Marshal(common.TestInitConfig)
+			require.NoError(t, err)
+			mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
+			pCert, _ := pem.Decode([]byte(common.AdminCert))
+			parsed, err := x509.ParseCertificate(pCert.Bytes)
+			require.NoError(t, err)
+			marshaledIdentity, err := common.MarshalIdentity(common.TestCreatorMSP, parsed.Raw)
+			require.NoError(t, err)
+			mockStub.GetCreatorReturns(marshaledIdentity, nil)
+			mockStub.CreateCompositeKeyCalls(func(s string, i []string) (string, error) {
+				return shim.CreateCompositeKey(s, i)
+			})
 
-	stub := common.StubCreateAndInit(t)
-	resp := setKyc(t, stub, s)
-	validationResultSetKyc(t, stub, resp, s)
+			info := &pb.AccountInfo{
+				KycHash: kycHash,
+			}
+			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+			mockStub.GetStateCalls(func(s string) ([]byte, error) {
+				switch s {
+				case "__config":
+					return cfgBytes, nil
+				case key:
+					return proto.Marshal(info)
+				}
+
+				return nil, nil
+			})
+
+			ccAcl := cc.New()
+			resp := setKyc(ccAcl, mockStub, testCase.testAddress, testCase.newKYC)
+			require.Equal(t, testCase.respStatus, resp.Status)
+			require.Contains(t, resp.Message, testCase.errorMsg)
+
+			if resp.Status != int32(shim.OK) {
+				require.Less(t, mockStub.PutStateCallCount(), 2)
+				return
+			}
+
+			require.Equal(t, 2, mockStub.PutStateCallCount())
+			keyState, valState := mockStub.PutStateArgsForCall(1)
+			require.Equal(t, key, keyState)
+
+			// check address
+			addrFromLedger := &pb.AccountInfo{}
+			require.NoError(t, proto.Unmarshal(valState, addrFromLedger))
+			require.True(t, proto.Equal(addrFromLedger, &pb.AccountInfo{
+				KycHash: testCase.newKYC,
+			}))
+		})
+	}
 }
 
-func TestSetKycEmptyAddress(t *testing.T) {
-	t.Parallel()
-
-	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
-	s := &seriesSetKyc{
-		testAddress: "",
-		newKYC:      "newKychash",
-		respStatus:  500,
-		errorMsg:    errs.ErrEmptyAddress,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setKyc(t, stub, s)
-	validationResultSetKyc(t, stub, resp, s)
-}
-
-func TestSetKycWrongAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetKyc{
-		testAddress: common.TestWrongAddress,
-		newKYC:      "newKychash",
-		respStatus:  500,
-	}
-
-	errorMsg := "account info for address " +
-		s.testAddress + " is empty"
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := setKyc(t, stub, s)
-	validationResultSetKyc(t, stub, resp, s)
-}
-
-func setKyc(t *testing.T, stub *shimtest.MockStub, ser *seriesSetKyc) peer.Response {
-	// add user first
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
-	)
-	require.Equal(t, int32(shim.OK), resp.Status)
-
+func setKyc(cc *cc.ACL, mockStub *mock.ChaincodeStub, addr string, kyc string) peer.Response {
 	// change KYC
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	pKeys := make([]string, 0, len(common.TestUsersDifferentKeyTypes))
@@ -94,40 +119,17 @@ func setKyc(t *testing.T, stub *shimtest.MockStub, ser *seriesSetKyc) peer.Respo
 		pKeys = append(pKeys, user.PublicKey)
 	}
 
-	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnSetKYC, ser.testAddress, ser.newKYC, nonce}, pKeys...), "")))
+	message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnSetKYC, addr, kyc, nonce}, pKeys...), "")))
 
-	vPKeys := make([][]byte, 0, len(pKeys))
-	vSignatures := make([][]byte, 0, len(pKeys))
+	vSignatures := make([]string, 0, len(pKeys))
 	for _, pubKey := range pKeys {
 		sKey := common.MockValidatorsKeys[pubKey]
-		vPKeys = append(vPKeys, []byte(pubKey))
-		vSignatures = append(vSignatures, common.HexEncodedSignature(base58.Decode(sKey), message[:]))
+		vSignatures = append(vSignatures, string(common.HexEncodedSignature(base58.Decode(sKey), message[:])))
 	}
 
-	invokeArgs := append(
-		append([][]byte{[]byte(common.FnSetKYC), []byte(ser.testAddress), []byte(ser.newKYC), []byte(nonce)}, vPKeys...),
-		vSignatures...,
-	)
-	respNewKey := stub.MockInvoke("0", invokeArgs)
-
-	return respNewKey
-}
-
-func validationResultSetKyc(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesSetKyc) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
-
-	if resp.Status != int32(shim.OK) {
-		return
-	}
-
-	// check address
-	check := stub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccInfoFn), []byte(ser.testAddress)})
-	require.Equal(t, int32(shim.OK), check.Status)
-
-	addrFromLedger := &pb.AccountInfo{}
-	require.NoError(t, json.Unmarshal(check.Payload, addrFromLedger))
-	require.Equal(t, false, addrFromLedger.BlackListed)
-	require.Equal(t, false, addrFromLedger.GrayListed)
-	require.Equal(t, ser.newKYC, addrFromLedger.KycHash)
+	args := []string{addr, kyc, nonce}
+	args = append(args, pKeys...)
+	args = append(args, vSignatures...)
+	mockStub.GetFunctionAndParametersReturns(common.FnSetKYC, args)
+	return cc.Invoke(mockStub)
 }
