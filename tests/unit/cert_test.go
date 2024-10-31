@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/common"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/require"
 )

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"

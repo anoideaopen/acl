@@ -1,19 +1,23 @@
 package unit
 
 import (
-	"encoding/json"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"strconv"
 	"testing"
 
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/common"
+	"github.com/anoideaopen/acl/tests/unit/mock"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type seriesSetAccountInfo struct {
@@ -24,180 +28,140 @@ type seriesSetAccountInfo struct {
 	errorMsg      string
 }
 
-func TestSetAccountInfoTrueAddressFalseLists(t *testing.T) {
+func TestSetAccountInfo(t *testing.T) {
 	t.Parallel()
+	for _, testCase := range []struct {
+		description   string
+		testAddress   string
+		respStatus    int32
+		isGrayListed  bool
+		isBlackListed bool
+		errorMsg      string
+	}{
+		{
+			description:   "true address false lists",
+			testAddress:   common.TestAddr,
+			respStatus:    int32(shim.OK),
+			isGrayListed:  false,
+			isBlackListed: false,
+			errorMsg:      "",
+		},
+		{
+			description:   "true address true gray list false black lists",
+			testAddress:   common.TestAddr,
+			respStatus:    int32(shim.OK),
+			isGrayListed:  true,
+			isBlackListed: false,
+			errorMsg:      "",
+		},
+		{
+			description:   "true address false gray list true black lists",
+			testAddress:   common.TestAddr,
+			respStatus:    int32(shim.OK),
+			isGrayListed:  false,
+			isBlackListed: true,
+			errorMsg:      "",
+		},
+		{
+			description:   "true address true lists",
+			testAddress:   common.TestAddr,
+			respStatus:    int32(shim.OK),
+			isGrayListed:  true,
+			isBlackListed: true,
+			errorMsg:      "",
+		},
+		{
+			description:   "empty address",
+			testAddress:   "",
+			respStatus:    int32(shim.ERROR),
+			isGrayListed:  false,
+			isBlackListed: false,
+			errorMsg:      errs.ErrEmptyAddress,
+		},
+		{
+			description:   "info wrong address",
+			testAddress:   common.TestWrongAddress,
+			respStatus:    int32(shim.ERROR),
+			isGrayListed:  false,
+			isBlackListed: false,
+			errorMsg:      fmt.Sprintf(errs.ErrAccountForAddressIsEmpty, common.TestWrongAddress),
+		},
+		{
+			description:   "wrong address string",
+			testAddress:   "AbracadabraAbracadabraAbracadabraAbracadabra",
+			respStatus:    int32(shim.ERROR),
+			isGrayListed:  false,
+			isBlackListed: false,
+			errorMsg:      "invalid address: checksum error",
+		},
+		{
+			description:   "wrong address numeric",
+			testAddress:   "111111111111111111111111111111111111111",
+			respStatus:    int32(shim.ERROR),
+			isGrayListed:  false,
+			isBlackListed: false,
+			errorMsg:      "invalid address: checksum error",
+		},
+	} {
+		t.Run(testCase.description, func(t *testing.T) {
+			mockStub := new(mock.ChaincodeStub)
+			mockStub.GetTxIDReturns("0")
+			cfgBytes, err := protojson.Marshal(common.TestInitConfig)
+			require.NoError(t, err)
+			mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
+			pCert, _ := pem.Decode([]byte(common.AdminCert))
+			parsed, err := x509.ParseCertificate(pCert.Bytes)
+			require.NoError(t, err)
+			marshaledIdentity, err := common.MarshalIdentity(common.TestCreatorMSP, parsed.Raw)
+			require.NoError(t, err)
+			mockStub.GetCreatorReturns(marshaledIdentity, nil)
+			mockStub.CreateCompositeKeyCalls(func(s string, i []string) (string, error) {
+				return shim.CreateCompositeKey(s, i)
+			})
 
-	s := &seriesSetAccountInfo{
-		testAddress:   common.TestAddr,
-		respStatus:    int32(shim.OK),
-		isGrayListed:  "false",
-		isBlackListed: "false",
-		errorMsg:      "",
+			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+			info := &pb.AccountInfo{
+				KycHash: kycHash,
+			}
+			mockStub.GetStateCalls(func(s string) ([]byte, error) {
+				switch s {
+				case "__config":
+					return cfgBytes, nil
+				case key:
+					return proto.Marshal(info)
+				}
+
+				return nil, nil
+			})
+
+			ccAcl := cc.New()
+			mockStub.GetFunctionAndParametersReturns(
+				"setAccountInfo",
+				[]string{testCase.testAddress, "kycHash2", strconv.FormatBool(testCase.isGrayListed), strconv.FormatBool(testCase.isBlackListed)},
+			)
+			resp := ccAcl.Invoke(mockStub)
+
+			// check result
+			require.Equal(t, testCase.respStatus, resp.Status)
+			require.Contains(t, resp.Message, testCase.errorMsg)
+
+			if resp.Status != int32(shim.OK) {
+				require.Equal(t, mockStub.PutStateCallCount(), 0)
+				return
+			}
+
+			require.Equal(t, 1, mockStub.PutStateCallCount())
+			keyState, valState := mockStub.PutStateArgsForCall(0)
+			require.Equal(t, key, keyState)
+
+			addrFromLedger := &pb.AccountInfo{}
+			require.NoError(t, proto.Unmarshal(valState, addrFromLedger))
+			require.True(t, proto.Equal(addrFromLedger, &pb.AccountInfo{
+				KycHash:     "kycHash2",
+				GrayListed:  testCase.isGrayListed,
+				BlackListed: testCase.isBlackListed,
+			}))
+		})
 	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func TestSetAccountInfoTrueAddressTrueGrayListFalseBlackLists(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetAccountInfo{
-		testAddress:   common.TestAddr,
-		respStatus:    int32(shim.OK),
-		isGrayListed:  "true",
-		isBlackListed: "false",
-		errorMsg:      "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func TestSetAccountInfoTrueAddressFalseGrayListTrueBlackLists(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetAccountInfo{
-		testAddress:   common.TestAddr,
-		respStatus:    int32(shim.OK),
-		isGrayListed:  "false",
-		isBlackListed: "true",
-		errorMsg:      "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func TestSetAccountInfoTrueAddressTrueLists(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetAccountInfo{
-		testAddress:   common.TestAddr,
-		respStatus:    int32(shim.OK),
-		isGrayListed:  "true",
-		isBlackListed: "true",
-		errorMsg:      "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func TestSetAccountInfoEmptyAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetAccountInfo{
-		testAddress:   "",
-		respStatus:    int32(shim.ERROR),
-		isGrayListed:  "false",
-		isBlackListed: "false",
-		errorMsg:      errs.ErrEmptyAddress,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func TestSetAccountInfoWrongAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetAccountInfo{
-		testAddress:   common.TestWrongAddress,
-		respStatus:    int32(shim.ERROR),
-		isGrayListed:  "false",
-		isBlackListed: "false",
-		errorMsg:      fmt.Sprintf(errs.ErrAccountForAddressIsEmpty, common.TestWrongAddress),
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func TestSetAccountInfoWrongAddressString(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetAccountInfo{
-		testAddress:   "AbracadabraAbracadabraAbracadabraAbracadabra",
-		respStatus:    int32(shim.ERROR),
-		isGrayListed:  "false",
-		isBlackListed: "false",
-		errorMsg:      "invalid address: checksum error",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func TestSetAccountInfoWrongAddressNumeric(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesSetAccountInfo{
-		testAddress:   "111111111111111111111111111111111111111",
-		respStatus:    int32(shim.ERROR),
-		isGrayListed:  "false",
-		isBlackListed: "false",
-		errorMsg:      "invalid address: checksum error",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := setAccountInfo(t, stub, s)
-	validationResultSetAccountInfo(t, stub, resp, s)
-}
-
-func setAccountInfo(t *testing.T, stub *shimtest.MockStub, ser *seriesSetAccountInfo) peer.Response {
-	// add user first
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
-	)
-	require.Equal(t, int32(shim.OK), resp.Status)
-
-	check := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte("setAccountInfo"), []byte(ser.testAddress), []byte("kycHash2"), []byte(ser.isGrayListed), []byte(ser.isBlackListed)},
-	)
-
-	return check
-}
-
-func validationResultSetAccountInfo(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesSetAccountInfo) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
-
-	if resp.Status != int32(shim.OK) {
-		return
-	}
-
-	check := stub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccInfoFn), []byte(ser.testAddress)})
-	require.Equal(t, ser.respStatus, check.Status)
-
-	isGrayListedBool, err := strconv.ParseBool(ser.isGrayListed)
-	require.NoError(t, err)
-	isBlackListedBool, err := strconv.ParseBool(ser.isBlackListed)
-	require.NoError(t, err)
-
-	addrFromLedger := &pb.AccountInfo{}
-	require.NoError(t, json.Unmarshal(check.Payload, addrFromLedger))
-	require.Equal(t, "kycHash2", addrFromLedger.KycHash)
-	require.Equal(t, isGrayListedBool, addrFromLedger.GrayListed)
-	require.Equal(t, isBlackListedBool, addrFromLedger.BlackListed)
-
-	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, isGrayListedBool, response.Account.GrayListed, "user is not grayListed")
-	require.Equal(t, isBlackListedBool, response.Account.BlackListed, "user is not blackListed")
 }

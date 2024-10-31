@@ -5,7 +5,7 @@ import (
 
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"

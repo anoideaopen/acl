@@ -7,7 +7,6 @@ import (
 	"time"
 
 	aclpb "github.com/anoideaopen/acl/proto"
-	"github.com/anoideaopen/acl/tests/common"
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
@@ -169,7 +168,7 @@ var _ = Describe("ACL config tests", func() {
 			Validators: []*aclpb.ACLValidator{
 				{
 					PublicKey: "0",
-					KeyType:   common.KeyTypeEd25519,
+					KeyType:   pbfound.KeyType_name[int32(pbfound.KeyType_ed25519)],
 				},
 			},
 		}
@@ -183,7 +182,7 @@ var _ = Describe("ACL config tests", func() {
 			Validators: []*aclpb.ACLValidator{
 				{
 					PublicKey: "0",
-					KeyType:   common.KeyTypeEd25519,
+					KeyType:   pbfound.KeyType_name[int32(pbfound.KeyType_ed25519)],
 				},
 			},
 		}
@@ -214,7 +213,7 @@ var _ = Describe("ACL config tests", func() {
 			Validators: []*aclpb.ACLValidator{
 				{
 					PublicKey: "",
-					KeyType:   common.KeyTypeEd25519,
+					KeyType:   pbfound.KeyType_name[int32(pbfound.KeyType_ed25519)],
 				},
 				{
 					PublicKey: admin.PublicKeyBase58,
@@ -276,7 +275,7 @@ var _ = Describe("ACL config tests", func() {
 			Validators: []*aclpb.ACLValidator{
 				{
 					PublicKey: admin.PublicKeyBase58,
-					KeyType:   common.KeyTypeGost,
+					KeyType:   pbfound.KeyType_name[int32(pbfound.KeyType_gost)],
 				},
 			},
 		}
