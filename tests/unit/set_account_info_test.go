@@ -20,16 +20,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-type seriesSetAccountInfo struct {
-	testAddress   string
-	respStatus    int32
-	isGrayListed  string
-	isBlackListed string
-	errorMsg      string
-}
-
 func TestSetAccountInfo(t *testing.T) {
 	t.Parallel()
+
 	for _, testCase := range []struct {
 		description   string
 		testAddress   string
