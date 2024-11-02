@@ -8,7 +8,7 @@ import (
 
 	"github.com/anoideaopen/acl/cc"
 	aclproto "github.com/anoideaopen/acl/proto"
-	"github.com/anoideaopen/acl/tests/common"
+	"github.com/anoideaopen/acl/tests/unit/common"
 	"github.com/anoideaopen/acl/tests/unit/mock"
 	"github.com/anoideaopen/foundation/core/telemetry"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
