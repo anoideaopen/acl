@@ -1,41 +1,61 @@
 package unit
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/tests/unit/common"
-	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/golang/protobuf/proto" //nolint:staticcheck
+	"github.com/anoideaopen/acl/tests/unit/mock"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
+	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetAddresses(t *testing.T) {
-	stub := common.StubCreateAndInit(t)
+	mockStub, cfgBytes := common.NuwMockStub(t)
 
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
-	)
+	mockStub.GetStateCalls(func(s string) ([]byte, error) {
+		switch s {
+		case "__config":
+			return cfgBytes, nil
+		}
+
+		return nil, nil
+	})
+
+	ccAcl := cc.New()
+	mockStub.GetFunctionAndParametersReturns("getAddresses", []string{"1", common.TestAddr})
+	resp := ccAcl.Invoke(mockStub)
+
+	require.Equal(t, int32(shim.ERROR), resp.Status)
+	require.Contains(t, resp.Message, "empty address iterator")
+
+	key, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{common.TestAddr})
+	require.NoError(t, err)
+	fakeIterator := &mock.StateIterator{}
+	fakeIterator.HasNextReturnsOnCall(0, true)
+	fakeIterator.HasNextReturnsOnCall(1, false)
+	fakeIterator.NextReturns(&queryresult.KV{
+		Key:   key,
+		Value: []byte(common.TestAddrHashInHex),
+	}, nil)
+	mockStub.GetStateByPartialCompositeKeyWithPaginationReturns(fakeIterator, &peer.QueryResponseMetadata{
+		FetchedRecordsCount: 1,
+		Bookmark:            "",
+	}, nil)
+
+	mockStub.GetFunctionAndParametersReturns("getAddresses", []string{"1", ""})
+	resp = ccAcl.Invoke(mockStub)
 	require.Equal(t, int32(shim.OK), resp.Status)
+	require.Empty(t, resp.Message)
 
-	respGetAddr := stub.MockInvoke("0", [][]byte{[]byte("getAddresses"), []byte("1"), []byte(common.TestAddr)})
-	// require.Equal(t, int32(shim.OK), respGetAddr.Status)
-	require.Equal(t, int32(shim.ERROR), respGetAddr.Status)
-	require.Contains(t, respGetAddr.GetMessage(), "empty address iterator")
-
-	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, common.TestAddr, response.Address.Address.AddrString(), "invalid address")
-	require.Equal(t, kycHash, response.Account.KycHash)
-	require.False(t, response.Account.GrayListed)
-	require.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
-	require.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
-	require.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
+	addr := &cc.AddrsWithPagination{}
+	require.NoError(t, json.Unmarshal(resp.GetPayload(), addr))
+	require.Equal(t, &cc.AddrsWithPagination{
+		Addrs:    []string{common.TestAddr},
+		Bookmark: "",
+	}, addr)
 }

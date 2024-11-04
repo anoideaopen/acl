@@ -1,24 +1,19 @@
 package unit
 
 import (
-	"crypto/x509"
 	"encoding/hex"
-	"encoding/pem"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/tests/unit/common"
-	"github.com/anoideaopen/acl/tests/unit/mock"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestAddUserSecp256k1PublicKey(t *testing.T) {
@@ -95,20 +90,7 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub := new(mock.ChaincodeStub)
-			mockStub.GetTxIDReturns("0")
-			cfgBytes, err := protojson.Marshal(common.TestInitConfig)
-			require.NoError(t, err)
-			mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
-			pCert, _ := pem.Decode([]byte(common.AdminCert))
-			parsed, err := x509.ParseCertificate(pCert.Bytes)
-			require.NoError(t, err)
-			marshaledIdentity, err := common.MarshalIdentity(common.TestCreatorMSP, parsed.Raw)
-			require.NoError(t, err)
-			mockStub.GetCreatorReturns(marshaledIdentity, nil)
-			mockStub.CreateCompositeKeyCalls(func(s string, i []string) (string, error) {
-				return shim.CreateCompositeKey(s, i)
-			})
+			mockStub, cfgBytes := common.NuwMockStub(t)
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
 				switch s {
@@ -223,20 +205,7 @@ func TestAddUserGostPublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub := new(mock.ChaincodeStub)
-			mockStub.GetTxIDReturns("0")
-			cfgBytes, err := protojson.Marshal(common.TestInitConfig)
-			require.NoError(t, err)
-			mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
-			pCert, _ := pem.Decode([]byte(common.AdminCert))
-			parsed, err := x509.ParseCertificate(pCert.Bytes)
-			require.NoError(t, err)
-			marshaledIdentity, err := common.MarshalIdentity(common.TestCreatorMSP, parsed.Raw)
-			require.NoError(t, err)
-			mockStub.GetCreatorReturns(marshaledIdentity, nil)
-			mockStub.CreateCompositeKeyCalls(func(s string, i []string) (string, error) {
-				return shim.CreateCompositeKey(s, i)
-			})
+			mockStub, cfgBytes := common.NuwMockStub(t)
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
 				switch s {

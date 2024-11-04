@@ -1,8 +1,6 @@
 package unit
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"strconv"
 	"testing"
@@ -11,13 +9,10 @@ import (
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/unit/common"
-	"github.com/anoideaopen/acl/tests/unit/mock"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestSetAccountInfo(t *testing.T) {
@@ -97,20 +92,7 @@ func TestSetAccountInfo(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub := new(mock.ChaincodeStub)
-			mockStub.GetTxIDReturns("0")
-			cfgBytes, err := protojson.Marshal(common.TestInitConfig)
-			require.NoError(t, err)
-			mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
-			pCert, _ := pem.Decode([]byte(common.AdminCert))
-			parsed, err := x509.ParseCertificate(pCert.Bytes)
-			require.NoError(t, err)
-			marshaledIdentity, err := common.MarshalIdentity(common.TestCreatorMSP, parsed.Raw)
-			require.NoError(t, err)
-			mockStub.GetCreatorReturns(marshaledIdentity, nil)
-			mockStub.CreateCompositeKeyCalls(func(s string, i []string) (string, error) {
-				return shim.CreateCompositeKey(s, i)
-			})
+			mockStub, cfgBytes := common.NuwMockStub(t)
 
 			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
 			require.NoError(t, err)

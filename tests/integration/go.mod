@@ -4,9 +4,9 @@ go 1.23.1
 
 require (
 	github.com/IBM/idemix v0.0.2-0.20231011101252-a4feda90f3f7
-	github.com/anoideaopen/acl v0.0.4-0.20240709131543-bf642c53380c
-	github.com/anoideaopen/foundation v0.0.8-0.20241004061005-f79463cfdc1f
-	github.com/anoideaopen/foundation/test/integration v0.0.0-20241004061005-f79463cfdc1f
+	github.com/anoideaopen/acl v0.0.8-0.20241104155855-0c2783d8bbcd
+	github.com/anoideaopen/foundation v0.0.10-0.20241104163828-a1211154709c
+	github.com/anoideaopen/foundation/test/integration v0.0.0-20241104163828-a1211154709c
 	github.com/anoideaopen/robot v0.0.3-0.20240814133021-25a749a95916
 	github.com/fsouza/go-dockerclient v1.11.1
 	github.com/golang/protobuf v1.5.4

@@ -3,225 +3,147 @@ package unit
 import (
 	"testing"
 
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/unit/common"
-	"github.com/stretchr/testify/require"
-
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/stretchr/testify/require"
 )
 
-type seriesBlackList struct {
-	testAddress string
-	list        string
-	respStatus  int32
-	errorMsg    string
-}
+func TestBlackList(t *testing.T) {
+	for _, testCase := range []struct {
+		description string
+		fname       string
+		args        func() []string
+		respStatus  int32
+		errorMsg    string
+	}{
+		{
+			description: "true",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{common.TestAddr, string(cc.BlackList)}
+			},
+			respStatus: int32(shim.OK),
+			errorMsg:   "",
+		},
+		{
+			description: "empty address",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{"", string(cc.BlackList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   errs.ErrEmptyAddress,
+		},
+		{
+			description: "wrong address",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{common.TestWrongAddress, string(cc.BlackList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   "account info for address " + common.TestWrongAddress + " is empty",
+		},
+		{
+			description: "wrong parameter list",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{common.TestAddr, "kek"}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   "kek is not valid list type, accepted 'black' or 'gray' only",
+		},
+		{
+			description: "less args",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{common.TestAddr}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   "incorrect number of arguments",
+		},
+		{
+			description: "remove true",
+			fname:       common.FnDelFromList,
+			args: func() []string {
+				return []string{common.TestAddr, string(cc.BlackList)}
+			},
+			respStatus: int32(shim.OK),
+			errorMsg:   "",
+		},
+		{
+			description: "remove empty address",
+			fname:       common.FnDelFromList,
+			args: func() []string {
+				return []string{"", string(cc.BlackList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   errs.ErrEmptyAddress,
+		},
+		{
+			description: "remove wrong address",
+			fname:       common.FnDelFromList,
+			args: func() []string {
+				return []string{common.TestWrongAddress, string(cc.BlackList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   "account info for address " + common.TestWrongAddress + " is empty",
+		},
+	} {
+		t.Run(testCase.description, func(t *testing.T) {
+			mockStub, cfgBytes := common.NuwMockStub(t)
 
-// add dynamic errorMsg in series
-func (s *seriesBlackList) SetError(errMsg string) {
-	s.errorMsg = errMsg
-}
+			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+			info := &pb.AccountInfo{
+				KycHash: kycHash,
+			}
+			if testCase.fname == common.FnDelFromList {
+				info.BlackListed = true
+			}
+			mockStub.GetStateCalls(func(s string) ([]byte, error) {
+				switch s {
+				case "__config":
+					return cfgBytes, nil
+				case key:
+					return proto.Marshal(info)
+				}
 
-func TestBlackListTrue(t *testing.T) {
-	t.Parallel()
+				return nil, nil
+			})
 
-	s := &seriesBlackList{
-		testAddress: common.TestAddr,
-		list:        "black",
-		respStatus:  int32(shim.OK),
-		errorMsg:    "",
+			ccAcl := cc.New()
+			args := testCase.args()
+			mockStub.GetFunctionAndParametersReturns(testCase.fname, args)
+			resp := ccAcl.Invoke(mockStub)
+
+			require.Equal(t, testCase.respStatus, resp.Status)
+			require.Contains(t, resp.Message, testCase.errorMsg)
+
+			if resp.Status != int32(shim.OK) {
+				require.Equal(t, mockStub.PutStateCallCount(), 0)
+				return
+			}
+
+			require.Equal(t, 1, mockStub.PutStateCallCount())
+			keyState, valState := mockStub.PutStateArgsForCall(0)
+			require.Equal(t, key, keyState)
+
+			addrFromLedger := &pb.AccountInfo{}
+			require.NoError(t, proto.Unmarshal(valState, addrFromLedger))
+
+			flag := true
+			if testCase.fname == common.FnDelFromList {
+				flag = false
+			}
+			require.True(t, proto.Equal(addrFromLedger, &pb.AccountInfo{
+				KycHash:     "kycHash",
+				BlackListed: flag,
+			}))
+		})
 	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := addAddressToBlackList(t, stub, s)
-	validationResultAddAddressToBlackList(t, stub, resp, s)
-}
-
-func TestBlackListEmptyAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesBlackList{
-		testAddress: "",
-		list:        "black",
-		respStatus:  int32(shim.ERROR),
-		errorMsg:    errs.ErrEmptyAddress,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := addAddressToBlackList(t, stub, s)
-	validationResultAddAddressToBlackList(t, stub, resp, s)
-}
-
-func TestBlackListWrongAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesBlackList{
-		testAddress: common.TestWrongAddress,
-		list:        "black",
-		respStatus:  int32(shim.ERROR),
-	}
-
-	errorMsg := "account info for address " + s.testAddress + " is empty"
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := addAddressToBlackList(t, stub, s)
-	validationResultAddAddressToBlackList(t, stub, resp, s)
-}
-
-func TestBlackListWrongParameterList(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesBlackList{
-		testAddress: common.TestAddr,
-		list:        "kek",
-		respStatus:  int32(shim.ERROR),
-	}
-
-	errorMsg := s.list + " is not valid list type, accepted 'black' or 'gray' only"
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := addAddressToBlackList(t, stub, s)
-	validationResultAddAddressToBlackList(t, stub, resp, s)
-}
-
-func TestBlackListLessArgs(t *testing.T) {
-	t.Parallel()
-
-	stub := common.StubCreateAndInit(t)
-	resp := stub.MockInvoke("0", [][]byte{
-		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue),
-	})
-	require.Equal(t, int32(shim.OK), resp.Status, resp.Message)
-
-	respBlackList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(common.TestAddr)})
-	require.Equal(t, int32(shim.ERROR), respBlackList.Status)
-	require.Contains(t, respBlackList.Message, "incorrect number of arguments")
-}
-
-func TestRemoveAddressFromBlackListTrue(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesBlackList{
-		testAddress: common.TestAddr,
-		list:        "black",
-		respStatus:  int32(shim.OK),
-		errorMsg:    "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := removeAddressFromBlackList(t, stub, s)
-	validationResultRemoveAddressFromBlackList(t, stub, resp, s)
-}
-
-func TestRemoveAddressFromBlackListEmptyAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesBlackList{
-		testAddress: "",
-		list:        "black",
-		respStatus:  int32(shim.ERROR),
-		errorMsg:    errs.ErrEmptyAddress,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := removeAddressFromBlackList(t, stub, s)
-	validationResultRemoveAddressFromBlackList(t, stub, resp, s)
-}
-
-func TestRemoveAddressFromBlackListWrongAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesBlackList{
-		testAddress: common.TestWrongAddress,
-		list:        "black",
-		respStatus:  int32(shim.ERROR),
-	}
-
-	errorMsg := "account info for address " + s.testAddress + " is empty"
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := removeAddressFromBlackList(t, stub, s)
-	validationResultRemoveAddressFromBlackList(t, stub, resp, s)
-}
-
-func addAddressToBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBlackList) peer.Response {
-	resp := stub.MockInvoke("0", [][]byte{
-		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue),
-	})
-	require.Equal(t, int32(shim.OK), resp.Status, resp.Message)
-
-	respBlackList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(ser.testAddress), []byte(ser.list)})
-
-	return respBlackList
-}
-
-func validationResultAddAddressToBlackList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesBlackList) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
-
-	if resp.Status != int32(shim.OK) {
-		return
-	}
-
-	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, true, response.Account.BlackListed, "user is not blacklisted")
-}
-
-func removeAddressFromBlackList(t *testing.T, stub *shimtest.MockStub, ser *seriesBlackList) peer.Response {
-	resp := stub.MockInvoke("0", [][]byte{
-		[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true"),
-	})
-	require.Equal(t, int32(shim.OK), resp.Status, resp.Message)
-
-	respBlackList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(common.TestAddr), []byte(ser.list)})
-	require.Equal(t, int32(shim.OK), respBlackList.Status)
-
-	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, true, response.Account.BlackListed, "user is not blacklisted")
-
-	respDelFromList := stub.MockInvoke("0", [][]byte{[]byte(common.FnDelFromList), []byte(ser.testAddress), []byte("black")})
-
-	return respDelFromList
-}
-
-func validationResultRemoveAddressFromBlackList(
-	t *testing.T,
-	stub *shimtest.MockStub,
-	resp peer.Response,
-	ser *seriesBlackList,
-) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
-
-	if resp.Status != int32(shim.OK) {
-		return
-	}
-
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, false, response.Account.BlackListed, "user is blacklisted")
 }

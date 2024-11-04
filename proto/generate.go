@@ -8,3 +8,8 @@ import "github.com/hyperledger/fabric-chaincode-go/shim"
 type chaincodeStub interface { //nolint:unused
 	shim.ChaincodeStubInterface
 }
+
+//counterfeiter:generate -o ../tests/unit/mock/state_iterator.go --fake-name StateIterator . stateIterator
+type stateIterator interface { //nolint:unused
+	shim.StateQueryIteratorInterface
+}
