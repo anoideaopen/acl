@@ -1,8 +1,6 @@
 package unit
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"strconv"
 	"strings"
 	"testing"
@@ -19,7 +17,6 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto" //nolint:staticcheck
 )
 
@@ -56,20 +53,7 @@ func TestSetKyc(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub := new(mock.ChaincodeStub)
-			mockStub.GetTxIDReturns("0")
-			cfgBytes, err := protojson.Marshal(common.TestInitConfig)
-			require.NoError(t, err)
-			mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
-			pCert, _ := pem.Decode([]byte(common.AdminCert))
-			parsed, err := x509.ParseCertificate(pCert.Bytes)
-			require.NoError(t, err)
-			marshaledIdentity, err := common.MarshalIdentity(common.TestCreatorMSP, parsed.Raw)
-			require.NoError(t, err)
-			mockStub.GetCreatorReturns(marshaledIdentity, nil)
-			mockStub.CreateCompositeKeyCalls(func(s string, i []string) (string, error) {
-				return shim.CreateCompositeKey(s, i)
-			})
+			mockStub, cfgBytes := common.NuwMockStub(t)
 
 			info := &pb.AccountInfo{
 				KycHash: kycHash,

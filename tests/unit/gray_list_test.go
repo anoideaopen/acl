@@ -4,186 +4,128 @@ import (
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/unit/common"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 )
 
-type seriesGrayList struct {
-	testAddress string
-	respStatus  int32
-	errorMsg    string
-}
+func TestGrayList(t *testing.T) {
+	for _, testCase := range []struct {
+		description string
+		fname       string
+		args        func() []string
+		respStatus  int32
+		errorMsg    string
+	}{
+		{
+			description: "true",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{common.TestAddr, string(cc.GrayList)}
+			},
+			respStatus: int32(shim.OK),
+			errorMsg:   "",
+		},
+		{
+			description: "empty address",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{"", string(cc.GrayList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   errs.ErrEmptyAddress,
+		},
+		{
+			description: "wrong address",
+			fname:       common.FnAddToList,
+			args: func() []string {
+				return []string{common.TestWrongAddress, string(cc.GrayList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   "account info for address " + common.TestWrongAddress + " is empty",
+		},
+		{
+			description: "remove true",
+			fname:       common.FnDelFromList,
+			args: func() []string {
+				return []string{common.TestAddr, string(cc.GrayList)}
+			},
+			respStatus: int32(shim.OK),
+			errorMsg:   "",
+		},
+		{
+			description: "remove empty address",
+			fname:       common.FnDelFromList,
+			args: func() []string {
+				return []string{"", string(cc.GrayList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   errs.ErrEmptyAddress,
+		},
+		{
+			description: "remove wrong address",
+			fname:       common.FnDelFromList,
+			args: func() []string {
+				return []string{common.TestWrongAddress, string(cc.GrayList)}
+			},
+			respStatus: int32(shim.ERROR),
+			errorMsg:   "account info for address " + common.TestWrongAddress + " is empty",
+		},
+	} {
+		t.Run(testCase.description, func(t *testing.T) {
+			mockStub, cfgBytes := common.NuwMockStub(t)
 
-// add dynamic errorMsg in series
-func (s *seriesGrayList) SetError(errMsg string) {
-	s.errorMsg = errMsg
-}
+			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+			info := &pb.AccountInfo{
+				KycHash: kycHash,
+			}
+			if testCase.fname == common.FnDelFromList {
+				info.GrayListed = true
+			}
+			mockStub.GetStateCalls(func(s string) ([]byte, error) {
+				switch s {
+				case "__config":
+					return cfgBytes, nil
+				case key:
+					return proto.Marshal(info)
+				}
 
-func TestGrayListTrue(t *testing.T) {
-	t.Parallel()
+				return nil, nil
+			})
 
-	s := &seriesGrayList{
-		testAddress: common.TestAddr,
-		respStatus:  int32(shim.OK),
-		errorMsg:    "",
+			ccAcl := cc.New()
+			args := testCase.args()
+			mockStub.GetFunctionAndParametersReturns(testCase.fname, args)
+			resp := ccAcl.Invoke(mockStub)
+
+			require.Equal(t, testCase.respStatus, resp.Status)
+			require.Contains(t, resp.Message, testCase.errorMsg)
+
+			if resp.Status != int32(shim.OK) {
+				require.Equal(t, mockStub.PutStateCallCount(), 0)
+				return
+			}
+
+			require.Equal(t, 1, mockStub.PutStateCallCount())
+			keyState, valState := mockStub.PutStateArgsForCall(0)
+			require.Equal(t, key, keyState)
+
+			addrFromLedger := &pb.AccountInfo{}
+			require.NoError(t, proto.Unmarshal(valState, addrFromLedger))
+
+			flag := true
+			if testCase.fname == common.FnDelFromList {
+				flag = false
+			}
+			require.True(t, proto.Equal(addrFromLedger, &pb.AccountInfo{
+				KycHash:    "kycHash",
+				GrayListed: flag,
+			}))
+		})
 	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := addAddressToGrayListTest(t, stub, s)
-	validationResultAddAddressToGrayListTest(t, stub, resp, s)
-}
-
-func TestGrayListEmptyAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesGrayList{
-		testAddress: "",
-		respStatus:  int32(shim.ERROR),
-		errorMsg:    errs.ErrEmptyAddress,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := addAddressToGrayListTest(t, stub, s)
-	validationResultAddAddressToGrayListTest(t, stub, resp, s)
-}
-
-func TestGrayListWrongAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesGrayList{
-		testAddress: common.TestWrongAddress,
-		respStatus:  int32(shim.ERROR),
-	}
-
-	errorMsg := "account info for address " + s.testAddress + " is empty"
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := addAddressToGrayListTest(t, stub, s)
-	validationResultAddAddressToGrayListTest(t, stub, resp, s)
-}
-
-func TestRemoveAddressFromGrayListTrue(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesGrayList{
-		testAddress: common.TestAddr,
-		respStatus:  int32(shim.OK),
-		errorMsg:    "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := removeAddressFromGrayList(t, stub, s)
-	validationResultRemoveAddressFromGrayList(t, stub, resp, s)
-}
-
-func TestRemoveAddressFromGrayListEmptyAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesGrayList{
-		testAddress: "",
-		respStatus:  int32(shim.ERROR),
-		errorMsg:    errs.ErrEmptyAddress,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := removeAddressFromGrayList(t, stub, s)
-	validationResultRemoveAddressFromGrayList(t, stub, resp, s)
-}
-
-func TestRemoveAddressFromGrayListWrongAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesGrayList{
-		testAddress: common.TestWrongAddress,
-		respStatus:  int32(shim.ERROR),
-	}
-
-	errorMsg := "account info for address " + s.testAddress + " is empty"
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := removeAddressFromGrayList(t, stub, s)
-	validationResultRemoveAddressFromGrayList(t, stub, resp, s)
-}
-
-func addAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, ser *seriesGrayList) peer.Response {
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
-	)
-	require.Equal(t, int32(shim.OK), resp.Status)
-
-	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(ser.testAddress), []byte(cc.GrayList)})
-
-	return respGrayList
-}
-
-func validationResultAddAddressToGrayListTest(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
-
-	if resp.Status != int32(shim.OK) {
-		return
-	}
-
-	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
-}
-
-func removeAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, ser *seriesGrayList) peer.Response {
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte("true")},
-	)
-	require.Equal(t, int32(shim.OK), resp.Status)
-
-	respGrayList := stub.MockInvoke("0", [][]byte{[]byte(common.FnAddToList), []byte(common.TestAddr), []byte(cc.GrayList)})
-	require.Equal(t, int32(shim.OK), respGrayList.Status)
-
-	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, true, response.Account.GrayListed, "user is not gray listed")
-
-	respDelFromList := stub.MockInvoke("0", [][]byte{[]byte(common.FnDelFromList), []byte(ser.testAddress), []byte(cc.GrayList)})
-
-	return respDelFromList
-}
-
-func validationResultRemoveAddressFromGrayList(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesGrayList) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
-
-	if resp.Status != int32(shim.OK) {
-		return
-	}
-
-	// check
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(common.PubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.NotNil(t, response.Account)
-	require.Equal(t, false, response.Account.GrayListed, "user is gray listed")
 }

@@ -12,12 +12,14 @@ import (
 
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/proto"
+	"github.com/anoideaopen/acl/tests/unit/mock"
 	"github.com/anoideaopen/foundation/keys/eth"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	pb "github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/hyperledger/fabric-protos-go/msp"
+	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -317,4 +319,33 @@ func VerifySignature(
 	// try to verity secp256k1
 	digest := eth.Hash(message)
 	return eth.Verify(publicKey, digest, signature)
+}
+
+// New MockStub
+func NuwMockStub(t *testing.T) (*mock.ChaincodeStub, []byte) {
+	mockStub := new(mock.ChaincodeStub)
+	mockStub.GetTxIDReturns("0")
+	cfgBytes, err := protojson.Marshal(TestInitConfig)
+	require.NoError(t, err)
+	mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
+	pCert, _ := pem.Decode([]byte(AdminCert))
+	parsed, err := x509.ParseCertificate(pCert.Bytes)
+	require.NoError(t, err)
+	marshaledIdentity, err := MarshalIdentity(TestCreatorMSP, parsed.Raw)
+	require.NoError(t, err)
+	mockStub.GetCreatorReturns(marshaledIdentity, nil)
+	mockStub.CreateCompositeKeyCalls(shim.CreateCompositeKey)
+	mockStub.SplitCompositeKeyCalls(func(s string) (string, []string, error) {
+		componentIndex := 1
+		components := []string{}
+		for i := 1; i < len(s); i++ {
+			if s[i] == 0 {
+				components = append(components, s[componentIndex:i])
+				componentIndex = i + 1
+			}
+		}
+		return components[0], components[1:], nil
+	})
+
+	return mockStub, cfgBytes
 }
