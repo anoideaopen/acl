@@ -126,7 +126,7 @@ func TestGetAccountsInfo(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub, cfgBytes := common.NuwMockStub(t)
+			mockStub, cfgBytes := common.NewMockStub(t)
 
 			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{"FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N"})
 			require.NoError(t, err)

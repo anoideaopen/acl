@@ -77,7 +77,7 @@ func TestGrayList(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub, cfgBytes := common.NuwMockStub(t)
+			mockStub, cfgBytes := common.NewMockStub(t)
 
 			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
 			require.NoError(t, err)
