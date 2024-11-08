@@ -322,7 +322,7 @@ func VerifySignature(
 }
 
 // New MockStub
-func NuwMockStub(t *testing.T) (*mock.ChaincodeStub, []byte) {
+func NewMockStub(t *testing.T) (*mock.ChaincodeStub, []byte) {
 	mockStub := new(mock.ChaincodeStub)
 	mockStub.GetTxIDReturns("0")
 	cfgBytes, err := protojson.Marshal(TestInitConfig)

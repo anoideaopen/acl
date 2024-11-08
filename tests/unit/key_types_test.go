@@ -90,7 +90,7 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub, cfgBytes := common.NuwMockStub(t)
+			mockStub, cfgBytes := common.NewMockStub(t)
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
 				switch s {
@@ -205,7 +205,7 @@ func TestAddUserGostPublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub, cfgBytes := common.NuwMockStub(t)
+			mockStub, cfgBytes := common.NewMockStub(t)
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
 				switch s {

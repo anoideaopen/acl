@@ -15,7 +15,7 @@ import (
 )
 
 func TestGetAddresses(t *testing.T) {
-	mockStub, cfgBytes := common.NuwMockStub(t)
+	mockStub, cfgBytes := common.NewMockStub(t)
 
 	mockStub.GetStateCalls(func(s string) ([]byte, error) {
 		switch s {

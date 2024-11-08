@@ -53,7 +53,7 @@ func TestSetKyc(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
-			mockStub, cfgBytes := common.NuwMockStub(t)
+			mockStub, cfgBytes := common.NewMockStub(t)
 
 			info := &pb.AccountInfo{
 				KycHash: kycHash,
