@@ -563,7 +563,7 @@ func (c *ACL) AddAddressForNominee(stub shim.ChaincodeStubInterface, args []stri
 	}
 
 	// adding address
-	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.AddrString()})
 	if err != nil {
 		return err
 	}
@@ -651,7 +651,7 @@ func (c *ACL) RemoveAddressFromNominee(stub shim.ChaincodeStubInterface, args []
 	}
 
 	// removing address
-	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.AddrString()})
 	if err != nil {
 		return err
 	}
@@ -739,7 +739,7 @@ func (c *ACL) GetAddressRightForNominee(stub shim.ChaincodeStubInterface, args [
 	}
 
 	// retrieving right
-	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.AddrString()})
 	if err != nil {
 		return nil, err
 	}
@@ -809,7 +809,7 @@ func (c *ACL) GetAddressesListForNominee(stub shim.ChaincodeStubInterface, args 
 	}
 
 	// retrieving addresses
-	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.String()})
+	addressesCompositeKey, err := stub.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, nomineeAddress.AddrString()})
 	if err != nil {
 		return nil, err
 	}
