@@ -3,113 +3,111 @@ package unit
 import (
 	"testing"
 
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
+	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/tests/unit/common"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/sha3"
 )
 
-type seriesCheckAddress struct {
-	testAddress string
-	respStatus  int32
-	errorMsg    string
-}
-
-// add dynamic errorMsg in series
-func (s *seriesCheckAddress) SetError(errMsg string) {
-	s.errorMsg = errMsg
-}
-
-func TestCheckAddressTrue(t *testing.T) {
+func TestCheckAddress(t *testing.T) {
 	t.Parallel()
 
-	s := &seriesCheckAddress{
-		testAddress: common.TestAddr,
-		respStatus:  int32(shim.OK),
-		errorMsg:    "",
+	for _, testCase := range []struct {
+		description string
+		testAddress string
+		respStatus  int32
+		errorMsg    string
+	}{
+		{
+			description: "true",
+			testAddress: common.TestAddr,
+			respStatus:  int32(shim.OK),
+			errorMsg:    "",
+		},
+		{
+			description: "empty address",
+			testAddress: "",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    errs.ErrEmptyAddress,
+		},
+		{
+			description: "wrong address",
+			testAddress: common.TestWrongAddress,
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "no public keys for address " + common.TestWrongAddress,
+		},
+		{
+			description: "wrong address symbols",
+			testAddress: "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "no public keys for address Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+		},
+	} {
+		t.Run(testCase.description, func(t *testing.T) {
+			mockStub, cfgBytes := common.NewMockStub(t)
+
+			keyPk, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+			keyAccountInfo, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+			keyAddress, err := shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{common.TestAddrHashInHex})
+			require.NoError(t, err)
+
+			info := &pb.AccountInfo{
+				KycHash: kycHash,
+			}
+
+			b, err := helpers.DecodeBase58PublicKey(common.PubKey)
+			require.NoError(t, err)
+			hashed := sha3.Sum256(b)
+			signAddr := &pb.SignedAddress{
+				Address: &pb.Address{
+					UserID:       "testUserID",
+					Address:      hashed[:],
+					IsIndustrial: true,
+				},
+			}
+
+			mockStub.GetStateCalls(func(s string) ([]byte, error) {
+				switch s {
+				case "__config":
+					return cfgBytes, nil
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(info)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				}
+
+				return nil, nil
+			})
+
+			ccAcl := cc.New()
+			mockStub.GetFunctionAndParametersReturns("checkAddress", []string{testCase.testAddress})
+			resp := ccAcl.Invoke(mockStub)
+
+			// check result
+			require.Equal(t, testCase.respStatus, resp.Status)
+			require.Contains(t, resp.Message, testCase.errorMsg)
+
+			if resp.Status != int32(shim.OK) {
+				return
+			}
+
+			addrFromLedger := &pb.Address{}
+			require.NoError(t, proto.Unmarshal(resp.GetPayload(), addrFromLedger))
+			require.True(t, proto.Equal(addrFromLedger, &pb.Address{
+				UserID:       "testUserID",
+				Address:      hashed[:],
+				IsIndustrial: true,
+			}))
+		})
 	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := checkAddress(t, stub, s)
-	validationResultCheckAddress(t, resp, s)
-}
-
-func TestCheckAddressEmptyAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesCheckAddress{
-		testAddress: "",
-		respStatus:  int32(shim.ERROR),
-		errorMsg:    errs.ErrEmptyAddress,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := checkAddress(t, stub, s)
-	validationResultCheckAddress(t, resp, s)
-}
-
-func TestCheckAddressWrongAddress(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesCheckAddress{
-		testAddress: common.TestWrongAddress,
-		respStatus:  int32(shim.ERROR),
-	}
-
-	errorMsg := "no public keys for address " + s.testAddress
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := checkAddress(t, stub, s)
-	validationResultCheckAddress(t, resp, s)
-}
-
-func TestCheckAddressWrongAddressSymbols(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesCheckAddress{
-		testAddress: "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
-		respStatus:  int32(shim.ERROR),
-	}
-
-	errorMsg := "no public keys for address " + s.testAddress
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := checkAddress(t, stub, s)
-	validationResultCheckAddress(t, resp, s)
-}
-
-func checkAddress(t *testing.T, stub *shimtest.MockStub, ser *seriesCheckAddress) peer.Response {
-	// add user first
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
-	)
-	require.Equal(t, int32(shim.OK), resp.Status)
-
-	check := stub.MockInvoke("0", [][]byte{[]byte("checkAddress"), []byte(ser.testAddress)})
-
-	return check
-}
-
-func validationResultCheckAddress(t *testing.T, resp peer.Response, ser *seriesCheckAddress) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
-
-	if resp.Status != int32(shim.OK) {
-		return
-	}
-
-	addrFromLedger := &pb.Address{}
-	require.NoError(t, proto.Unmarshal(resp.Payload, addrFromLedger))
-	require.Equal(t, ser.testAddress, base58.CheckEncode(addrFromLedger.Address[1:], addrFromLedger.Address[0]), "invalid address")
-	require.Equal(t, testUserID, addrFromLedger.UserID, "invalid userID")
-	require.Equal(t, true, addrFromLedger.IsIndustrial, "invalid isIndustrial field")
-	require.Equal(t, false, addrFromLedger.IsMultisig, "invalid IsMultisig field")
 }

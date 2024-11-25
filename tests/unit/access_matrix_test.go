@@ -1,431 +1,579 @@
 package unit
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/tests/unit/common"
-	"github.com/anoideaopen/foundation/mock"
-	mstub "github.com/anoideaopen/foundation/mock/stub"
+	"github.com/anoideaopen/acl/tests/unit/mock"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/anoideaopen/foundation/test/unit/fixtures_test"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
-	channelName   = "BA"
-	chaincodeName = "IVT.BAR"
-	roleName      = "issuer"
-	operationName = ""
+	operationKey        = "acl_access_matrix_operation"
+	addressKey          = "acl_access_matrix_address"
+	nomineeAddressesKey = "acl_access_matrix_principal_addresses"
+	channelName         = "BA"
+	chaincodeName       = "IVT.BAR"
+	roleName            = "issuer"
+	operationName       = ""
 )
 
 func TestAclAccessMatrix(t *testing.T) {
-	var mockStub *shimtest.MockStub
-	t.Run("Initializing acl stub", func(t *testing.T) {
-		mockStub = common.StubCreateAndInit(t)
-	})
+	t.Parallel()
 
-	// check address
 	hashed := sha3.Sum256(base58.Decode(common.PubKey))
 	addr := base58.CheckEncode(hashed[1:], hashed[0])
-
-	t.Run("Adding user", func(t *testing.T) {
-		resp := mockStub.MockInvoke("0", [][]byte{
-			[]byte(common.FnAddUser),
-			[]byte(common.PubKey),
-			[]byte("kychash"),
-			[]byte("testUserID"),
-			[]byte("true"),
-		})
-		require.Equal(t, int32(shim.OK), resp.Status)
-	})
-
-	t.Run("Adding new user right", func(t *testing.T) {
-		resp := mockStub.MockInvoke("0", [][]byte{
-			[]byte(common.FnAddRights),
-			[]byte(channelName),
-			[]byte(chaincodeName),
-			[]byte(roleName),
-			[]byte(operationName),
-			[]byte(addr),
-		})
-		require.Equal(t, int32(shim.OK), resp.Status)
-	})
-
-	t.Run("Checking if right was added", func(t *testing.T) {
-		result := mockStub.MockInvoke("0", [][]byte{
-			[]byte(common.FnGetAccOpRight),
-			[]byte(channelName),
-			[]byte(chaincodeName),
-			[]byte(roleName),
-			[]byte(operationName),
-			[]byte(addr),
-		})
-		require.Equal(t, int32(shim.OK), result.Status)
-
-		response := &pb.HaveRight{}
-		require.NoError(t, proto.Unmarshal(result.Payload, response))
-		require.NotNil(t, response.HaveRight)
-		require.Equal(t, true, response.HaveRight, "right was not added")
-	})
-
-	t.Run("Checking user rights", func(t *testing.T) {
-		result := mockStub.MockInvoke("0", [][]byte{
-			[]byte(common.FnGetAccAllRights),
-			[]byte(addr),
-		})
-		require.Equal(t, int32(shim.OK), result.Status)
-
-		response := &pb.AccountRights{}
-		require.NoError(t, protojson.Unmarshal(result.Payload, response))
-		require.NotNil(t, response.Address)
-		require.NotNil(t, response.Rights)
-		require.Equal(t, addr, response.Address.AddrString(), "wrong address")
-		require.Len(t, response.Rights, 1)
-		require.Equal(t, channelName, response.Rights[0].ChannelName)
-		require.Equal(t, chaincodeName, response.Rights[0].ChaincodeName)
-		require.Equal(t, roleName, response.Rights[0].RoleName)
-		require.Equal(t, operationName, response.Rights[0].OperationName)
-		require.Equal(t, addr, response.Rights[0].Address.AddrString())
-		require.NotNil(t, response.Rights[0].HaveRight)
-		require.Equal(t, true, response.Rights[0].HaveRight.HaveRight)
-	})
-
-	t.Run("[negative] Check operation rights by user", func(t *testing.T) {
-		uCert, err := common.GetCert(common.UserCertPath)
-		require.NoError(t, err)
-		require.NotNil(t, uCert)
-		err = common.SetCreator(mockStub, common.TestCreatorMSP, uCert.Raw)
-		require.NoError(t, err)
-
-		result := mockStub.MockInvoke("1", [][]byte{
-			[]byte(common.FnGetAccOpRight),
-			[]byte(channelName),
-			[]byte(chaincodeName),
-			[]byte(roleName),
-			[]byte(operationName),
-			[]byte(addr),
-		})
-		require.Equal(t, int32(shim.ERROR), result.Status)
-		require.Contains(t, result.Message, errs.ErrCalledNotCCOrAdmin)
-	})
-
-	t.Run("Checking operation rights", func(t *testing.T) {
-		cert, err := common.GetCert(common.AdminCertPath)
-		require.NoError(t, err)
-		require.NotNil(t, cert)
-		err = common.SetCreator(mockStub, common.TestCreatorMSP, cert.Raw)
-		require.NoError(t, err)
-
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnGetOpAllRights),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(roleName),
-				[]byte(operationName),
-			},
-		)
-		require.Equal(t, int32(shim.OK), result.Status)
-
-		response := &pb.OperationRights{}
-		require.NoError(t, protojson.Unmarshal(result.Payload, response))
-		require.NotNil(t, response.OperationName)
-		require.NotNil(t, response.Rights)
-		require.Equal(t, operationName, response.OperationName, "wrong address")
-		require.Len(t, response.Rights, 1)
-		require.Equal(t, channelName, response.Rights[0].ChannelName)
-		require.Equal(t, chaincodeName, response.Rights[0].ChaincodeName)
-		require.Equal(t, roleName, response.Rights[0].RoleName)
-		require.Equal(t, operationName, response.Rights[0].OperationName)
-		require.Equal(t, addr, response.Rights[0].Address.AddrString())
-		require.NotNil(t, response.Rights[0].HaveRight)
-		require.Equal(t, true, response.Rights[0].HaveRight.HaveRight)
-	})
-
-	t.Run("Adding new user right", func(t *testing.T) {
-		resp := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnAddRights),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(roleName),
-				[]byte(operationName),
-				[]byte(addr),
-			},
-		)
-		require.Equal(t, int32(shim.OK), resp.Status)
-	})
-
-	t.Run("Adding same user right again", func(t *testing.T) {
-		resp := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnAddRights),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(roleName),
-				[]byte(operationName),
-				[]byte(addr),
-			},
-		)
-		require.Equal(t, int32(shim.OK), resp.Status)
-	})
-
-	t.Run("Removing right", func(t *testing.T) {
-		resp := mockStub.MockInvoke("0", [][]byte{
-			[]byte(common.FnRemoveRights),
-			[]byte(channelName),
-			[]byte(chaincodeName),
-			[]byte(roleName),
-			[]byte(operationName),
-			[]byte(addr),
-		})
-		require.Equal(t, int32(shim.OK), resp.Status)
-	})
-
-	t.Run("Checking if right was removed", func(t *testing.T) {
-		result := mockStub.MockInvoke("0", [][]byte{
-			[]byte(common.FnGetAccOpRight),
-			[]byte(channelName),
-			[]byte(chaincodeName),
-			[]byte(roleName),
-			[]byte(operationName),
-			[]byte(addr),
-		})
-		require.Equal(t, int32(shim.OK), result.Status)
-
-		response := &pb.HaveRight{}
-		require.NoError(t, proto.Unmarshal(result.Payload, response))
-		require.NotNil(t, response.HaveRight)
-		require.Equal(t, false, response.HaveRight, "right was not added")
-	})
-
-	t.Run("Checking user rights", func(t *testing.T) {
-		result := mockStub.MockInvoke("0", [][]byte{[]byte(common.FnGetAccAllRights), []byte(addr)})
-		require.Equal(t, int32(shim.OK), result.Status)
-
-		response := &pb.AccountRights{}
-		require.NoError(t, protojson.Unmarshal(result.Payload, response))
-		require.NotNil(t, response.Address)
-		require.Nil(t, response.Rights)
-		require.Equal(t, addr, response.Address.AddrString(), "wrong address")
-		require.Len(t, response.Rights, 0)
-	})
-
-	t.Run("Checking operation rights", func(t *testing.T) {
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnGetOpAllRights),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(roleName),
-				[]byte(operationName),
-			},
-		)
-		require.Equal(t, int32(shim.OK), result.Status)
-
-		response := &pb.OperationRights{}
-		require.NoError(t, protojson.Unmarshal(result.Payload, response))
-		require.NotNil(t, response.OperationName)
-		require.Nil(t, response.Rights)
-		require.Equal(t, operationName, response.OperationName, "wrong address")
-		require.Len(t, response.Rights, 0)
-	})
 
 	principalUser := common.TestUsers[0]
 	principalHashed := sha3.Sum256(base58.Decode(principalUser.PublicKey))
 	principalAddress := base58.CheckEncode(principalHashed[1:], principalHashed[0])
+	principalHashInHex := hex.EncodeToString(principalHashed[:])
 
-	t.Run("Adding user", func(t *testing.T) {
-		resp := mockStub.MockInvoke("0", [][]byte{
-			[]byte(common.FnAddUser),
-			[]byte(principalUser.PublicKey),
-			[]byte("kychash"),
-			[]byte("testUserID"),
-			[]byte("true"),
+	keyPk, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{common.TestAddr})
+	require.NoError(t, err)
+	keyAccountInfo, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
+	require.NoError(t, err)
+	keyAddress, err := shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{common.TestAddrHashInHex})
+	require.NoError(t, err)
+	keyOperationMatrix, err := shim.CreateCompositeKey(operationKey, []string{channelName, chaincodeName, roleName, operationName})
+	require.NoError(t, err)
+	keyAddresMatrix, err := shim.CreateCompositeKey(addressKey, []string{common.TestAddr})
+	require.NoError(t, err)
+	keyNomineeAddresses, err := shim.CreateCompositeKey(nomineeAddressesKey, []string{channelName, chaincodeName, addr})
+	require.NoError(t, err)
+
+	keyPrincipalPk, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{principalAddress})
+	require.NoError(t, err)
+	keyPrincipalAccountInfo, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{principalAddress})
+	require.NoError(t, err)
+	keyPrincipalAddress, err := shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{principalHashInHex})
+	require.NoError(t, err)
+
+	signPrincipalAddr := &pb.SignedAddress{
+		Address: &pb.Address{
+			UserID:       "testUserID",
+			Address:      principalHashed[:],
+			IsIndustrial: true,
+		},
+	}
+
+	accountInfo := &pb.AccountInfo{
+		KycHash: kycHash,
+	}
+	signAddr := &pb.SignedAddress{
+		Address: &pb.Address{
+			UserID:       "testUserID",
+			Address:      hashed[:],
+			IsIndustrial: true,
+		},
+	}
+	accounts := &pb.Accounts{
+		Addresses: []*pb.Address{
+			{
+				UserID:       "testUserID",
+				Address:      hashed[:],
+				IsIndustrial: true,
+			},
+		},
+	}
+	accountsPrincipal := &pb.Accounts{
+		Addresses: []*pb.Address{
+			{
+				UserID:       "testUserID",
+				Address:      principalHashed[:],
+				IsIndustrial: true,
+			},
+		},
+	}
+	accountRights := &pb.AccountRights{
+		Address: &pb.Address{
+			UserID:       "testUserID",
+			Address:      hashed[:],
+			IsIndustrial: true,
+		},
+		Rights: []*pb.Right{
+			{
+				ChannelName:   channelName,
+				ChaincodeName: chaincodeName,
+				RoleName:      roleName,
+				OperationName: operationName,
+				Address: &pb.Address{
+					UserID:       "testUserID",
+					Address:      hashed[:],
+					IsIndustrial: true,
+				},
+				HaveRight: &pb.HaveRight{HaveRight: true},
+			},
+		},
+	}
+
+	for _, testCase := range []struct {
+		description string
+		fn          string
+		args        []string
+		respStatus  int32
+		errorMsg    string
+		getFn       func(s string) ([]byte, error)
+		checkFn     func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte)
+		cert        string
+	}{
+		{
+			description: "add rights",
+			fn:          common.FnAddRights,
+			args:        []string{channelName, chaincodeName, roleName, operationName, addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				require.Equal(t, 2, mockStub.PutStateCallCount())
+
+				keyState, val := mockStub.PutStateArgsForCall(0)
+				require.Equal(t, keyState, keyOperationMatrix)
+				accountsState := &pb.Accounts{}
+				require.NoError(t, protojson.Unmarshal(val, accountsState))
+				require.True(t, proto.Equal(accountsState, accounts))
+
+				keyState, val = mockStub.PutStateArgsForCall(1)
+				require.Equal(t, keyState, keyAddresMatrix)
+				accountRightsState := &pb.AccountRights{}
+				require.NoError(t, protojson.Unmarshal(val, accountRightsState))
+				require.True(t, proto.Equal(accountRightsState, accountRights))
+			},
+		},
+		{
+			description: "add rights again",
+			fn:          common.FnAddRights,
+			args:        []string{channelName, chaincodeName, roleName, operationName, addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyOperationMatrix:
+					return protojson.Marshal(accounts)
+				case keyAddresMatrix:
+					return protojson.Marshal(accountRights)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				require.Equal(t, 0, mockStub.PutStateCallCount())
+			},
+		},
+		{
+			description: "remove rights",
+			fn:          common.FnRemoveRights,
+			args:        []string{channelName, chaincodeName, roleName, operationName, addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyOperationMatrix:
+					return protojson.Marshal(accounts)
+				case keyAddresMatrix:
+					return protojson.Marshal(accountRights)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				require.Equal(t, 2, mockStub.PutStateCallCount())
+
+				keyState, val := mockStub.PutStateArgsForCall(0)
+				require.Equal(t, keyState, keyOperationMatrix)
+				accountsState := &pb.Accounts{}
+				require.NoError(t, protojson.Unmarshal(val, accountsState))
+				require.True(t, proto.Equal(accountsState, &pb.Accounts{
+					Addresses: []*pb.Address{},
+				}))
+
+				keyState, val = mockStub.PutStateArgsForCall(1)
+				require.Equal(t, keyState, keyAddresMatrix)
+				accountRightsState := &pb.AccountRights{}
+				require.NoError(t, protojson.Unmarshal(val, accountRightsState))
+				require.True(t, proto.Equal(accountRightsState, &pb.AccountRights{
+					Address: signAddr.Address,
+					Rights:  []*pb.Right{},
+				}))
+			},
+		},
+		{
+			description: "get account operation right check if added",
+			fn:          common.FnGetAccOpRight,
+			args:        []string{channelName, chaincodeName, roleName, operationName, addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyOperationMatrix:
+					return protojson.Marshal(accounts)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				hr := &pb.HaveRight{}
+				require.NoError(t, proto.Unmarshal(payload, hr))
+				require.True(t, proto.Equal(hr, &pb.HaveRight{HaveRight: true}))
+			},
+		},
+		{
+			description: "get account operation right check if removed",
+			fn:          common.FnGetAccOpRight,
+			args:        []string{channelName, chaincodeName, roleName, operationName, addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyOperationMatrix:
+					return protojson.Marshal(&pb.Accounts{
+						Addresses: []*pb.Address{},
+					})
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				hr := &pb.HaveRight{}
+				require.NoError(t, proto.Unmarshal(payload, hr))
+				require.True(t, proto.Equal(hr, &pb.HaveRight{}))
+			},
+		},
+		{
+			description: "get account operation right bad certificate",
+			fn:          common.FnGetAccOpRight,
+			args:        []string{channelName, chaincodeName, roleName, operationName, addr},
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    errs.ErrCalledNotCCOrAdmin,
+			cert:        common.UserCert,
+		},
+		{
+			description: "get account all rights check if added",
+			fn:          common.FnGetAccAllRights,
+			args:        []string{addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyAddresMatrix:
+					return protojson.Marshal(accountRights)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				ar := &pb.AccountRights{}
+				require.NoError(t, protojson.Unmarshal(payload, ar))
+				require.True(t, proto.Equal(ar, accountRights))
+			},
+		},
+		{
+			description: "get account all rights check if removed",
+			fn:          common.FnGetAccAllRights,
+			args:        []string{addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyAddresMatrix:
+					return protojson.Marshal(&pb.AccountRights{
+						Address: signAddr.Address,
+						Rights:  []*pb.Right{},
+					})
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				ar := &pb.AccountRights{}
+				require.NoError(t, protojson.Unmarshal(payload, ar))
+				require.True(t, proto.Equal(ar, &pb.AccountRights{
+					Address: signAddr.Address,
+					Rights:  []*pb.Right{},
+				}))
+			},
+		},
+		{
+			description: "get operation all rights check if added",
+			fn:          common.FnGetOpAllRights,
+			args:        []string{channelName, chaincodeName, roleName, operationName},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyOperationMatrix:
+					return protojson.Marshal(accounts)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				or := &pb.OperationRights{}
+				require.NoError(t, protojson.Unmarshal(payload, or))
+				require.True(t, proto.Equal(or, &pb.OperationRights{
+					OperationName: operationName,
+					Rights:        accountRights.Rights,
+				}))
+			},
+		},
+		{
+			description: "get operation all rights check if removed",
+			fn:          common.FnGetOpAllRights,
+			args:        []string{channelName, chaincodeName, roleName, operationName},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyOperationMatrix:
+					return protojson.Marshal(&pb.Accounts{
+						Addresses: []*pb.Address{},
+					})
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				or := &pb.OperationRights{}
+				require.NoError(t, protojson.Unmarshal(payload, or))
+				require.True(t, proto.Equal(or, &pb.OperationRights{OperationName: operationName}))
+			},
+		},
+		{
+			description: "add address for nominee",
+			fn:          common.FnAddAddressForNominee,
+			args:        []string{channelName, chaincodeName, addr, principalAddress},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyPrincipalPk:
+					return []byte(principalHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyPrincipalAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyPrincipalAddress:
+					return proto.Marshal(signPrincipalAddr)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				require.Equal(t, 1, mockStub.PutStateCallCount())
+
+				keyState, val := mockStub.PutStateArgsForCall(0)
+				require.Equal(t, keyState, keyNomineeAddresses)
+				accountsState := &pb.Accounts{}
+				require.NoError(t, protojson.Unmarshal(val, accountsState))
+				require.True(t, proto.Equal(accountsState, accountsPrincipal))
+			},
+		},
+		{
+			description: "add address for nominee again",
+			fn:          common.FnAddAddressForNominee,
+			args:        []string{channelName, chaincodeName, addr, principalAddress},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyPrincipalPk:
+					return []byte(principalHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyPrincipalAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyPrincipalAddress:
+					return proto.Marshal(signPrincipalAddr)
+				case keyNomineeAddresses:
+					return protojson.Marshal(accountsPrincipal)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				require.Equal(t, 0, mockStub.PutStateCallCount())
+			},
+		},
+		{
+			description: "remove address from nominee",
+			fn:          common.FnRemoveAddressFromNominee,
+			args:        []string{channelName, chaincodeName, addr, principalAddress},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyPrincipalPk:
+					return []byte(principalHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyPrincipalAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyPrincipalAddress:
+					return proto.Marshal(signPrincipalAddr)
+				case keyNomineeAddresses:
+					return protojson.Marshal(accountsPrincipal)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				require.Equal(t, 1, mockStub.PutStateCallCount())
+
+				keyState, val := mockStub.PutStateArgsForCall(0)
+				require.Equal(t, keyState, keyNomineeAddresses)
+				accountsState := &pb.Accounts{}
+				require.NoError(t, protojson.Unmarshal(val, accountsState))
+				require.True(t, proto.Equal(accountsState, &pb.Accounts{Addresses: []*pb.Address{}}))
+			},
+		},
+		{
+			description: "checking nominee right by bad certificate",
+			fn:          common.FnGetAddressRightForNominee,
+			args:        []string{channelName, chaincodeName, addr, principalAddress},
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    errs.ErrCalledNotCCOrAdmin,
+			cert:        common.UserCert,
+		},
+		{
+			description: "checking nominee if addresses added",
+			fn:          common.FnGetAddressesListForNominee,
+			args:        []string{channelName, chaincodeName, addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyNomineeAddresses:
+					return protojson.Marshal(accountsPrincipal)
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				ac := &pb.Accounts{}
+				require.NoError(t, protojson.Unmarshal(payload, ac))
+				require.True(t, proto.Equal(ac, accountsPrincipal))
+			},
+		},
+		{
+			description: "checking nominee if addresses removed",
+			fn:          common.FnGetAddressesListForNominee,
+			args:        []string{channelName, chaincodeName, addr},
+			respStatus:  int32(shim.OK),
+			getFn: func(s string) ([]byte, error) {
+				switch s {
+				case keyPk:
+					return []byte(common.TestAddrHashInHex), nil
+				case keyAccountInfo:
+					return proto.Marshal(accountInfo)
+				case keyAddress:
+					return proto.Marshal(signAddr)
+				case keyNomineeAddresses:
+					return protojson.Marshal(&pb.Accounts{Addresses: []*pb.Address{}})
+				}
+				return nil, nil
+			},
+			checkFn: func(t *testing.T, mockStub *mock.ChaincodeStub, payload []byte) {
+				ac := &pb.Accounts{}
+				require.NoError(t, protojson.Unmarshal(payload, ac))
+				require.True(t, proto.Equal(ac, &pb.Accounts{Addresses: []*pb.Address{}}))
+			},
+		},
+	} {
+		t.Run(testCase.description, func(t *testing.T) {
+			mockStub, cfgBytes := common.NewMockStub(t)
+
+			if len(testCase.cert) != 0 {
+				common.SetCert(t, mockStub, testCase.cert)
+			}
+
+			mockStub.GetStateCalls(func(s string) ([]byte, error) {
+				switch s {
+				case "__config":
+					return cfgBytes, nil
+				}
+
+				if testCase.getFn != nil {
+					return testCase.getFn(s)
+				}
+
+				return nil, nil
+			})
+
+			ccAcl := cc.New()
+			mockStub.GetFunctionAndParametersReturns(testCase.fn, testCase.args)
+			resp := ccAcl.Invoke(mockStub)
+
+			require.Equal(t, testCase.respStatus, resp.Status)
+			require.Contains(t, resp.Message, testCase.errorMsg)
+
+			if resp.Status != int32(shim.OK) {
+				return
+			}
+
+			if testCase.checkFn != nil {
+				testCase.checkFn(t, mockStub, resp.GetPayload())
+			}
 		})
-		require.Equal(t, int32(shim.OK), resp.Status)
-	})
-
-	t.Run("adding principal address for nominee", func(t *testing.T) {
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnAddAddressForNominee),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(addr),
-				[]byte(principalAddress),
-			},
-		)
-		require.Equal(t, int32(shim.OK), result.Status)
-	})
-
-	t.Run("checking nominee addresses", func(t *testing.T) {
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnGetAddressesListForNominee),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(addr),
-			},
-		)
-
-		addresses := &pb.Accounts{}
-		require.NoError(t, protojson.Unmarshal(result.Payload, addresses))
-		require.Equal(t, 1, len(addresses.GetAddresses()))
-		require.Equal(t, principalAddress, addresses.GetAddresses()[0].AddrString())
-	})
-
-	t.Run("[negative] checking nominee right by user", func(t *testing.T) {
-		uCert, err := common.GetCert(common.UserCertPath)
-		require.NoError(t, err)
-		require.NotNil(t, uCert)
-		err = common.SetCreator(mockStub, common.TestCreatorMSP, uCert.Raw)
-		require.NoError(t, err)
-
-		result := mockStub.MockInvoke("1", [][]byte{
-			[]byte(common.FnGetAddressRightForNominee),
-			[]byte(channelName),
-			[]byte(chaincodeName),
-			[]byte(addr),
-			[]byte(principalAddress),
-		})
-		require.Equal(t, int32(shim.ERROR), result.Status)
-		require.Contains(t, result.Message, errs.ErrCalledNotCCOrAdmin)
-	})
-
-	t.Run("adding address again", func(t *testing.T) {
-		cert, err := common.GetCert(common.AdminCertPath)
-		require.NoError(t, err)
-		require.NotNil(t, cert)
-		err = common.SetCreator(mockStub, common.TestCreatorMSP, cert.Raw)
-		require.NoError(t, err)
-
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnAddAddressForNominee),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(addr),
-				[]byte(principalAddress),
-			},
-		)
-		require.Equal(t, int32(shim.OK), result.Status)
-	})
-
-	t.Run("checking if address was not added", func(t *testing.T) {
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnGetAddressesListForNominee),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(addr),
-			},
-		)
-
-		addresses := &pb.Accounts{}
-		require.NoError(t, protojson.Unmarshal(result.Payload, addresses))
-		require.Equal(t, 1, len(addresses.GetAddresses()))
-		require.Equal(t, principalAddress, addresses.GetAddresses()[0].AddrString())
-	})
-
-	t.Run("removing address", func(t *testing.T) {
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnRemoveAddressFromNominee),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(addr),
-				[]byte(principalAddress),
-			},
-		)
-		require.Equal(t, int32(shim.OK), result.Status)
-	})
-
-	t.Run("checking if address was removed", func(t *testing.T) {
-		result := mockStub.MockInvoke(
-			"0",
-			[][]byte{
-				[]byte(common.FnGetAddressesListForNominee),
-				[]byte(channelName),
-				[]byte(chaincodeName),
-				[]byte(addr),
-			},
-		)
-
-		addresses := &pb.Accounts{}
-		require.NoError(t, protojson.Unmarshal(result.Payload, addresses))
-		require.Equal(t, 0, len(addresses.GetAddresses()))
-	})
-}
-
-func TestAclCalledFromChaincode(t *testing.T) {
-	ledgerMock := mock.NewLedger(t)
-	owner := ledgerMock.NewWallet()
-
-	t.Run("Initializing acl chaincode", func(t *testing.T) {
-		aclCC := mstub.NewMockStub("acl", cc.New())
-		cert, err := common.GetCert(common.AdminCertPath)
-		require.NoError(t, err)
-		creator, err := common.MarshalIdentity(common.TestCreatorMSP, cert.Raw)
-		require.NoError(t, err)
-		aclCC.SetCreator(creator)
-		aclCC.MockInit("0", common.TestInitArgs)
-		ledgerMock.SetACL(aclCC)
-	})
-
-	t.Run("Initializing fiat chaincode", func(t *testing.T) {
-		cfg := &pb.Config{
-			Contract: &pb.ContractConfig{
-				Symbol:   "FIAT",
-				RobotSKI: fixtures_test.RobotHashedCert,
-			},
-			Token: &pb.TokenConfig{
-				Name:     "FIAT",
-				Decimals: uint32(0),
-				Issuer:   &pb.Wallet{Address: owner.Address()},
-			},
-		}
-
-		cfgBytes, _ := protojson.Marshal(cfg)
-
-		init := ledgerMock.NewCC("fiat", common.NewFiatToken(), string(cfgBytes))
-		require.Empty(t, init)
-	})
-
-	user := ledgerMock.NewWallet()
-	ownerPkB58 := base58.Encode(owner.PubKey())
-	userPkB58 := base58.Encode(user.PubKey())
-
-	t.Run("Requesting rights from fiat", func(t *testing.T) {
-		owner.Invoke("acl", "addUser", ownerPkB58, "123", "testuser", "true")
-		owner.Invoke("acl", "addUser", userPkB58, "234", "testuser2", "true")
-		owner.Invoke("acl", "addRights", "fiat", "fiat", "issuer", "someMethod", user.Address())
-
-		result := owner.Invoke("fiat", "getRight", "fiat", "fiat", "issuer", "someMethod", user.Address())
-		require.Equal(t, "true", result)
-	})
-
-	t.Run("Requesting addresses for nominee from fiat", func(t *testing.T) {
-		owner.Invoke("acl", common.FnAddAddressForNominee, "fiat", "fiat", owner.Address(), user.Address())
-
-		result := owner.Invoke("fiat", common.FnGetAddressRightForNominee, "fiat", "fiat", owner.Address(), user.Address())
-		require.Equal(t, "true", result)
-	})
+	}
 }

@@ -328,12 +328,7 @@ func NewMockStub(t *testing.T) (*mock.ChaincodeStub, []byte) {
 	cfgBytes, err := protojson.Marshal(TestInitConfig)
 	require.NoError(t, err)
 	mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
-	pCert, _ := pem.Decode([]byte(AdminCert))
-	parsed, err := x509.ParseCertificate(pCert.Bytes)
-	require.NoError(t, err)
-	marshaledIdentity, err := MarshalIdentity(TestCreatorMSP, parsed.Raw)
-	require.NoError(t, err)
-	mockStub.GetCreatorReturns(marshaledIdentity, nil)
+	SetCert(t, mockStub, AdminCert)
 	mockStub.CreateCompositeKeyCalls(shim.CreateCompositeKey)
 	mockStub.SplitCompositeKeyCalls(func(s string) (string, []string, error) {
 		componentIndex := 1
@@ -348,4 +343,13 @@ func NewMockStub(t *testing.T) (*mock.ChaincodeStub, []byte) {
 	})
 
 	return mockStub, cfgBytes
+}
+
+func SetCert(t *testing.T, mockStub *mock.ChaincodeStub, cert string) {
+	pCert, _ := pem.Decode([]byte(cert))
+	parsed, err := x509.ParseCertificate(pCert.Bytes)
+	require.NoError(t, err)
+	marshaledIdentity, err := MarshalIdentity(TestCreatorMSP, parsed.Raw)
+	require.NoError(t, err)
+	mockStub.GetCreatorReturns(marshaledIdentity, nil)
 }
