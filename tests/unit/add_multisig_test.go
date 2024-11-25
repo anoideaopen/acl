@@ -115,7 +115,7 @@ func TestAddMultisig(t *testing.T) {
 			description: "pub key equal 43 symbols",
 			respStatus:  int32(shim.ERROR),
 			errorMsg:    errs.ErrRecordsNotFound,
-			prepare: func(pubkeys []string, signs []string, priv []string, _ map[string][]byte, _ string) []string {
+			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2"
 				return append(append([]string{"3", nonce}, pubkeys...), signs...)
@@ -124,8 +124,8 @@ func TestAddMultisig(t *testing.T) {
 		{
 			description: "pub key equal 44 symbols",
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    "",
-			prepare: func(pubkeys []string, signs []string, priv []string, _ map[string][]byte, _ string) []string {
+			errorMsg:    errs.ErrRecordsNotFound,
+			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z"
 				return append(append([]string{"3", nonce}, pubkeys...), signs...)
@@ -135,7 +135,7 @@ func TestAddMultisig(t *testing.T) {
 			description: "pub key empty",
 			respStatus:  int32(shim.ERROR),
 			errorMsg:    "empty public key detected",
-			prepare: func(pubkeys []string, signs []string, priv []string, _ map[string][]byte, _ string) []string {
+			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = ""
 				return append(append([]string{"3", nonce}, pubkeys...), signs...)
@@ -145,7 +145,7 @@ func TestAddMultisig(t *testing.T) {
 			description: "pub key more than 44 symbols",
 			respStatus:  int32(shim.ERROR),
 			errorMsg:    "incorrect len of decoded from base58 public key 'Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV': '33'",
-			prepare: func(pubkeys []string, signs []string, priv []string, _ map[string][]byte, _ string) []string {
+			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV"
 				return append(append([]string{"3", nonce}, pubkeys...), signs...)
@@ -155,7 +155,7 @@ func TestAddMultisig(t *testing.T) {
 			description: "pub key less than 43 symbols",
 			respStatus:  int32(shim.ERROR),
 			errorMsg:    "incorrect len of decoded from base58 public key 'Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR': '31'",
-			prepare: func(pubkeys []string, signs []string, priv []string, _ map[string][]byte, _ string) []string {
+			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR"
 				return append(append([]string{"3", nonce}, pubkeys...), signs...)
@@ -165,7 +165,7 @@ func TestAddMultisig(t *testing.T) {
 			description: "pub key wrong numeric zero",
 			respStatus:  int32(shim.ERROR),
 			errorMsg:    "failed base58 decoding of key 00000000000000000000000000000000",
-			prepare: func(pubkeys []string, signs []string, priv []string, _ map[string][]byte, _ string) []string {
+			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "00000000000000000000000000000000"
 				return append(append([]string{"3", nonce}, pubkeys...), signs...)
@@ -175,7 +175,7 @@ func TestAddMultisig(t *testing.T) {
 			description: "pub key with special symbols",
 			respStatus:  int32(shim.ERROR),
 			errorMsg:    "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
-			prepare: func(pubkeys []string, signs []string, priv []string, _ map[string][]byte, _ string) []string {
+			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra"
 				return append(append([]string{"3", nonce}, pubkeys...), signs...)

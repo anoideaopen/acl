@@ -2,8 +2,6 @@ package unit
 
 import (
 	"context"
-	"crypto/x509"
-	"encoding/pem"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
@@ -12,7 +10,6 @@ import (
 	"github.com/anoideaopen/acl/tests/unit/mock"
 	"github.com/anoideaopen/foundation/core/telemetry"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -21,7 +18,16 @@ import (
 )
 
 func TestTelemetry(t *testing.T) {
-	mockStub := newMockStub(t)
+	mockStub, cfgBytes := common.NewMockStub(t)
+	mockStub.GetStateCalls(func(s string) ([]byte, error) {
+		switch s {
+		case "__config":
+			return cfgBytes, nil
+		}
+
+		return nil, nil
+	})
+	common.SetCert(t, mockStub, common.AdminCert)
 
 	t.Run("invoke without tracing", func(t *testing.T) {
 		mockStub.GetFunctionAndParametersReturns(
@@ -44,38 +50,6 @@ func TestTelemetry(t *testing.T) {
 		response := cc.New().Invoke(mockStub)
 		require.Equal(t, shim.OK, int(response.GetStatus()))
 	})
-}
-
-func newMockStub(t *testing.T) *mock.ChaincodeStub {
-	const txID = "0"
-
-	mockStub := new(mock.ChaincodeStub)
-
-	mockStub.GetTxIDReturns(txID)
-
-	cfgBytes, err := protojson.Marshal(common.TestInitConfig)
-	require.NoError(t, err)
-
-	mockStub.GetStateCalls(func(s string) ([]byte, error) {
-		switch s {
-		case "__config":
-			return cfgBytes, nil
-		}
-
-		return nil, nil
-	})
-
-	mockStub.GetSignedProposalReturns(&peer.SignedProposal{}, nil)
-	pCert, _ := pem.Decode([]byte(common.AdminCert))
-	parsed, err := x509.ParseCertificate(pCert.Bytes)
-	require.NoError(t, err)
-
-	marshaledIdentity, err := common.MarshalIdentity(common.TestCreatorMSP, parsed.Raw)
-	require.NoError(t, err)
-
-	mockStub.GetCreatorReturns(marshaledIdentity, nil)
-
-	return mockStub
 }
 
 func addTelemetryToMockStub(t *testing.T, mockStub *mock.ChaincodeStub) *mock.ChaincodeStub {

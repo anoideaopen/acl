@@ -1,381 +1,262 @@
 package unit
 
 import (
-	"encoding/hex"
-	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/tests/unit/common"
+	"github.com/anoideaopen/foundation/core/types/big"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-chaincode-go/shimtest" //nolint:staticcheck
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 )
 
-type seriesChangePublicKey struct {
-	newPubKey  string
-	respStatus int32
-	errorMsg   string
-}
-
-// add dynamic errorMsg in series
-func (s *seriesChangePublicKey) SetError(errMsg string) {
-	s.errorMsg = errMsg
-}
-
-func TestChangePublicKeyEqual43Symbols(t *testing.T) {
+func TestChangePublicKey(t *testing.T) {
 	t.Parallel()
 
-	s := &seriesChangePublicKey{
-		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
-		respStatus: int32(shim.OK),
-		errorMsg:   "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyEqual44Symbols(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesChangePublicKey{
-		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
-		respStatus: int32(shim.OK),
-		errorMsg:   "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyEmpty(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesChangePublicKey{
-		newPubKey:  "",
-		respStatus: int32(shim.ERROR),
-		errorMsg:   errs.ErrEmptyNewKey,
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyMoreThan44Symbols(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesChangePublicKey{
-		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
-		respStatus: int32(shim.ERROR),
-	}
-
-	errorMsg := fmt.Sprintf(
-		"incorrect len of decoded from base58 public key '%s': '%d'",
-		s.newPubKey,
-		33,
-	)
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyLessThan43Symbols(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesChangePublicKey{
-		newPubKey:  "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
-		respStatus: int32(shim.ERROR),
-	}
-
-	errorMsg := fmt.Sprintf(
-		"incorrect len of decoded from base58 public key '%s': '%d'",
-		s.newPubKey,
-		31,
-	)
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyWrongString(t *testing.T) {
-	t.Parallel()
-
-	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
-	s := &seriesChangePublicKey{
-		newPubKey:  "AbracadabraAbracadabraAbracadabraAbracadabra",
-		respStatus: int32(shim.OK),
-		errorMsg:   "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyWrongNumeric(t *testing.T) {
-	t.Parallel()
-
-	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
-	s := &seriesChangePublicKey{
-		newPubKey:  "11111111111111111111111111111111",
-		respStatus: int32(shim.OK),
-		errorMsg:   "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyWrongNumericZero(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesChangePublicKey{
-		newPubKey:  "00000000000000000000000000000000",
-		respStatus: int32(shim.ERROR),
-	}
-
-	errorMsg := "failed base58 decoding of key " + s.newPubKey
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeyWithSpecialSymbols(t *testing.T) {
-	t.Parallel()
-
-	s := &seriesChangePublicKey{
-		newPubKey:  "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
-		respStatus: int32(shim.ERROR),
-	}
-
-	errorMsg := "failed base58 decoding of key " + s.newPubKey
-	s.SetError(errorMsg)
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func TestChangePublicKeySameKey(t *testing.T) {
-	t.Parallel()
-
-	t.Skip("https://github.com/anoideaopen/acl/-/issues/3")
-	s := &seriesChangePublicKey{
-		newPubKey:  common.PubKey,
-		respStatus: int32(shim.OK),
-		errorMsg:   "",
-	}
-
-	stub := common.StubCreateAndInit(t)
-	resp := changePublicKey(t, stub, s)
-	validationResultChangePublicKey(t, stub, resp, s)
-}
-
-func changePublicKey(t *testing.T, stub *shimtest.MockStub, ser *seriesChangePublicKey) peer.Response {
-	// prepare (create pk -> addr and addr -> pk mappings in ACL)
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
-	)
-	require.Equal(t, int32(shim.OK), resp.Status)
-
-	// change pk
-	pKeys := make([]string, len(common.TestUsersDifferentKeyTypes))
-	for i, user := range common.TestUsersDifferentKeyTypes {
-		pKeys[i] = user.PublicKey
-	}
-
-	duplicateKeysString := make([]string, 0, len(pKeys))
-	for i, pubKey := range pKeys {
-		if i == 2 {
-			duplicateKeysString = append(duplicateKeysString, pKeys[i-1]) //nolint:staticcheck
-		} else {
-			duplicateKeysString = append(duplicateKeysString, pubKey) //nolint:staticcheck
-		}
-	}
-
-	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	reasonID := "1"
-	message := sha3.Sum256([]byte(
-		strings.Join(
-			append([]string{common.FnChangePublicKey, common.TestAddr, common.DefaultReason, reasonID, ser.newPubKey, nonce}, pKeys...),
-			""),
-	))
-	vPKeys, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
+	newPubKey := "94EdE9iZRzU9mUiVDNxYKKWymHeBxHR8mA8AetFrg8m4"
 
-	invokeArgs := append(
-		append([][]byte{
-			[]byte(common.FnChangePublicKey),
-			[]byte(common.TestAddr),
-			[]byte(common.DefaultReason),
-			[]byte(reasonID),
-			[]byte(ser.newPubKey),
-			[]byte(nonce),
-		}, vPKeys...),
-		vSignatures...,
-	)
-	respNewKey := stub.MockInvoke("0", invokeArgs)
+	for _, testCase := range []struct {
+		description string
+		respStatus  int32
+		errorMsg    string
+		newPubKey   string
+		prepare     func([]string) []string
+	}{
+		{
+			description: "fraud: duplicate signature (wrong case)",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "duplicate validators signatures are not allowed",
+			newPubKey:   newPubKey,
+			prepare: func(pubkeys []string) []string {
+				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
+				args := []string{
+					common.FnChangePublicKey,
+					common.TestAddr,
+					common.DefaultReason,
+					reasonID,
+					newPubKey,
+					nonce,
+				}
+				pubkeys[2] = pubkeys[1]
 
-	return respNewKey
-}
+				args = append(args, pubkeys...)
+				message := sha3.Sum256([]byte(strings.Join(args, "")))
+				_, vSignatures := common.GenerateTestValidatorSignatures(pubkeys, message[:])
 
-func validationResultChangePublicKey(t *testing.T, stub *shimtest.MockStub, resp peer.Response, ser *seriesChangePublicKey) {
-	require.Equal(t, ser.respStatus, resp.Status)
-	require.Contains(t, resp.Message, ser.errorMsg)
+				var signatures []string
+				for _, signature := range vSignatures {
+					signatures = append(signatures, string(signature))
+				}
 
-	if resp.Status != int32(shim.OK) {
-		return
+				args = append(args, signatures...)
+
+				return args
+			},
+		},
+		{
+			description: "not all members signed (wrong case)",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "uneven number of public keys and signatures provided",
+			newPubKey:   newPubKey,
+			prepare: func(pubkeys []string) []string {
+				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
+				args := []string{
+					common.FnChangePublicKey,
+					common.TestAddr,
+					common.DefaultReason,
+					reasonID,
+					newPubKey,
+					nonce,
+				}
+				pubkeys[2] = pubkeys[1]
+
+				args = append(args, pubkeys...)
+				message := sha3.Sum256([]byte(strings.Join(args, "")))
+				_, vSignatures := common.GenerateTestValidatorSignatures(pubkeys, message[:])
+
+				var signatures []string
+				for _, signature := range vSignatures {
+					signatures = append(signatures, string(signature))
+				}
+
+				args = append(args, signatures[:len(signatures)-1]...)
+
+				return args
+			},
+		},
+		{
+			description: "incorrect new key input (wrong case)",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "failed base58 decoding of key blabla",
+			newPubKey:   "blabla",
+		},
+		{
+			description: "pub key equal 43 symbols",
+			respStatus:  int32(shim.OK),
+			errorMsg:    "",
+			newPubKey:   "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
+		},
+		{
+			description: "pub key equal 44 symbols",
+			respStatus:  int32(shim.OK),
+			errorMsg:    "",
+			newPubKey:   "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
+		},
+		{
+			description: "pub key empty",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    errs.ErrEmptyNewKey,
+			newPubKey:   "",
+		},
+		{
+			description: "pub key more than 44 symbols",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "incorrect len of decoded from base58 public key 'Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV': '33'",
+			newPubKey:   "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
+		},
+		{
+			description: "pub key less than 43 symbols",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "incorrect len of decoded from base58 public key 'Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR': '31'",
+			newPubKey:   "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
+		},
+		{
+			description: "pub key wrong numeric zero",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "failed base58 decoding of key 00000000000000000000000000000000",
+			newPubKey:   "00000000000000000000000000000000",
+		},
+		{
+			description: "pub key with special symbols",
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			newPubKey:   "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+		},
+	} {
+		t.Run(testCase.description, func(t *testing.T) {
+			mockStub, cfgBytes := common.NewMockStub(t)
+
+			pKeys := make([]string, len(common.TestUsersDifferentKeyTypes))
+			for i, user := range common.TestUsersDifferentKeyTypes {
+				pKeys[i] = user.PublicKey
+			}
+			nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
+			args := []string{
+				common.FnChangePublicKey,
+				common.TestAddr,
+				common.DefaultReason,
+				reasonID,
+				testCase.newPubKey,
+				nonce,
+			}
+
+			args = append(args, pKeys...)
+			message := sha3.Sum256([]byte(strings.Join(args, "")))
+			_, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
+
+			var signatures []string
+			for _, signature := range vSignatures {
+				signatures = append(signatures, string(signature))
+			}
+
+			args = append(args, signatures...)
+
+			if testCase.prepare != nil {
+				args = testCase.prepare(pKeys)
+			}
+
+			keyPk, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+			keyAddress, err := shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{common.TestAddrHashInHex})
+			require.NoError(t, err)
+			keyNonce, err := shim.CreateCompositeKey(compositekey.NoncePrefix, []string{common.TestAddr})
+			require.NoError(t, err)
+
+			hashed := sha3.Sum256(base58.Decode(common.PubKey))
+			signAddr, err := proto.Marshal(&pb.SignedAddress{
+				Address: &pb.Address{
+					UserID:       "testUserID",
+					Address:      hashed[:],
+					IsIndustrial: true,
+				},
+			})
+			require.NoError(t, err)
+
+			state := make(map[string][]byte)
+			state["__config"] = cfgBytes
+			state[keyPk] = []byte(common.TestAddrHashInHex)
+			state[keyAddress] = signAddr
+
+			mockStub.GetStateCalls(func(s string) ([]byte, error) {
+				v, ok := state[s]
+				if ok {
+					return v, nil
+				}
+
+				return nil, nil
+			})
+
+			ccAcl := cc.New()
+			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKey, args[1:])
+			resp := ccAcl.Invoke(mockStub)
+
+			require.Equal(t, testCase.respStatus, resp.Status)
+			require.Contains(t, resp.Message, testCase.errorMsg)
+
+			if resp.Status != int32(shim.OK) {
+				require.LessOrEqual(t, mockStub.PutStateCallCount(), 1)
+				return
+			}
+
+			require.Equal(t, 2, mockStub.DelStateCallCount())
+			key := mockStub.DelStateArgsForCall(0)
+			require.Equal(t, keyAddress, key)
+			key = mockStub.DelStateArgsForCall(1)
+			require.Equal(t, keyPk, key)
+
+			require.Equal(t, 3, mockStub.PutStateCallCount())
+			key, val := mockStub.PutStateArgsForCall(0)
+			require.Equal(t, keyNonce, key)
+			require.Equal(t, nonce, new(big.Int).SetBytes(val).String())
+
+			key, val = mockStub.PutStateArgsForCall(2)
+			require.Equal(t, keyPk, key)
+			keyAddress, err = shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{string(val)})
+			require.NoError(t, err)
+
+			key, val = mockStub.PutStateArgsForCall(1)
+			require.Equal(t, keyAddress, key)
+			signAddrGet := &pb.SignedAddress{}
+			err = proto.Unmarshal(val, signAddrGet)
+			require.NoError(t, err)
+			require.True(t, proto.Equal(&pb.SignedAddress{
+				Address: &pb.Address{
+					UserID:       "testUserID",
+					Address:      hashed[:],
+					IsIndustrial: true,
+				},
+				SignedTx: []string{common.FnChangePublicKey,
+					common.TestAddr,
+					common.DefaultReason,
+					reasonID,
+					testCase.newPubKey,
+					nonce,
+					pKeys[0], pKeys[1], pKeys[2],
+					signatures[0], signatures[1], signatures[2],
+				},
+				Reason:   common.DefaultReason,
+				ReasonId: int32(1),
+			}, signAddrGet))
+		})
 	}
-
-	// check pb.Address
-	result := stub.MockInvoke("0", [][]byte{[]byte(common.FnCheckKeys), []byte(ser.newPubKey)})
-	require.Equal(t, int32(shim.OK), result.Status)
-
-	response := &pb.AclResponse{}
-	require.NoError(t, proto.Unmarshal(result.Payload, response))
-	require.NotNil(t, response.Address)
-	require.Equal(t, common.TestAddr, response.Address.Address.AddrString(),
-		"failed to find address %s by new key %s", common.TestAddr, newPubKey)
-	require.Equal(t, testUserID, response.Address.Address.UserID, "invalid userID")
-	require.Equal(t, true, response.Address.Address.IsIndustrial, "invalid isIndustrial field")
-	require.Equal(t, false, response.Address.Address.IsMultisig, "invalid IsMultisig field")
-	require.Equal(t, common.DefaultReason, response.Address.Reason)
-	require.Equal(t, int32(1), response.Address.ReasonId)
-
-	// check signature
-	srcArgs := response.Address.SignedTx[0:6]
-	pksAndSignatures := response.Address.SignedTx[6:]
-	pksOfValidators := pksAndSignatures[:len(pksAndSignatures)/2]
-	decodedMessage := sha3.Sum256([]byte(strings.Join(append(srcArgs, pksOfValidators...), "")))
-	signaturesOfValidators := pksAndSignatures[len(pksAndSignatures)/2:]
-
-	for i, vpk := range pksOfValidators {
-		require.True(t, helpers.IsValidator(common.TestInitConfig.Validators, vpk),
-			"pk %s does not belong to any validator", vpk)
-		decodedSignature, err := hex.DecodeString(signaturesOfValidators[i])
-		require.NoError(t, err)
-		require.True(t, common.VerifySignature(base58.Decode(vpk), decodedMessage[:], decodedSignature),
-			"the signature %s does not match the public key %s", signaturesOfValidators[i], vpk)
-	}
-}
-
-func TestChangePublicKeyNegatives(t *testing.T) {
-	// prepare (create pk -> addr and addr -> pk mappings in ACL)
-	stub := common.StubCreateAndInit(t)
-
-	resp := stub.MockInvoke(
-		"0",
-		[][]byte{[]byte(common.FnAddUser), []byte(common.PubKey), []byte(kycHash), []byte(testUserID), []byte(stateTrue)},
-	)
-	require.Equal(t, int32(shim.OK), resp.Status)
-
-	// change pk
-	pKeys := make([]string, 0, len(common.MockUsersKeys))
-	for pubKey := range common.MockUsersKeys {
-		pKeys = append(pKeys, pubKey)
-	}
-
-	duplicateKeysString := make([]string, 0, len(pKeys))
-	for i, pubKey := range pKeys {
-		if i == 2 {
-			duplicateKeysString = append(duplicateKeysString, pKeys[i-1])
-		} else {
-			duplicateKeysString = append(duplicateKeysString, pubKey)
-		}
-	}
-
-	t.Run("fraud: duplicate signature of validator (wrong case)", func(t *testing.T) {
-		nonce := strconv.Itoa(int((time.Now().Unix() + 1) * 1000))
-		reasonID := "1"
-		message := sha3.Sum256([]byte(
-			strings.Join(
-				append(
-					[]string{common.FnChangePublicKey, common.TestAddr, common.DefaultReason, reasonID, newPubKey, nonce},
-					duplicateKeysString...,
-				),
-				""),
-		))
-		duplicatePubKeysBytes, duplicateSignatures := common.GenerateTestValidatorSignatures(duplicateKeysString, message[:])
-
-		invokeArgs := append(
-			append([][]byte{
-				[]byte(common.FnChangePublicKey),
-				[]byte(common.TestAddr),
-				[]byte(common.DefaultReason),
-				[]byte(reasonID),
-				[]byte(newPubKey),
-				[]byte(nonce),
-			}, duplicatePubKeysBytes...),
-			duplicateSignatures...)
-
-		respNewKey := stub.MockInvoke("0", invokeArgs)
-		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		require.Contains(t, respNewKey.Message, "duplicate validators signatures are not allowed")
-	})
-
-	t.Run("NEGATIVE. Number of pub keys does not match number of signatures", func(t *testing.T) {
-		nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
-		reasonID := "1"
-		message := sha3.Sum256([]byte(strings.Join(append(
-			[]string{common.FnChangePublicKey, common.TestAddr, common.DefaultReason, reasonID, newPubKey, nonce}, pKeys...), "")))
-		vPKeys, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
-
-		invokeArgs := append(
-			append([][]byte{
-				[]byte(common.FnChangePublicKey),
-				[]byte(common.TestAddr),
-				[]byte(common.DefaultReason),
-				[]byte(reasonID),
-				[]byte(newPubKey),
-				[]byte(nonce),
-			}, vPKeys...),
-			vSignatures[:len(vSignatures)-1]...,
-		)
-		respNewKey := stub.MockInvoke("0", invokeArgs)
-		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		require.Contains(t, respNewKey.Message, "uneven number of public keys and signatures provided")
-	})
-
-	t.Run("NEGATIVE. Incorrect new key input", func(t *testing.T) {
-		nonce := strconv.Itoa(int(time.Now().UnixNano() * 1000))
-		reason := "because..."
-		reasonID := "1"
-		message := sha3.Sum256([]byte(strings.Join(append([]string{common.FnChangePublicKey, common.TestAddr, reason, reasonID, "blabla", nonce}, pKeys...), "")))
-		vPKeys, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
-
-		invokeArgs := append(
-			append([][]byte{
-				[]byte(common.FnChangePublicKey),
-				[]byte(common.TestAddr),
-				[]byte(reason),
-				[]byte(reasonID),
-				[]byte("blabla"),
-				[]byte(nonce),
-			}, vPKeys...),
-			vSignatures...,
-		)
-		respNewKey := stub.MockInvoke("0", invokeArgs)
-		require.Equal(t, int32(shim.ERROR), respNewKey.Status)
-		require.Contains(t, respNewKey.Message, "failed base58 decoding of key blabla")
-	})
 }
