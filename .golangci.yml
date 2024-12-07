@@ -65,6 +65,8 @@ linters:
     - sloglint
     - protogetter
     - fatcontext
+    - recvcheck
+    - iface
   #    - spancheck
   #    - intrange # (Go 1.22+)
   #    - copyloopvar # (Go 1.22+)
@@ -88,8 +90,6 @@ linters:
     - zerologlint
     - dupl
     - funlen
-    - gomnd
-    - execinquery
 linters-settings:
   gosec:
     excludes:

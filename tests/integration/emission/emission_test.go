@@ -3,6 +3,7 @@ package emission
 import (
 	"slices"
 
+	"github.com/anoideaopen/foundation/mocks"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -33,8 +34,8 @@ var _ = Describe("ACL emission tests", func() {
 	})
 
 	var (
-		channels = []string{cmn.ChannelAcl, cmn.ChannelFiat}
-		user     *client.UserFoundation
+		channels = []string{cmn.ChannelACL, cmn.ChannelFiat}
+		user     *mocks.UserFoundation
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -46,7 +47,7 @@ var _ = Describe("ACL emission tests", func() {
 	})
 	BeforeEach(func() {
 		ts.InitNetwork(channels, integration.SmartBFTBasePort)
-		ts.DeployChaincodesByName([]string{cmn.ChannelAcl})
+		ts.DeployChaincodesByName([]string{cmn.ChannelACL})
 	})
 	BeforeEach(func() {
 		By("start robot")
@@ -63,7 +64,7 @@ var _ = Describe("ACL emission tests", func() {
 
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_secp256k1)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_secp256k1)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -97,7 +98,7 @@ var _ = Describe("ACL emission tests", func() {
 		ts.AddAdminToACL()
 
 		By("creating multisigned user")
-		multisigUser, err := client.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
+		multisigUser, err := mocks.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("adding users to ACL")
@@ -116,7 +117,7 @@ var _ = Describe("ACL emission tests", func() {
 		)
 
 		By("add user to acl")
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -143,7 +144,7 @@ var _ = Describe("ACL emission tests", func() {
 		ts.AddAdminToACL()
 
 		By("creating multisigned user")
-		multisigUser, err := client.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
+		multisigUser, err := mocks.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("adding users to ACL")
@@ -162,7 +163,7 @@ var _ = Describe("ACL emission tests", func() {
 		)
 
 		By("creating new user for multisig")
-		newUser, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		newUser, err := mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("adding new user to ACL")
@@ -183,7 +184,7 @@ var _ = Describe("ACL emission tests", func() {
 		)
 
 		By("add user to acl")
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)

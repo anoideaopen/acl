@@ -2,6 +2,7 @@ package account
 
 import (
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
+	"github.com/anoideaopen/foundation/mocks"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -29,8 +30,8 @@ var _ = Describe("ACL basic tests", func() {
 	})
 
 	var (
-		channels = []string{cmn.ChannelAcl}
-		user     *client.UserFoundation
+		channels = []string{cmn.ChannelACL}
+		user     *mocks.UserFoundation
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -48,7 +49,7 @@ var _ = Describe("ACL basic tests", func() {
 	It("Get Account Info test", func() {
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -68,14 +69,14 @@ var _ = Describe("ACL basic tests", func() {
 		)
 
 		By("getting account info")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnGetAccountInfo, user.AddressBase58Check).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnGetAccountInfo, user.AddressBase58Check).
 			CheckResponseWithFunc(aclcmn.CheckAccountInfo(etalonAccountInfo))
 	})
 
 	It("Set KYC test", func() {
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -90,14 +91,14 @@ var _ = Describe("ACL basic tests", func() {
 		ts.SetKYC(user, etalonAccountInfo.GetKycHash(), ts.Admin())
 
 		By("getting account info with checkKeys function")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(etalonAccountInfo, user))
 	})
 
 	It("Set Account Info test", func() {
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -117,11 +118,11 @@ var _ = Describe("ACL basic tests", func() {
 		)
 
 		By("getting account info")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnGetAccountInfo, user.AddressBase58Check).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnGetAccountInfo, user.AddressBase58Check).
 			CheckResponseWithFunc(aclcmn.CheckAccountInfo(etalonAccountInfo))
 
 		By("getting account info with checkKeys function")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(etalonAccountInfo, user))
 
 		etalonAccountInfo.GrayListed = false
@@ -135,11 +136,11 @@ var _ = Describe("ACL basic tests", func() {
 		)
 
 		By("getting account info")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnGetAccountInfo, user.AddressBase58Check).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnGetAccountInfo, user.AddressBase58Check).
 			CheckResponseWithFunc(aclcmn.CheckAccountInfo(etalonAccountInfo))
 
 		By("getting account info with checkKeys function")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(etalonAccountInfo, user))
 
 		etalonAccountInfo.BlackListed = false
@@ -153,11 +154,11 @@ var _ = Describe("ACL basic tests", func() {
 		)
 
 		By("getting account info")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnGetAccountInfo, user.AddressBase58Check).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnGetAccountInfo, user.AddressBase58Check).
 			CheckResponseWithFunc(aclcmn.CheckAccountInfo(etalonAccountInfo))
 
 		By("getting account info with checkKeys function")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(etalonAccountInfo, user))
 
 		etalonAccountInfo.GrayListed = true
@@ -171,11 +172,11 @@ var _ = Describe("ACL basic tests", func() {
 		)
 
 		By("getting account info")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnGetAccountInfo, user.AddressBase58Check).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnGetAccountInfo, user.AddressBase58Check).
 			CheckResponseWithFunc(aclcmn.CheckAccountInfo(etalonAccountInfo))
 
 		By("getting account info with checkKeys function")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, user.PublicKeyBase58).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, user.PublicKeyBase58).
 			CheckResponseWithFunc(aclcmn.CheckKeys(etalonAccountInfo, user))
 	})
 })

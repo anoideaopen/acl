@@ -2,6 +2,7 @@ package rights
 
 import (
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
+	"github.com/anoideaopen/foundation/mocks"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -30,8 +31,8 @@ var _ = Describe("ACL integration rights tests", func() {
 	})
 
 	var (
-		channels = []string{cmn.ChannelAcl}
-		user     *client.UserFoundation
+		channels = []string{cmn.ChannelACL}
+		user     *mocks.UserFoundation
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -48,15 +49,15 @@ var _ = Describe("ACL integration rights tests", func() {
 
 	It("Add rights test", func() {
 		var (
-			channelName   = cmn.ChannelAcl
-			chaincodeName = cmn.ChannelAcl
+			channelName   = cmn.ChannelACL
+			chaincodeName = cmn.ChannelACL
 			roleName      = "roleName"
 			operationName = "operationName"
 		)
 
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -80,13 +81,13 @@ var _ = Describe("ACL integration rights tests", func() {
 		ts.AddRights(channelName, chaincodeName, roleName, operationName, user)
 
 		By("checking getAccountAllRights")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnGetAccountAllRights, user.AddressBase58Check).
+		ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnGetAccountAllRights, user.AddressBase58Check).
 			CheckResponseWithFunc(aclcmn.CheckGetAccountAllRights(etalonRights, user))
 
 		By("checking getAccountOperationRight")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountOperationRight,
 			channelName,
 			chaincodeName,
@@ -97,8 +98,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getOperationAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetOperationAllRights,
 			channelName,
 			chaincodeName,
@@ -113,8 +114,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountOperationRight")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountOperationRight,
 			channelName,
 			chaincodeName,
@@ -125,8 +126,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getOperationAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetOperationAllRights,
 			channelName,
 			chaincodeName,
@@ -136,8 +137,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountAllRights,
 			user.AddressBase58Check,
 		).CheckResponseWithFunc(aclcmn.CheckGetAccountAllRights(etalonRights, user))
@@ -145,15 +146,15 @@ var _ = Describe("ACL integration rights tests", func() {
 
 	It("Get Account All Rights test", func() {
 		var (
-			channelName   = cmn.ChannelAcl
-			chaincodeName = cmn.ChannelAcl
+			channelName   = cmn.ChannelACL
+			chaincodeName = cmn.ChannelACL
 			roleName      = "roleName"
 			operationName = "operationName"
 		)
 
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -173,8 +174,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking result")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountAllRights,
 			user.AddressBase58Check,
 		).CheckResponseWithFunc(aclcmn.CheckGetAccountAllRights(etalonRights, user))
@@ -184,8 +185,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking result")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountAllRights,
 			user.AddressBase58Check,
 		).CheckResponseWithFunc(aclcmn.CheckGetAccountAllRights(nil, user))
@@ -193,15 +194,15 @@ var _ = Describe("ACL integration rights tests", func() {
 
 	It("Get Account Operation Right test", func() {
 		var (
-			channelName   = cmn.ChannelAcl
-			chaincodeName = cmn.ChannelAcl
+			channelName   = cmn.ChannelACL
+			chaincodeName = cmn.ChannelACL
 			roleName      = "roleName"
 			operationName = "operationName"
 		)
 
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -211,8 +212,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountOperationRight")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountOperationRight,
 			channelName,
 			chaincodeName,
@@ -226,8 +227,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountOperationRight")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountOperationRight,
 			channelName,
 			chaincodeName,
@@ -239,15 +240,15 @@ var _ = Describe("ACL integration rights tests", func() {
 
 	It("Get Operation All Rights test", func() {
 		var (
-			channelName   = cmn.ChannelAcl
-			chaincodeName = cmn.ChannelAcl
+			channelName   = cmn.ChannelACL
+			chaincodeName = cmn.ChannelACL
 			roleName      = "roleName"
 			operationName = "operationName"
 		)
 
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -272,8 +273,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getOperationAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetOperationAllRights,
 			channelName,
 			chaincodeName,
@@ -287,8 +288,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getOperationAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetOperationAllRights,
 			channelName,
 			chaincodeName,
@@ -299,15 +300,15 @@ var _ = Describe("ACL integration rights tests", func() {
 
 	It("Remove rights test", func() {
 		var (
-			channelName   = cmn.ChannelAcl
-			chaincodeName = cmn.ChannelAcl
+			channelName   = cmn.ChannelACL
+			chaincodeName = cmn.ChannelACL
 			roleName      = "roleName"
 			operationName = "operationName"
 		)
 
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -327,16 +328,16 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountAllRights,
 			user.AddressBase58Check,
 		).CheckResponseWithFunc(aclcmn.CheckGetAccountAllRights(etalonRights, user))
 
 		By("checking getAccountOperationRight")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountOperationRight,
 			channelName,
 			chaincodeName,
@@ -350,8 +351,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountOperationRight")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountOperationRight,
 			channelName,
 			chaincodeName,
@@ -362,8 +363,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountAllRights,
 			user.AddressBase58Check,
 		).CheckResponseWithFunc(aclcmn.CheckGetAccountAllRights(nil, user))
@@ -373,8 +374,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountOperationRight")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountOperationRight,
 			channelName,
 			chaincodeName,
@@ -385,8 +386,8 @@ var _ = Describe("ACL integration rights tests", func() {
 
 		By("checking getAccountAllRights")
 		ts.Query(
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
+			cmn.ChannelACL,
+			cmn.ChannelACL,
 			FnGetAccountAllRights,
 			user.AddressBase58Check,
 		).CheckResponseWithFunc(aclcmn.CheckGetAccountAllRights(nil, user))
