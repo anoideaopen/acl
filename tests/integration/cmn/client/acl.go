@@ -2,6 +2,9 @@ package client
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/anoideaopen/foundation/mocks"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	fclient "github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -11,28 +14,27 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/protobuf/encoding/protojson"
-	"time"
 )
 
-type AclTestSuite struct {
+type ACLTestSuite struct {
 	*fclient.FoundationTestSuite
 }
 
-func NewTestSuite(components *nwo.Components) *AclTestSuite {
-	return &AclTestSuite{FoundationTestSuite: fclient.NewTestSuite(components)}
+func NewTestSuite(components *nwo.Components) *ACLTestSuite {
+	return &ACLTestSuite{FoundationTestSuite: fclient.NewTestSuite(components)}
 }
 
-func (ts *AclTestSuite) CheckAddressForNominee(
+func (ts *ACLTestSuite) CheckAddressForNominee(
 	channelName string,
 	chaincodeName string,
-	nominee *fclient.UserFoundation,
-	principal *fclient.UserFoundation,
+	nominee *mocks.UserFoundation,
+	principal *mocks.UserFoundation,
 	haveRight bool,
 ) {
 	Eventually(func() string {
 		sess, err := ts.Network.PeerUserSession(ts.Peer, ts.MainUserName, commands.ChaincodeQuery{
-			ChannelID: cmn.ChannelAcl,
-			Name:      cmn.ChannelAcl,
+			ChannelID: cmn.ChannelACL,
+			Name:      cmn.ChannelACL,
 			Ctor:      cmn.CtorFromSlice([]string{"getAddressRightForNominee", channelName, chaincodeName, nominee.AddressBase58Check, principal.AddressBase58Check}),
 		})
 		Eventually(sess, ts.Network.EventuallyTimeout).Should(gexec.Exit())
@@ -47,22 +49,22 @@ func (ts *AclTestSuite) CheckAddressForNominee(
 			return fmt.Sprintf("failed to unmarshal response: %v", err)
 		}
 
-		Expect(resp.HaveRight).To(BeEquivalentTo(haveRight))
+		Expect(resp.GetHaveRight()).To(BeEquivalentTo(haveRight))
 
 		return ""
 	}, ts.Network.EventuallyTimeout, time.Second).Should(BeEmpty())
 }
 
-func (ts *AclTestSuite) AddAddressForNominee(
+func (ts *ACLTestSuite) AddAddressForNominee(
 	channelName string,
 	chaincodeName string,
-	nominee *fclient.UserFoundation,
-	principal *fclient.UserFoundation,
+	nominee *mocks.UserFoundation,
+	principal *mocks.UserFoundation,
 ) {
 	sess, err := ts.Network.PeerUserSession(ts.Peer, ts.MainUserName, commands.ChaincodeInvoke{
-		ChannelID: cmn.ChannelAcl,
+		ChannelID: cmn.ChannelACL,
 		Orderer:   ts.Network.OrdererAddress(ts.Orderer, nwo.ListenPort),
-		Name:      cmn.ChannelAcl,
+		Name:      cmn.ChannelACL,
 		Ctor: cmn.CtorFromSlice([]string{
 			"addAddressForNominee",
 			channelName,
@@ -83,16 +85,16 @@ func (ts *AclTestSuite) AddAddressForNominee(
 	ts.CheckAddressForNominee(channelName, chaincodeName, nominee, principal, true)
 }
 
-func (ts *AclTestSuite) RemoveAddressFromNominee(
+func (ts *ACLTestSuite) RemoveAddressFromNominee(
 	channelName string,
 	chaincodeName string,
-	nominee *fclient.UserFoundation,
-	principal *fclient.UserFoundation,
+	nominee *mocks.UserFoundation,
+	principal *mocks.UserFoundation,
 ) {
 	sess, err := ts.Network.PeerUserSession(ts.Peer, ts.MainUserName, commands.ChaincodeInvoke{
-		ChannelID: cmn.ChannelAcl,
+		ChannelID: cmn.ChannelACL,
 		Orderer:   ts.Network.OrdererAddress(ts.Orderer, nwo.ListenPort),
-		Name:      cmn.ChannelAcl,
+		Name:      cmn.ChannelACL,
 		Ctor: cmn.CtorFromSlice([]string{
 			"removeAddressFromNominee",
 			channelName,

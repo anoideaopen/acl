@@ -24,8 +24,8 @@ func DeployACLWithError(
 	cfgBytesACL, err := protojson.Marshal(aclCfg)
 	Expect(err).NotTo(HaveOccurred())
 	ctorACL := cmn.CtorFromSlice([]string{string(cfgBytesACL)})
-	DeployChaincodeFoundationWithError(network, cmn.ChannelAcl, components,
-		cmn.AclModulePath(), ctorACL, testDir, errorMsg)
+	DeployChaincodeFoundationWithError(network, cmn.ChannelACL, components,
+		cmn.ACLModulePath(), ctorACL, testDir, errorMsg)
 }
 
 func DeployChaincodeFoundationWithError(

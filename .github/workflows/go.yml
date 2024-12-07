@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VER: 1.23.1
+  GO_VER: 1.23.4
   GO_VER_OLD: 1.20.3
-  GINKGO_VER: 2.19.1
+  GINKGO_VER: 2.22.0
 
 jobs:
   check-cyrillic-comments:
@@ -57,7 +57,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.60
+          version: v1.62
           args: --out-format=colored-line-number
           skip-cache: true
           problem-matchers: true
@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version:
-          - '1.23.1'
+          - '1.23.4'
           - '1.20.3'
     runs-on: 'ubuntu-20.04'
     steps:
