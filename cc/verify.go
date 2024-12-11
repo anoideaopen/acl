@@ -2,6 +2,7 @@ package cc
 
 import (
 	"crypto/ed25519"
+	"fmt"
 
 	aclproto "github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/keys/eth"
@@ -27,6 +28,9 @@ func verifySignature(
 	signature []byte,
 ) (bool, error) {
 	switch keyType {
+	case pb.KeyType_ed25519.String():
+		messageDigest := sha3.Sum256(message)
+		return len(publicKey) == ed25519.PublicKeySize && ed25519.Verify(publicKey, messageDigest[:], signature), nil
 	case pb.KeyType_secp256k1.String():
 		messageDigest := sha3.Sum256(message)
 		hash := eth.Hash(messageDigest[:])
@@ -35,7 +39,6 @@ func verifySignature(
 		digest := gost.Sum256(message)
 		return gost.Verify(publicKey, digest[:], signature)
 	default:
-		messageDigest := sha3.Sum256(message)
-		return len(publicKey) == ed25519.PublicKeySize && ed25519.Verify(publicKey, messageDigest[:], signature), nil
+		return false, fmt.Errorf("unknown public key type: %s", keyType)
 	}
 }

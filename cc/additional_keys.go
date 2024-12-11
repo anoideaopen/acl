@@ -117,7 +117,7 @@ func (c *ACL) AddAdditionalKey(stub shim.ChaincodeStubInterface, args []string) 
 
 	// Reconciling signatures with the hash of the message.
 	if err := c.verifyValidatorSignatures(
-		messageToSign[:],
+		messageToSign,
 		validatorKeys,
 		validatorHexSignatures,
 	); err != nil {
