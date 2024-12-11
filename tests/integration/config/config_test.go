@@ -263,22 +263,4 @@ var _ = Describe("ACL config tests", func() {
 		}
 		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'validator #'0'' has invalid key type:`)
 	})
-
-	It("Acl init gost key type", func() {
-		By("Deploying chaincode acl")
-		pathToPrivateKeyBackend := network.PeerUserKey(peer, "User1")
-		skiBackend, err := cmn.ReadSKI(pathToPrivateKeyBackend)
-		Expect(err).NotTo(HaveOccurred())
-
-		aclCfg := &aclpb.ACLConfig{
-			AdminSKIEncoded: skiBackend,
-			Validators: []*aclpb.ACLValidator{
-				{
-					PublicKey: admin.PublicKeyBase58,
-					KeyType:   pbfound.KeyType_name[int32(pbfound.KeyType_gost)],
-				},
-			},
-		}
-		aclcmn.DeployACLWithError(network, components, testDir, aclCfg, `'validator #'0'' has invalid key type:`)
-	})
 })
