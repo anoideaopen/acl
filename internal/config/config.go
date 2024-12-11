@@ -9,7 +9,6 @@ import (
 
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
-	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -92,8 +91,7 @@ func SetConfig(stub shim.ChaincodeStubInterface) error {
 
 		validatorKeys[validatorKey] = validatorKey
 
-		// gost key can't be used as a validator's key
-		if !helpers.ValidatePublicKeyType(validator.GetKeyType(), pb.KeyType_gost.String()) {
+		if !helpers.ValidatePublicKeyType(validator.GetKeyType()) {
 			return fmt.Errorf(ErrValidatorInvalidKeyType, i, validator.GetPublicKey())
 		}
 	}

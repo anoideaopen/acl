@@ -70,6 +70,6 @@ func (key *PublicKey) validateLength() error {
 func (key *PublicKey) verifySignature(
 	digest []byte,
 	signature []byte,
-) bool {
+) (bool, error) {
 	return verifySignature(key.Bytes, key.Type, digest, signature)
 }
