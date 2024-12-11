@@ -4,13 +4,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"time"
 
 	"github.com/anoideaopen/foundation/mocks"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	fclient "github.com/anoideaopen/foundation/test/integration/cmn/client"
+	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric/integration/nwo"
 	"github.com/hyperledger/fabric/integration/nwo/commands"
 	. "github.com/onsi/gomega"
@@ -143,7 +143,7 @@ func (ts *AclTestSuite) AddAdditionalKey(
 	pKeys, sMsgsByte, err := validatorMultisignedUser.Sign(ctorArgs...)
 	Expect(err).NotTo(HaveOccurred())
 
-	var sMsgsStr []string
+	sMsgsStr := make([]string, 0, len(sMsgsByte))
 	for _, sMsgByte := range sMsgsByte {
 		sMsgsStr = append(sMsgsStr, hex.EncodeToString(sMsgByte))
 	}
@@ -184,7 +184,7 @@ func (ts *AclTestSuite) RemoveAdditionalKey(
 	pKeys, sMsgsByte, err := validatorMultisignedUser.Sign(ctorArgs...)
 	Expect(err).NotTo(HaveOccurred())
 
-	var sMsgsStr []string
+	sMsgsStr := make([]string, 0, len(sMsgsByte))
 	for _, sMsgByte := range sMsgsByte {
 		sMsgsStr = append(sMsgsStr, hex.EncodeToString(sMsgByte))
 	}
