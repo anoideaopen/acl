@@ -14,7 +14,6 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/sha3"
 )
 
 /*
@@ -115,11 +114,10 @@ func (c *ACL) AddAdditionalKey(stub shim.ChaincodeStubInterface, args []string) 
 
 	// Creating a hash of the message.
 	messageToSign := []byte(strings.Join(messageElements, ""))
-	messageDigest := sha3.Sum256(messageToSign)
 
 	// Reconciling signatures with the hash of the message.
 	if err := c.verifyValidatorSignatures(
-		messageDigest[:],
+		messageToSign[:],
 		validatorKeys,
 		validatorHexSignatures,
 	); err != nil {
@@ -230,11 +228,10 @@ func (c *ACL) RemoveAdditionalKey(stub shim.ChaincodeStubInterface, args []strin
 
 	// Creating a hash of the message.
 	messageToSign := []byte(strings.Join(messageElements, ""))
-	messageDigest := sha3.Sum256(messageToSign)
 
 	// Reconciling signatures with the hash of the message.
 	if err := c.verifyValidatorSignatures(
-		messageDigest[:],
+		messageToSign,
 		validatorKeys,
 		validatorHexSignatures,
 	); err != nil {

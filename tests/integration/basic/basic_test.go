@@ -1,13 +1,11 @@
 package basic
 
 import (
-	"slices"
-
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
 	aclclient "github.com/anoideaopen/acl/tests/integration/cmn/client"
+	"github.com/anoideaopen/foundation/mocks"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
-	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/hyperledger/fabric/integration"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -38,7 +36,7 @@ var _ = Describe("ACL basic tests", func() {
 
 	var (
 		channels = []string{cmn.ChannelAcl}
-		user     *client.UserFoundation
+		user     *mocks.UserFoundation
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -56,7 +54,7 @@ var _ = Describe("ACL basic tests", func() {
 	It("Add user test & check keys test", func() {
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -68,7 +66,7 @@ var _ = Describe("ACL basic tests", func() {
 
 	It("Add multisigned user test", func() {
 		By("creating multisgined user")
-		user1, err := client.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
+		user1, err := mocks.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("adding users to ACL")
@@ -82,116 +80,13 @@ var _ = Describe("ACL basic tests", func() {
 		// ToDo add check multisigned user
 	})
 
-	It("Change public key with hex encoded key", func() {
-		By("add admin to acl")
-		ts.AddAdminToACL()
-
-		By("creating users")
-		oldUser, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
-		Expect(err).NotTo(HaveOccurred())
-		newUser, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("adding old user to ACL")
-		ts.AddUser(oldUser)
-
-		By("adding new user to ACL")
-		ts.AddUser(newUser)
-
-		By("changing user public key")
-		ts.ChangePublicKey(
-			oldUser,
-			newUser.PublicKeyBase58,
-			"0",
-			"0",
-			ts.Admin(),
-		)
-
-		By("checking result")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
-			CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
-	})
-
-	It("Change public key with base58 signature test", func() {
-		By("add admin to acl")
-		ts.AddAdminToACL()
-
-		By("creating users")
-		oldUser, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
-		Expect(err).NotTo(HaveOccurred())
-		newUser, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("adding old user to ACL")
-		ts.AddUser(oldUser)
-
-		By("adding new user to ACL")
-		ts.AddUser(newUser)
-
-		By("changing user public key")
-		ts.ChangePublicKeyBase58signed(
-			oldUser,
-			"0",
-			cmn.ChannelAcl,
-			cmn.ChannelAcl,
-			newUser.PublicKeyBase58,
-			"reason",
-			"0",
-			ts.Admin(),
-		)
-
-		By("checking result")
-		ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
-			CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
-	})
-
-	It("Change multisigned user public key", func() {
-		By("add admin to acl")
-		ts.AddAdminToACL()
-
-		By("creating multisigned user")
-		multisignedUser, err := client.NewUserFoundationMultisigned(pbfound.KeyType_ed25519, usersPolicy)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("adding users to ACL")
-		for _, user := range multisignedUser.Users {
-			ts.AddUser(user)
-		}
-
-		By("adding multisigned user")
-		ts.AddUserMultisigned(multisignedUser)
-
-		By("creating new user for multisigned")
-		newUser, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("adding new user to ACL")
-		ts.AddUser(newUser)
-
-		By("replacing old user to new in multisigned Users collection")
-		oldUser := multisignedUser.Users[0]
-		multisignedUser.Users = slices.Replace(multisignedUser.Users, 0, 1, newUser)
-
-		By("changing multisigned user public key")
-		ts.ChangeMultisigPublicKey(
-			multisignedUser,
-			oldUser.PublicKeyBase58,
-			newUser.PublicKeyBase58,
-			"reason",
-			"0",
-			ts.Admin(),
-		)
-
-		// ToDo add check for getting the old address providing the new key
-	})
-
 	It("Check address test", func() {
 		By("add admin to acl")
 		ts.AddAdminToACL()
 
 		By("creating user")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("adding old user to ACL")
@@ -211,11 +106,11 @@ var _ = Describe("ACL basic tests", func() {
 
 	It("Get Addresses test", func() {
 		By("adding users to acl")
-		user1, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user1, err := mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
-		user2, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user2, err := mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
-		user3, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user3, err := mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user1)
@@ -231,9 +126,9 @@ var _ = Describe("ACL basic tests", func() {
 		By("adding users to acl")
 		ts.AddAdminToACL()
 
-		nominee, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		nominee, err := mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
-		principal, err := client.NewUserFoundation(pbfound.KeyType_ed25519)
+		principal, err := mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)

@@ -13,7 +13,6 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"golang.org/x/crypto/sha3"
 )
 
 // AddMultisig creates multi-signature address which operates when N of M signatures is present
@@ -172,8 +171,9 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 
 	newKeysString := strings.Join(newKeys, "/")
 	message := append([]string{"changeMultisigPublicKey", multisigAddr, oldKey, newKeysString, reason, args[4], nonce}, pks...)
-	hashedMessage := sha3.Sum256([]byte(strings.Join(message, "")))
-	if err = c.verifyValidatorSignatures(hashedMessage[:], pks, signatures); err != nil {
+	messageToSign := []byte(strings.Join(message, ""))
+	//hashedMessage := sha3.Sum256([]byte(strings.Join(message, "")))
+	if err = c.verifyValidatorSignatures(messageToSign, pks, signatures); err != nil {
 		return fmt.Errorf("failed verifying signatures: %w", err)
 	}
 

@@ -295,7 +295,8 @@ func (c *ACL) Setkyc(stub shim.ChaincodeStubInterface, args []string) error {
 		validatorsCount = lenPksAndSignatures / 2
 		pks             = pksAndSignatures[:validatorsCount]
 		signatures      = pksAndSignatures[validatorsCount:]
-		message         = sha3.Sum256([]byte(strings.Join(append([]string{"setkyc", address, newKyc, nonce}, pks...), "")))
+		//message         = sha3.Sum256([]byte(strings.Join(append([]string{"setkyc", address, newKyc, nonce}, pks...), "")))
+		message = []byte(strings.Join(append([]string{"setkyc", address, newKyc, nonce}, pks...), ""))
 	)
 
 	if err := checkNonce(stub, address, nonce); err != nil {
@@ -489,7 +490,8 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 	)
 
 	const fn = "changePublicKeyWithBase58Signature"
-	message := sha3.Sum256([]byte(fn + strings.Join(args[:8+validatorsCount], "")))
+	//message := sha3.Sum256([]byte(fn + strings.Join(args[:8+validatorsCount], "")))
+	message := []byte(fn + strings.Join(args[:8+validatorsCount], ""))
 
 	if err = checkNonce(stub, forAddrOrig, nonce); err != nil {
 		return fmt.Errorf("failed checking nonce: %w", err)
@@ -646,7 +648,8 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) e
 	)
 
 	const fn = "changePublicKey"
-	message := sha3.Sum256([]byte(strings.Join(append([]string{fn, forAddrOrig, reason, args[2], args[3], nonce}, pks...), "")))
+	//message := sha3.Sum256([]byte(strings.Join(append([]string{fn, forAddrOrig, reason, args[2], args[3], nonce}, pks...), "")))
+	message := []byte(strings.Join(append([]string{fn, forAddrOrig, reason, args[2], args[3], nonce}, pks...), ""))
 
 	if err = checkNonce(stub, forAddrOrig, nonce); err != nil {
 		return fmt.Errorf("failed checking nonce: %w", err)
@@ -775,7 +778,11 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 		// check signature
 		decodedSignature := base58.Decode(signatures[i])
 
-		if !verifyValidatorSignature(validator, message, decodedSignature) {
+		ok, err := verifyValidatorSignature(validator, message, decodedSignature)
+		if err != nil {
+			return fmt.Errorf("failed verifying signature: %w", err)
+		}
+		if !ok {
 			return fmt.Errorf(
 				"the signature %s does not match the public key %s",
 				signatures[i],
@@ -786,7 +793,7 @@ func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, sign
 	return nil
 }
 
-func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorSignatures []string) error {
+func (c *ACL) verifyValidatorSignatures(message []byte, validatorKeys, validatorSignatures []string) error {
 	if len(validatorSignatures) < len(c.config.GetValidators()) {
 		return errors.Errorf("%d of %d signed", len(validatorSignatures), len(c.config.GetValidators()))
 	}
@@ -815,7 +822,11 @@ func (c *ACL) verifyValidatorSignatures(digest []byte, validatorKeys, validatorS
 			return err
 		}
 
-		if !verifyValidatorSignature(validator, digest, decodedSignature) {
+		ok, err := verifyValidatorSignature(validator, message, decodedSignature)
+		if err != nil {
+			return fmt.Errorf("failed verifying signature: %w", err)
+		}
+		if !ok {
 			// in this method args signatures in hex
 			return errors.Errorf(
 				"the signature %s does not match the public key %s",

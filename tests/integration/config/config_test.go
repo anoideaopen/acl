@@ -8,9 +8,9 @@ import (
 
 	aclpb "github.com/anoideaopen/acl/proto"
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
+	"github.com/anoideaopen/foundation/mocks"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
-	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/anoideaopen/foundation/test/integration/cmn/fabricnetwork"
 	"github.com/anoideaopen/foundation/test/integration/cmn/runner"
 	docker "github.com/fsouza/go-dockerclient"
@@ -73,7 +73,7 @@ var _ = Describe("ACL config tests", func() {
 		redisDB        *runner.RedisDB
 		networkFound   *cmn.NetworkFoundation
 		peer           *nwo.Peer
-		admin          *client.UserFoundation
+		admin          *mocks.UserFoundation
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -156,7 +156,7 @@ var _ = Describe("ACL config tests", func() {
 
 		peer = network.Peer("Org1", "peer0")
 
-		admin, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		admin, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(admin.PrivateKeyBytes).NotTo(Equal(nil))
 	})

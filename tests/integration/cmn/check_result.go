@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/anoideaopen/acl/cc"
+	"github.com/anoideaopen/foundation/mocks"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/anoideaopen/foundation/test/integration/cmn/client"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -48,7 +48,7 @@ var (
 	TestHaveNoRight = &pb.HaveRight{HaveRight: false}
 )
 
-func CheckAddress(etalon *client.UserFoundation) func([]byte) string {
+func CheckAddress(etalon *mocks.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		out = out[:len(out)-1] // skip line feed
 		var aclRes pb.Address
@@ -82,7 +82,7 @@ func CheckAddressGraylisted(message string) func([]byte) string {
 	}
 }
 
-func CheckKeys(account *pb.AccountInfo, user *client.UserFoundation) func([]byte) string {
+func CheckKeys(account *pb.AccountInfo, user *mocks.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		out = out[:len(out)-1] // skip line feed
 		var aclRes pb.AclResponse
@@ -140,7 +140,7 @@ func CheckGetAccountOperationRight(etalon *pb.HaveRight) func([]byte) string {
 	}
 }
 
-func CheckRights(etalonRightsSet []*pb.Right, aclRightsSet []*pb.Right, user *client.UserFoundation) string {
+func CheckRights(etalonRightsSet []*pb.Right, aclRightsSet []*pb.Right, user *mocks.UserFoundation) string {
 	etalonRights := make([]*pb.Right, len(etalonRightsSet))
 	copy(etalonRights, etalonRightsSet)
 	for _, rightRes := range aclRightsSet {
@@ -164,7 +164,7 @@ func CheckRights(etalonRightsSet []*pb.Right, aclRightsSet []*pb.Right, user *cl
 	return ""
 }
 
-func CheckGetAccountAllRights(accountRights []*pb.Right, user *client.UserFoundation) func([]byte) string {
+func CheckGetAccountAllRights(accountRights []*pb.Right, user *mocks.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes pb.AccountRights
 		if err := protojson.Unmarshal(out, &aclRes); err != nil {
@@ -189,7 +189,7 @@ func CheckGetAccountAllRights(accountRights []*pb.Right, user *client.UserFounda
 	}
 }
 
-func CheckGetOperationAllRights(etalon *pb.OperationRights, user *client.UserFoundation) func([]byte) string {
+func CheckGetOperationAllRights(etalon *pb.OperationRights, user *mocks.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes pb.OperationRights
 		if err := protojson.Unmarshal(out, &aclRes); err != nil {
@@ -226,7 +226,7 @@ func CheckAccountInfo(etalon *pb.AccountInfo) func([]byte) string {
 	}
 }
 
-func CheckAddresses(users ...*client.UserFoundation) func([]byte) string {
+func CheckAddresses(users ...*mocks.UserFoundation) func([]byte) string {
 	return func(out []byte) string {
 		var aclRes cc.AddrsWithPagination
 		if err := json.Unmarshal(out, &aclRes); err != nil {

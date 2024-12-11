@@ -2,6 +2,7 @@ package lists
 
 import (
 	aclcmn "github.com/anoideaopen/acl/tests/integration/cmn"
+	"github.com/anoideaopen/foundation/mocks"
 	pbfound "github.com/anoideaopen/foundation/proto"
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/client"
@@ -29,7 +30,7 @@ var _ = Describe("ACL lists tests", func() {
 
 	var (
 		channels = []string{cmn.ChannelAcl}
-		user     *client.UserFoundation
+		user     *mocks.UserFoundation
 	)
 	BeforeEach(func() {
 		By("start redis")
@@ -47,7 +48,7 @@ var _ = Describe("ACL lists tests", func() {
 	It("Black & Gray lists test", func() {
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
@@ -70,7 +71,7 @@ var _ = Describe("ACL lists tests", func() {
 	It("Del from list test", func() {
 		By("add user to acl")
 		var err error
-		user, err = client.NewUserFoundation(pbfound.KeyType_ed25519)
+		user, err = mocks.NewUserFoundation(pbfound.KeyType_ed25519)
 		Expect(err).NotTo(HaveOccurred())
 
 		ts.AddUser(user)
