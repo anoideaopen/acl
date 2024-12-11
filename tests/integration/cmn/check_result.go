@@ -281,7 +281,7 @@ func CheckAddressRightForNominee(haveRight bool) func(b []byte) string {
 			return ErrCannotUnmarshalResponse
 		}
 
-		if aclRes.HaveRight != haveRight {
+		if aclRes.GetHaveRight() != haveRight {
 			return "haveRight not equals to etalon"
 		}
 
