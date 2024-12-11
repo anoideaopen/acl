@@ -172,7 +172,6 @@ func (c *ACL) ChangeMultisigPublicKey(stub shim.ChaincodeStubInterface, args []s
 	newKeysString := strings.Join(newKeys, "/")
 	message := append([]string{"changeMultisigPublicKey", multisigAddr, oldKey, newKeysString, reason, args[4], nonce}, pks...)
 	messageToSign := []byte(strings.Join(message, ""))
-	//hashedMessage := sha3.Sum256([]byte(strings.Join(message, "")))
 	if err = c.verifyValidatorSignatures(messageToSign, pks, signatures); err != nil {
 		return fmt.Errorf("failed verifying signatures: %w", err)
 	}
