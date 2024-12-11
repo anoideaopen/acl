@@ -28,8 +28,8 @@ type ACLTestSuite struct {
 	*fclient.FoundationTestSuite
 }
 
-func NewTestSuite(components *nwo.Components) *ACLTestSuite {
-	return &ACLTestSuite{FoundationTestSuite: fclient.NewTestSuite(components)}
+func NewTestSuite(components *nwo.Components, opts ...fclient.UserOption) *ACLTestSuite {
+	return &ACLTestSuite{FoundationTestSuite: fclient.NewTestSuite(components, opts...)}
 }
 
 func (ts *ACLTestSuite) CheckAddressForNominee(
@@ -123,7 +123,7 @@ func (ts *ACLTestSuite) RemoveAddressFromNominee(
 	ts.CheckAddressForNominee(channelName, chaincodeName, nominee, principal, false)
 }
 
-func (ts *AclTestSuite) AddAdditionalKey(
+func (ts *ACLTestSuite) AddAdditionalKey(
 	user *mocks.UserFoundation,
 	base58additionalKey string,
 	labels []string,
@@ -151,9 +151,9 @@ func (ts *AclTestSuite) AddAdditionalKey(
 	ctorArgs = append(append(ctorArgs, pKeys...), sMsgsStr...)
 
 	sess, err := ts.Network.PeerUserSession(ts.Peer, ts.MainUserName, commands.ChaincodeInvoke{
-		ChannelID: cmn.ChannelAcl,
+		ChannelID: cmn.ChannelACL,
 		Orderer:   ts.Network.OrdererAddress(ts.Orderer, nwo.ListenPort),
-		Name:      cmn.ChannelAcl,
+		Name:      cmn.ChannelACL,
 		Ctor:      cmn.CtorFromSlice(ctorArgs),
 		PeerAddresses: []string{
 			ts.Network.PeerAddress(ts.Network.Peer(ts.Org1Name, ts.Peer.Name), nwo.ListenPort),
@@ -168,7 +168,7 @@ func (ts *AclTestSuite) AddAdditionalKey(
 	ts.CheckAdditionalKey(user, base58additionalKey, true)
 }
 
-func (ts *AclTestSuite) RemoveAdditionalKey(
+func (ts *ACLTestSuite) RemoveAdditionalKey(
 	user *mocks.UserFoundation,
 	base58additionalKey string,
 	validators ...*mocks.UserFoundation,
@@ -192,9 +192,9 @@ func (ts *AclTestSuite) RemoveAdditionalKey(
 	ctorArgs = append(append(ctorArgs, pKeys...), sMsgsStr...)
 
 	sess, err := ts.Network.PeerUserSession(ts.Peer, ts.MainUserName, commands.ChaincodeInvoke{
-		ChannelID: cmn.ChannelAcl,
+		ChannelID: cmn.ChannelACL,
 		Orderer:   ts.Network.OrdererAddress(ts.Orderer, nwo.ListenPort),
-		Name:      cmn.ChannelAcl,
+		Name:      cmn.ChannelACL,
 		Ctor:      cmn.CtorFromSlice(ctorArgs),
 		PeerAddresses: []string{
 			ts.Network.PeerAddress(ts.Network.Peer(ts.Org1Name, ts.Peer.Name), nwo.ListenPort),
@@ -209,11 +209,11 @@ func (ts *AclTestSuite) RemoveAdditionalKey(
 	ts.CheckAdditionalKey(user, base58additionalKey, false)
 }
 
-func (ts *AclTestSuite) CheckAdditionalKey(user *mocks.UserFoundation, base58additionalKey string, shouldExists bool) {
+func (ts *ACLTestSuite) CheckAdditionalKey(user *mocks.UserFoundation, base58additionalKey string, shouldExists bool) {
 	Eventually(func() string {
 		sess, err := ts.Network.PeerUserSession(ts.Peer, ts.MainUserName, commands.ChaincodeQuery{
-			ChannelID: cmn.ChannelAcl,
-			Name:      cmn.ChannelAcl,
+			ChannelID: cmn.ChannelACL,
+			Name:      cmn.ChannelACL,
 			Ctor:      cmn.CtorFromSlice([]string{"checkKeys", user.PublicKeyBase58}),
 		})
 		Eventually(sess, ts.Network.EventuallyTimeout).Should(gexec.Exit())

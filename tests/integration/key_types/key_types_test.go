@@ -27,7 +27,7 @@ const (
 
 var _ = Describe("ACL key types tests", func() {
 	var (
-		ts *aclclient.AclTestSuite
+		ts *aclclient.ACLTestSuite
 	)
 
 	Describe("GOST key type tests", func() {
@@ -39,7 +39,7 @@ var _ = Describe("ACL key types tests", func() {
 		})
 
 		var (
-			channels = []string{cmn.ChannelAcl, cmn.ChannelFiat}
+			channels = []string{cmn.ChannelACL, cmn.ChannelFiat}
 			user     *mocks.UserFoundation
 		)
 		BeforeEach(func() {
@@ -131,7 +131,7 @@ var _ = Describe("ACL key types tests", func() {
 			)
 
 			By("checking result")
-			ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
+			ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, newUser.PublicKeyBase58).
 				CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
 		})
 
@@ -155,8 +155,8 @@ var _ = Describe("ACL key types tests", func() {
 			ts.ChangePublicKeyBase58signed(
 				oldUser,
 				"0",
-				cmn.ChannelAcl,
-				cmn.ChannelAcl,
+				cmn.ChannelACL,
+				cmn.ChannelACL,
 				newUser.PublicKeyBase58,
 				"reason",
 				"0",
@@ -164,7 +164,7 @@ var _ = Describe("ACL key types tests", func() {
 			)
 
 			By("checking result")
-			ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
+			ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, newUser.PublicKeyBase58).
 				CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
 		})
 
@@ -243,7 +243,7 @@ var _ = Describe("ACL key types tests", func() {
 		})
 
 		var (
-			channels = []string{cmn.ChannelAcl, cmn.ChannelFiat}
+			channels = []string{cmn.ChannelACL, cmn.ChannelFiat}
 			user     *mocks.UserFoundation
 		)
 		BeforeEach(func() {
@@ -335,7 +335,7 @@ var _ = Describe("ACL key types tests", func() {
 			)
 
 			By("checking result")
-			ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
+			ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, newUser.PublicKeyBase58).
 				CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
 		})
 
@@ -359,8 +359,8 @@ var _ = Describe("ACL key types tests", func() {
 			ts.ChangePublicKeyBase58signed(
 				oldUser,
 				"0",
-				cmn.ChannelAcl,
-				cmn.ChannelAcl,
+				cmn.ChannelACL,
+				cmn.ChannelACL,
 				newUser.PublicKeyBase58,
 				"reason",
 				"0",
@@ -368,7 +368,7 @@ var _ = Describe("ACL key types tests", func() {
 			)
 
 			By("checking result")
-			ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
+			ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, newUser.PublicKeyBase58).
 				CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
 		})
 
@@ -447,7 +447,7 @@ var _ = Describe("ACL key types tests", func() {
 		})
 
 		var (
-			channels = []string{cmn.ChannelAcl, cmn.ChannelFiat}
+			channels = []string{cmn.ChannelACL, cmn.ChannelFiat}
 			user     *mocks.UserFoundation
 		)
 		BeforeEach(func() {
@@ -539,7 +539,7 @@ var _ = Describe("ACL key types tests", func() {
 			)
 
 			By("checking result")
-			ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
+			ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, newUser.PublicKeyBase58).
 				CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
 		})
 
@@ -563,8 +563,8 @@ var _ = Describe("ACL key types tests", func() {
 			ts.ChangePublicKeyBase58signed(
 				oldUser,
 				"0",
-				cmn.ChannelAcl,
-				cmn.ChannelAcl,
+				cmn.ChannelACL,
+				cmn.ChannelACL,
 				newUser.PublicKeyBase58,
 				"reason",
 				"0",
@@ -572,7 +572,7 @@ var _ = Describe("ACL key types tests", func() {
 			)
 
 			By("checking result")
-			ts.Query(cmn.ChannelAcl, cmn.ChannelAcl, FnCheckKeys, newUser.PublicKeyBase58).
+			ts.Query(cmn.ChannelACL, cmn.ChannelACL, FnCheckKeys, newUser.PublicKeyBase58).
 				CheckResponseWithFunc(aclcmn.CheckKeys(aclcmn.TestAccountNotListed, oldUser))
 		})
 
