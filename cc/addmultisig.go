@@ -132,7 +132,11 @@ func checkSignatures(keys []PublicKey, message string, signatures [][]byte) erro
 	}
 
 	for i, key := range keys {
-		if !key.verifySignature(messageDigest(message), signatures[i]) {
+		ok, err := key.verifySignature([]byte(message), signatures[i])
+		if err != nil {
+			return fmt.Errorf("failed verifying signature: %w", err)
+		}
+		if !ok {
 			return fmt.Errorf(
 				"the signature %s does not match the public key %s",
 				hex.EncodeToString(signatures[i]),
@@ -141,9 +145,4 @@ func checkSignatures(keys []PublicKey, message string, signatures [][]byte) erro
 		}
 	}
 	return nil
-}
-
-func messageDigest(message string) []byte {
-	digest := sha3.Sum256([]byte(message))
-	return digest[:]
 }
