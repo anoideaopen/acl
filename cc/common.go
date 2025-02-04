@@ -6,8 +6,8 @@ import (
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/golang/protobuf/proto" //nolint:staticcheck
-	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
+	"google.golang.org/protobuf/proto"
 )
 
 const failIfExists = false

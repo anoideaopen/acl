@@ -8,9 +8,9 @@ import (
 	"github.com/anoideaopen/acl/cc/compositekey"
 	"github.com/anoideaopen/acl/tests/unit/common"
 	"github.com/anoideaopen/acl/tests/unit/mock"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
+	"github.com/hyperledger/fabric-protos-go-apiv2/ledger/queryresult"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	"github.com/stretchr/testify/require"
 )
 
