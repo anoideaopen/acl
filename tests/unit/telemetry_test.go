@@ -9,7 +9,7 @@ import (
 	"github.com/anoideaopen/acl/tests/unit/common"
 	"github.com/anoideaopen/acl/tests/unit/mock"
 	"github.com/anoideaopen/foundation/core/telemetry"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"

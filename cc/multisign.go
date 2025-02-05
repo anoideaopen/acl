@@ -11,8 +11,8 @@ import (
 	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"github.com/golang/protobuf/proto" //nolint:staticcheck
-	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
+	"google.golang.org/protobuf/proto"
 )
 
 // AddMultisig creates multi-signature address which operates when N of M signatures is present

@@ -9,7 +9,7 @@ import (
 
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/proto"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

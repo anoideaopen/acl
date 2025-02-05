@@ -13,11 +13,11 @@ import (
 	"github.com/anoideaopen/acl/tests/unit/mock"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
-	"google.golang.org/protobuf/proto" //nolint:staticcheck
+	"google.golang.org/protobuf/proto"
 )
 
 func TestSetKyc(t *testing.T) {
@@ -95,7 +95,7 @@ func TestSetKyc(t *testing.T) {
 	}
 }
 
-func setKyc(cc *cc.ACL, mockStub *mock.ChaincodeStub, addr string, kyc string) peer.Response {
+func setKyc(cc *cc.ACL, mockStub *mock.ChaincodeStub, addr string, kyc string) *peer.Response {
 	// change KYC
 	nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 	pKeys := make([]string, 0, len(common.TestUsersDifferentKeyTypes))

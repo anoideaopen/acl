@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	"github.com/anoideaopen/acl/cc/querystub"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 )
 
 func (c *ACL) GetAccountsInfo(stub shim.ChaincodeStubInterface, _ []string) ([]byte, error) {
-	responses := make([]peer.Response, 0)
+	responses := make([]*peer.Response, 0)
 	for _, bytes := range stub.GetArgs()[1:] {
 		payload, err := c.handleGetAccountsInfoItem(stub, bytes)
 		if err != nil {

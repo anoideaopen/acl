@@ -9,11 +9,11 @@ import (
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/tests/unit/common"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestGetAccountsInfo(t *testing.T) {
@@ -22,7 +22,7 @@ func TestGetAccountsInfo(t *testing.T) {
 	for _, testCase := range []struct {
 		description string
 		args        func() []string
-		checkResp   func([]peer.Response)
+		checkResp   func([]*peer.Response)
 		errorMsg    string
 	}{
 		{
@@ -30,7 +30,7 @@ func TestGetAccountsInfo(t *testing.T) {
 			args: func() []string {
 				return nil
 			},
-			checkResp: func(responses []peer.Response) {
+			checkResp: func(responses []*peer.Response) {
 				require.Empty(t, responses)
 			},
 			errorMsg: "",
@@ -42,7 +42,7 @@ func TestGetAccountsInfo(t *testing.T) {
 				require.NoError(t, err)
 				return []string{string(bytes)}
 			},
-			checkResp: func(responses []peer.Response) {
+			checkResp: func(responses []*peer.Response) {
 				require.Len(t, responses, 1)
 				require.Equal(t, int32(500), responses[0].GetStatus())
 				require.Equal(t, "not enough arguments '[\"test\"]'", responses[0].GetMessage())
@@ -56,7 +56,7 @@ func TestGetAccountsInfo(t *testing.T) {
 				require.NoError(t, err)
 				return []string{string(bytes)}
 			},
-			checkResp: func(responses []peer.Response) {
+			checkResp: func(responses []*peer.Response) {
 				require.Len(t, responses, 1)
 				require.Equal(t, int32(500), responses[0].GetStatus())
 				require.Contains(t, responses[0].GetMessage(), "failed get accounts info: unknown method tesst")
@@ -72,7 +72,7 @@ func TestGetAccountsInfo(t *testing.T) {
 				require.NoError(t, err)
 				return []string{string(bytes0), string(bytes1)}
 			},
-			checkResp: func(responses []peer.Response) {
+			checkResp: func(responses []*peer.Response) {
 				require.Len(t, responses, 2)
 
 				require.Equal(t, int32(500), responses[0].GetStatus())
@@ -102,7 +102,7 @@ func TestGetAccountsInfo(t *testing.T) {
 				}
 				return args
 			},
-			checkResp: func(responses []peer.Response) {
+			checkResp: func(responses []*peer.Response) {
 				require.Equal(t, 10, len(responses))
 
 				for _, response := range responses[:5] {
@@ -174,7 +174,7 @@ func TestGetAccountsInfo(t *testing.T) {
 			require.Equal(t, int32(shim.OK), resp.Status)
 			require.Contains(t, resp.Message, testCase.errorMsg)
 			require.NotEmpty(t, resp.Payload)
-			var responses []peer.Response
+			var responses []*peer.Response
 			err = json.Unmarshal(resp.Payload, &responses)
 			require.NoError(t, err)
 			testCase.checkResp(responses)

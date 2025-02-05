@@ -17,9 +17,9 @@ import (
 	"github.com/anoideaopen/acl/proto"
 	"github.com/anoideaopen/foundation/core/logger"
 	"github.com/anoideaopen/foundation/core/telemetry"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -53,7 +53,9 @@ func (c *ACL) log() *flogging.FabricLogger {
 
 // Init - method for initialize chaincode
 // args: adminSKI, validatorsCount, validatorBase58Ed25519PublicKey1, ..., validatorBase58Ed25519PublicKeyN
-func (c *ACL) Init(stub shim.ChaincodeStubInterface) peer.Response {
+func (c *ACL) Init(stub shim.ChaincodeStubInterface) *peer.Response {
+	stub.StartWriteBatch()
+
 	if err := config.SetConfig(stub); err != nil {
 		return shim.Error(err.Error())
 	}
@@ -100,7 +102,9 @@ func skipMethod(name string) bool {
 	}
 }
 
-func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
+func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) *peer.Response {
+	stub.StartWriteBatch()
+
 	var (
 		fn, args   = stub.GetFunctionAndParameters()
 		lg         = c.log()

@@ -1,6 +1,6 @@
 package proto
 
-import "github.com/hyperledger/fabric-chaincode-go/shim"
+import "github.com/hyperledger/fabric-chaincode-go/v2/shim"
 
 //go:generate protoc -I=. --go_out=paths=source_relative:. acl-config.proto
 //go:generate counterfeiter -generate
