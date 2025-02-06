@@ -4,8 +4,8 @@ github.com/StackExchange/wmi v1.2.1/go.mod h1:rcmrprowKIVzvc+NUiLncP2uuArMWLCbu9
 github.com/VictoriaMetrics/fastcache v1.12.2 h1:N0y9ASrJ0F6h0QaC3o6uJb3NIZ9VKLjCM7NQbSmF7WI=
 github.com/VictoriaMetrics/fastcache v1.12.2/go.mod h1:AmC+Nzz1+3G2eCPapF6UcsnkThDcMsQicp4xDukwJYI=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
-github.com/anoideaopen/foundation v0.0.11-0.20250205160831-835209200134 h1:3DTUoMBRp6NdxJ2GlQHkVrh4wDdnWxfzLS9SWmtGO14=
-github.com/anoideaopen/foundation v0.0.11-0.20250205160831-835209200134/go.mod h1:1QcYdRjpPq2p7hAc30WQEV8O0JJhlROn2SJ0edOUGe4=
+github.com/anoideaopen/foundation v0.1.0 h1:qOl9psmBwZc8igROud0AQbo4C27cg9W5vb7VXxWWcmA=
+github.com/anoideaopen/foundation v0.1.0/go.mod h1:1QcYdRjpPq2p7hAc30WQEV8O0JJhlROn2SJ0edOUGe4=
 github.com/bits-and-blooms/bitset v1.13.0 h1:bAQ9OPNFYbGHV6Nez0tmNI0RiEu7/hxlYJRUA0wFAVE=
 github.com/bits-and-blooms/bitset v1.13.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
