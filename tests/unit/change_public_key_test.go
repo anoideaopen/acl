@@ -1,6 +1,7 @@
 package unit
 
 import (
+	"crypto/sha3"
 	"strconv"
 	"strings"
 	"testing"
@@ -15,7 +16,6 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/proto"
 )
 

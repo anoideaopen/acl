@@ -141,7 +141,7 @@ func (r *AddMultisigRequest) parseKeysAndSignatures(
 
 	r.PublicKeys = make([]PublicKey, numberOfKeys)
 	r.Signatures = make([][]byte, numberOfKeys)
-	for i := 0; i < numberOfKeys; i++ {
+	for i := range numberOfKeys {
 		if r.PublicKeys[i], err = publicKeyFromBase58String(keysAndSignatures[i]); err != nil {
 			return fmt.Errorf("failed decoding public key: %w", err)
 		}

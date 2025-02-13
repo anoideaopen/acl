@@ -1,10 +1,11 @@
-//nolint:funlen,gocyclo,gomnd
+//nolint:funlen,gocyclo
 package cc
 
 import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"crypto/sha3"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
@@ -23,7 +24,6 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/hyperledger/fabric-protos-go-apiv2/msp"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/proto"
 )
 

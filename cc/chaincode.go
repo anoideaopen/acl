@@ -68,7 +68,7 @@ func (c *ACL) method(name string) (methods.Method, error) {
 		aclMethods := make(map[string]methods.Method)
 
 		t := reflect.TypeOf(c)
-		for i := 0; i < t.NumMethod(); i++ {
+		for i := range t.NumMethod() {
 			var (
 				method = t.Method(i)
 				err    error

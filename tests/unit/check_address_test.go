@@ -1,6 +1,7 @@
 package unit
 
 import (
+	"crypto/sha3"
 	"testing"
 
 	"github.com/anoideaopen/acl/cc"
@@ -11,7 +12,6 @@ import (
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/proto"
 )
 

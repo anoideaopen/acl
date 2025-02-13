@@ -2,6 +2,7 @@ package cc
 
 import (
 	"crypto/ed25519"
+	"crypto/sha3"
 	"fmt"
 
 	aclproto "github.com/anoideaopen/acl/proto"
@@ -9,7 +10,6 @@ import (
 	"github.com/anoideaopen/foundation/keys/gost"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"golang.org/x/crypto/sha3"
 )
 
 func verifyValidatorSignature(

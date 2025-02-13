@@ -1,6 +1,7 @@
 package cc
 
 import (
+	"crypto/sha3"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -13,7 +14,6 @@ import (
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
-	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/proto"
 )
 
