@@ -2,6 +2,7 @@ package cc
 
 import (
 	"bytes"
+	"crypto/sha3"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"github.com/anoideaopen/acl/cc/errs"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
-	"golang.org/x/crypto/sha3"
 )
 
 type CheckKeysRequest struct {

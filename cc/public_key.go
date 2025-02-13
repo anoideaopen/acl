@@ -1,13 +1,13 @@
 package cc
 
 import (
+	"crypto/sha3"
 	"encoding/hex"
 	"fmt"
 
 	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"golang.org/x/crypto/sha3"
 )
 
 type PublicKey struct {

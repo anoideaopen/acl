@@ -3,6 +3,7 @@ package unit
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha3"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -18,7 +19,6 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/encoding/protojson"
 	pbBuf "google.golang.org/protobuf/proto"
 )

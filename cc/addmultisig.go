@@ -2,6 +2,7 @@ package cc
 
 import (
 	"bytes"
+	"crypto/sha3"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -10,7 +11,6 @@ import (
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
-	"golang.org/x/crypto/sha3"
 )
 
 func addMultisigRequestFromArguments(
