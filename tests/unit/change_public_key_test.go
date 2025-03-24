@@ -245,7 +245,8 @@ func TestChangePublicKey(t *testing.T) {
 					Address:      hashed[:],
 					IsIndustrial: true,
 				},
-				SignedTx: []string{common.FnChangePublicKey,
+				SignedTx: []string{
+					common.FnChangePublicKey,
 					common.TestAddr,
 					common.DefaultReason,
 					reasonID,

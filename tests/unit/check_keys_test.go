@@ -272,7 +272,8 @@ func TestCheckKeys(t *testing.T) {
 						Address:      hashedM[:],
 						IsIndustrial: true,
 					},
-					SignedTx: []string{"addMultisig", "3", "1731068306000",
+					SignedTx: []string{
+						"addMultisig", "3", "1731068306000",
 						"A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4",
 						"5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
 						"6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4",
@@ -369,7 +370,8 @@ func TestCheckKeys(t *testing.T) {
 							Address:      hashedM[:],
 							IsIndustrial: true,
 						},
-						SignedTx: []string{"addMultisig", "3", "1731068306000",
+						SignedTx: []string{
+							"addMultisig", "3", "1731068306000",
 							"A4JdE9iZRzU9NEiVDNxYKKWymHeBxHR7mA8AetFrg8m4",
 							"5Tevazf8xxwyyKGku4VCCSVMDN56mU3mm2WsnENk1zv5",
 							"6qFz88dv2R8sXmyzWPjvzN6jafv7t1kNUHztYKjH1Rd4",

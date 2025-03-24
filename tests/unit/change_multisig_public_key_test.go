@@ -149,7 +149,8 @@ func TestChangeMultisigPublicKey(t *testing.T) {
 					Address:    hashedPksSortedOrder[:],
 					IsMultisig: true,
 				},
-				SignedTx: []string{common.FnAddMultisig, "3", nonce,
+				SignedTx: []string{
+					common.FnAddMultisig, "3", nonce,
 					pubKeys[0], pubKeys[1], pubKeys[2],
 					signature, signature, signature,
 				},

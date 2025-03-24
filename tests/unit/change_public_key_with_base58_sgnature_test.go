@@ -144,7 +144,8 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 			signAddrGet := &pb.SignedAddress{}
 			err = pbBuf.Unmarshal(val, signAddrGet)
 			require.NoError(t, err)
-			ssTx := []string{common.FnChangePublicKeyWithBase58Signature,
+			ssTx := []string{
+				common.FnChangePublicKeyWithBase58Signature,
 				"",
 				"acl",
 				"acl",

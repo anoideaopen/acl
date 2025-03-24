@@ -22,12 +22,12 @@ func addUser(stub shim.ChaincodeStubInterface, request AddUserRequest) error {
 		&pb.SignedAddress{
 			Address: &pb.Address{
 				UserID:       request.UserID,
-				Address:      request.PublicKey.Hash,
+				Address:      request.Hash,
 				IsIndustrial: request.IsIndustrial,
 				IsMultisig:   false,
 			},
 		},
-		request.PublicKey.HashInHex,
+		request.HashInHex,
 		failIfExists,
 	); err != nil {
 		return fmt.Errorf("failed saving signed address: %w", err)
@@ -42,7 +42,7 @@ func addUser(stub shim.ChaincodeStubInterface, request AddUserRequest) error {
 		&pb.AccountInfo{
 			KycHash: request.KYCHash,
 		},
-		request.PublicKey.HashInBase58Check,
+		request.HashInBase58Check,
 	); err != nil {
 		return fmt.Errorf("failed saving account info: %w", err)
 	}
