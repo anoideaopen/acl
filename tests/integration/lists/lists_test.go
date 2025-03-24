@@ -17,9 +17,7 @@ const (
 )
 
 var _ = Describe("ACL lists tests", func() {
-	var (
-		ts client.TestSuite
-	)
+	var ts client.TestSuite
 
 	BeforeEach(func() {
 		ts = client.NewTestSuite(components)

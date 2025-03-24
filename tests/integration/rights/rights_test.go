@@ -19,9 +19,7 @@ const (
 )
 
 var _ = Describe("ACL integration rights tests", func() {
-	var (
-		ts client.TestSuite
-	)
+	var ts client.TestSuite
 
 	BeforeEach(func() {
 		ts = client.NewTestSuite(components)

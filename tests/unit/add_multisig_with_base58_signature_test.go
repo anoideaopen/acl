@@ -314,7 +314,8 @@ func TestAddMultisigWithBase58Signature(t *testing.T) {
 					Address:    hashedMulti[:],
 					IsMultisig: true,
 				},
-				SignedTx: []string{common.FnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce,
+				SignedTx: []string{
+					common.FnAddMultisigWithBase58Signature, "req", "acl", "acl", "3", nonce,
 					pubKeys[0], pubKeys[1], pubKeys[2],
 					signatures[0], signatures[1], signatures[2],
 				},

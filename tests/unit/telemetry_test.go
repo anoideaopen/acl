@@ -55,7 +55,7 @@ func TestTelemetry(t *testing.T) {
 func addTelemetryToMockStub(t *testing.T, mockStub *mock.ChaincodeStub) *mock.ChaincodeStub {
 	const collectorEndpoint = "172.23.0.6:4318"
 
-	var testInitConfigWithTelemetry = &aclproto.ACLConfig{
+	testInitConfigWithTelemetry := &aclproto.ACLConfig{
 		AdminSKIEncoded: common.TestInitConfig.GetAdminSKIEncoded(),
 		Validators:      common.TestInitConfig.GetValidators(),
 		TracingCollectorEndpoint: &aclproto.TracingCollectorEndpoint{

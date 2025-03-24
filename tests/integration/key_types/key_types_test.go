@@ -26,9 +26,7 @@ const (
 )
 
 var _ = Describe("ACL key types tests", func() {
-	var (
-		ts *aclclient.ACLTestSuite
-	)
+	var ts *aclclient.ACLTestSuite
 
 	Describe("GOST key type tests", func() {
 		BeforeEach(func() {
