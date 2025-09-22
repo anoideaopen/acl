@@ -25,14 +25,14 @@ import (
 
 type (
 	ACL struct {
-		adminSKI  []byte
-		config    *proto.ACLConfig
-		methods   map[string]methods.Method
-		methodsMu sync.RWMutex
-		logger    *flogging.FabricLogger
-		isService bool
-		lockTH    sync.RWMutex
-		trHandler *telemetry.TracingHandler
+		adminSKI   []byte
+		config     *proto.ACLConfig
+		methods    map[string]methods.Method
+		methodOnce sync.Once
+		logger     *flogging.FabricLogger
+		isService  bool
+		lockTH     sync.RWMutex
+		trHandler  *telemetry.TracingHandler
 
 		opts opts
 	}
@@ -94,8 +94,11 @@ func (c *ACL) Init(stub shim.ChaincodeStubInterface) *peer.Response {
 }
 
 func (c *ACL) method(name string) (methods.Method, error) {
-	c.methodsMu.RLock()
-	defer c.methodsMu.RUnlock()
+	if c.methods == nil {
+		if err := c.setupMethods(); err != nil {
+			return nil, err
+		}
+	}
 	if method, ok := c.methods[name]; ok {
 		return method, nil
 	}
@@ -229,36 +232,37 @@ func (c *ACL) Start() error {
 }
 
 func (c *ACL) setupMethods() error {
-	c.methodsMu.Lock()
 	aclMethods := make(map[string]methods.Method)
+	var err error
+	c.methodOnce.Do(func() {
+		t := reflect.TypeOf(c)
+		for i := range t.NumMethod() {
+			var (
+				method = t.Method(i)
+			)
 
-	t := reflect.TypeOf(c)
-	for i := range t.NumMethod() {
-		var (
-			method = t.Method(i)
-			err    error
-		)
+			if skipMethod(method.Name) {
+				continue
+			}
 
-		if skipMethod(method.Name) {
-			continue
+			aclMethods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
+			if err != nil {
+				err = fmt.Errorf("failed adding method %s", method.Name)
+				return
+			}
 		}
+		// Process additional methods
+		// Add methods from options only if they are not already defined
+		for name, method := range c.opts.additionalMethods {
+			if _, ok := c.methods[name]; ok {
+				continue
+			}
+			c.methods[name] = method
+		}
+		c.methods = aclMethods
+	})
 
-		aclMethods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
-		if err != nil {
-			return fmt.Errorf("failed adding method %s", method.Name)
-		}
-	}
-	// Process additional methods
-	// Add methods from options only if they are not already defined
-	for name, method := range c.opts.additionalMethods {
-		if _, ok := c.methods[name]; ok {
-			continue
-		}
-		c.methods[name] = method
-	}
-	c.methods = aclMethods
-	defer c.methodsMu.Unlock()
-	return nil
+	return err
 }
 
 func (c *ACL) startAsRegularChaincode() error {
