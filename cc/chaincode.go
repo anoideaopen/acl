@@ -28,20 +28,50 @@ type (
 		adminSKI  []byte
 		config    *proto.ACLConfig
 		methods   map[string]methods.Method
+		methodsMu sync.RWMutex
 		logger    *flogging.FabricLogger
 		isService bool
 		lockTH    sync.RWMutex
 		trHandler *telemetry.TracingHandler
+
+		opts opts
+	}
+
+	opts struct {
+		additionalMethods map[string]methods.Method
 	}
 
 	Account struct {
 		Address string   `json:"address"`
 		Balance *big.Int `json:"balance"`
 	}
+
+	Option func(*opts) error
 )
 
-func New() *ACL {
-	return &ACL{}
+// WithAdditionalMethods configures the option to include additional methods for use in the application.
+func WithAdditionalMethods(additionalMethods map[string]any) Option {
+	return func(o *opts) error {
+		o.additionalMethods = make(map[string]methods.Method)
+		for name, method := range additionalMethods {
+			m, err := methods.New(method)
+			if err != nil {
+				return err
+			}
+			o.additionalMethods[name] = m
+		}
+		return nil
+	}
+}
+
+func New(options ...Option) *ACL {
+	var o opts
+	for _, opt := range options {
+		if err := opt(&o); err != nil {
+			panic(err)
+		}
+	}
+	return &ACL{opts: o}
 }
 
 func (c *ACL) log() *flogging.FabricLogger {
@@ -64,28 +94,8 @@ func (c *ACL) Init(stub shim.ChaincodeStubInterface) *peer.Response {
 }
 
 func (c *ACL) method(name string) (methods.Method, error) {
-	if c.methods == nil {
-		aclMethods := make(map[string]methods.Method)
-
-		t := reflect.TypeOf(c)
-		for i := range t.NumMethod() {
-			var (
-				method = t.Method(i)
-				err    error
-			)
-
-			if skipMethod(method.Name) {
-				continue
-			}
-
-			aclMethods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
-			if err != nil {
-				return nil, fmt.Errorf("failed adding method %s", method.Name)
-			}
-		}
-		c.methods = aclMethods
-	}
-
+	c.methodsMu.RLock()
+	defer c.methodsMu.RUnlock()
 	if method, ok := c.methods[name]; ok {
 		return method, nil
 	}
@@ -122,8 +132,8 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) *peer.Response {
 		lg.Infof(logMessage, fmt.Sprintf("elapsed: %s", time.Since(start)))
 	}()
 
-	// Need to always read the config to assure there will be no determinism while executing the transaction
-	// init config begin
+	// Need to always read the config to ensure there will be no determinism while executing the transaction
+	// init config begins
 	cfg, err := config.GetConfig(stub)
 	if err != nil {
 		errMsg := "failed getting chaincode config: " + err.Error()
@@ -144,7 +154,7 @@ func (c *ACL) Invoke(stub shim.ChaincodeStubInterface) *peer.Response {
 		return shim.Error(errMsg)
 	}
 
-	// Getting carrier from transient map and creating tracing span
+	// Getting carrier from a transient map and creating tracing span
 	_, span := c.tracingHandler().StartNewSpan(
 		c.tracingHandler().ContextFromStub(stub),
 		"cc.Invoke",
@@ -207,11 +217,48 @@ func (c *ACL) Start() error {
 		chaincodeExecModeServer = "server"
 	)
 
+	if err := c.setupMethods(); err != nil {
+		return fmt.Errorf("failed setting up chaincode methods: %w", err)
+	}
+
 	if os.Getenv(chaincodeExecModeEnv) == chaincodeExecModeServer {
 		return c.startAsChaincodeServer()
 	}
 
 	return c.startAsRegularChaincode()
+}
+
+func (c *ACL) setupMethods() error {
+	c.methodsMu.Lock()
+	aclMethods := make(map[string]methods.Method)
+
+	t := reflect.TypeOf(c)
+	for i := range t.NumMethod() {
+		var (
+			method = t.Method(i)
+			err    error
+		)
+
+		if skipMethod(method.Name) {
+			continue
+		}
+
+		aclMethods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
+		if err != nil {
+			return fmt.Errorf("failed adding method %s", method.Name)
+		}
+	}
+	// Process additional methods
+	// Add methods from options only if they are not already defined
+	for name, method := range c.opts.additionalMethods {
+		if _, ok := c.methods[name]; ok {
+			continue
+		}
+		c.methods[name] = method
+	}
+	c.methods = aclMethods
+	defer c.methodsMu.Unlock()
+	return nil
 }
 
 func (c *ACL) startAsRegularChaincode() error {
