@@ -237,9 +237,7 @@ func (c *ACL) setupMethods() error {
 	c.methodOnce.Do(func() {
 		t := reflect.TypeOf(c)
 		for i := range t.NumMethod() {
-			var (
-				method = t.Method(i)
-			)
+			method := t.Method(i)
 
 			if skipMethod(method.Name) {
 				continue
