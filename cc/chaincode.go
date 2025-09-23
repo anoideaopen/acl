@@ -232,9 +232,9 @@ func (c *ACL) Start() error {
 }
 
 func (c *ACL) setupMethods() error {
-	aclMethods := make(map[string]methods.Method)
 	var err error
 	c.methodOnce.Do(func() {
+		c.methods = make(map[string]methods.Method)
 		t := reflect.TypeOf(c)
 		for i := range t.NumMethod() {
 			method := t.Method(i)
@@ -243,7 +243,7 @@ func (c *ACL) setupMethods() error {
 				continue
 			}
 
-			aclMethods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
+			c.methods[helpers.ToLowerFirstLetter(method.Name)], err = methods.New(reflect.ValueOf(c).MethodByName(method.Name).Interface())
 			if err != nil {
 				err = fmt.Errorf("failed adding method %s", method.Name)
 				return
@@ -257,7 +257,6 @@ func (c *ACL) setupMethods() error {
 			}
 			c.methods[name] = method
 		}
-		c.methods = aclMethods
 	})
 
 	return err
