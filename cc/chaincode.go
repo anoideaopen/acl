@@ -25,19 +25,14 @@ import (
 
 type (
 	ACL struct {
-		adminSKI   []byte
-		config     *proto.ACLConfig
-		methods    map[string]methods.Method
-		methodOnce sync.Once
-		logger     *flogging.FabricLogger
-		isService  bool
-		lockTH     sync.RWMutex
-		trHandler  *telemetry.TracingHandler
-
-		opts opts
-	}
-
-	opts struct {
+		adminSKI          []byte
+		config            *proto.ACLConfig
+		methods           map[string]methods.Method
+		methodOnce        sync.Once
+		logger            *flogging.FabricLogger
+		isService         bool
+		lockTH            sync.RWMutex
+		trHandler         *telemetry.TracingHandler
 		additionalMethods map[string]methods.Method
 	}
 
@@ -46,32 +41,32 @@ type (
 		Balance *big.Int `json:"balance"`
 	}
 
-	Option func(*opts) error
+	Option func(acl *ACL) error
 )
 
 // WithAdditionalMethods configures the option to include additional methods for use in the application.
 func WithAdditionalMethods(additionalMethods map[string]any) Option {
-	return func(o *opts) error {
-		o.additionalMethods = make(map[string]methods.Method)
+	return func(cc *ACL) error {
+		cc.additionalMethods = make(map[string]methods.Method)
 		for name, method := range additionalMethods {
 			m, err := methods.New(method)
 			if err != nil {
 				return err
 			}
-			o.additionalMethods[name] = m
+			cc.additionalMethods[name] = m
 		}
 		return nil
 	}
 }
 
 func New(options ...Option) *ACL {
-	var o opts
+	var cc ACL
 	for _, opt := range options {
-		if err := opt(&o); err != nil {
+		if err := opt(&cc); err != nil {
 			panic(err)
 		}
 	}
-	return &ACL{opts: o}
+	return &cc
 }
 
 func (c *ACL) log() *flogging.FabricLogger {
@@ -251,7 +246,7 @@ func (c *ACL) setupMethods() error {
 		}
 		// Process additional methods
 		// Add methods from options only if they are not already defined
-		for name, method := range c.opts.additionalMethods {
+		for name, method := range c.additionalMethods {
 			if _, ok := c.methods[name]; ok {
 				continue
 			}
