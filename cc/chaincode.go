@@ -45,6 +45,7 @@ type (
 )
 
 // WithAdditionalMethods configures the option to include additional methods for use in the application.
+// In common cases we use camelCase for method names, but it is possible to use snake_case, underscore_case, etc., but it is not recommended.
 func WithAdditionalMethods(additionalMethods map[string]any) Option {
 	return func(cc *ACL) error {
 		cc.additionalMethods = make(map[string]methods.Method)

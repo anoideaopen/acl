@@ -49,6 +49,18 @@ func TestACLOptions(t *testing.T) {
 				},
 			})},
 		},
+		{
+			description: "Run ACL with options that tries to add new function which always returns error",
+			fn:          "myNewFunctionReturnErr",
+			args:        []string{"arg1", "arg2"},
+			respStatus:  int32(shim.ERROR),
+			errorMsg:    "error occurred",
+			options: []cc.Option{cc.WithAdditionalMethods(map[string]any{
+				"myNewFunctionReturnErr": func(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+					return nil, errors.New("error occurred")
+				},
+			})},
+		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
 			mockStub, cfgBytes := common.NewMockStub(t)
