@@ -45,7 +45,7 @@ var _ = Describe("ACL emission tests", func() {
 	})
 	BeforeEach(func() {
 		ts.InitNetwork(channels, integration.SmartBFTBasePort)
-		ts.DeployChaincodesByName([]string{cmn.ChannelACL})
+		ts.DeployChaincodesByChannelName([]string{cmn.ChannelACL})
 	})
 	BeforeEach(func() {
 		By("start robot")
