@@ -1,6 +1,6 @@
 module github.com/anoideaopen/acl/tests/integration
 
-go 1.25.1
+go 1.25.2
 
 tool (
 	github.com/IBM/idemix/tools/idemixgen
@@ -16,10 +16,10 @@ tool (
 
 require (
 	github.com/anoideaopen/acl v0.1.1-0.20250505195402-a675a2687c7c
-	github.com/anoideaopen/foundation v0.1.2
-	github.com/anoideaopen/foundation/test/integration v0.0.0-20250930204753-7aa15bebfcfe
+	github.com/anoideaopen/foundation v0.1.3
+	github.com/anoideaopen/foundation/test/integration v0.0.0-20251013151027-fe1389e5c9ce
 	github.com/fsouza/go-dockerclient v1.12.0
-	github.com/hyperledger/fabric v1.4.0-rc1.0.20250929141436-dad09ab05b71
+	github.com/hyperledger/fabric v1.4.0-rc1.0.20251012211530-60d501d4140c
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/tedsuo/ifrit v0.0.0-20230516164442-7862c310ad26
