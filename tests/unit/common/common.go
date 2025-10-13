@@ -185,7 +185,7 @@ func GenerateTestValidatorSignatures(pKeys []string, digest []byte) (vpKeys [][]
 		vpKeys = append(vpKeys, []byte(pubKey))
 		vSignatures = append(vSignatures, HexEncodedSignature(base58.Decode(sKey), digest))
 	}
-	return
+	return vpKeys, vSignatures
 }
 
 func Base58EncodedSignature(privateKey []byte, message []byte) []byte {

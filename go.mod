@@ -1,9 +1,9 @@
 module github.com/anoideaopen/acl
 
-go 1.24.2
+go 1.25.2
 
 require (
-	github.com/anoideaopen/foundation v0.1.2
+	github.com/anoideaopen/foundation v0.1.3
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/envoyproxy/protoc-gen-validate v1.2.1
 	github.com/hyperledger/fabric-chaincode-go/v2 v2.3.0

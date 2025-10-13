@@ -305,7 +305,7 @@ func (c *ACL) tryCheckAdditionalKey(
 
 	// Checking that the argument is the only one needed for the extra key case.
 	if len(args) != argsLen {
-		return
+		return resp, err
 	}
 
 	// Query Parameters.
@@ -313,7 +313,7 @@ func (c *ACL) tryCheckAdditionalKey(
 
 	// Check if the argument is a multisignature.
 	if strings.Count(publicKey, multisignSeparator) > 0 {
-		return
+		return resp, err
 	}
 
 	// Attempting to get the user's address by an additional public key.
@@ -324,7 +324,7 @@ func (c *ACL) tryCheckAdditionalKey(
 
 	// If no parent is found, the key is normal and control is passed to the higher handler.
 	if parentAddress == "" {
-		return
+		return resp, err
 	}
 
 	// Retrieving information about a user by their additional key.

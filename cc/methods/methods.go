@@ -46,7 +46,7 @@ func (m *invokeMethod) Call(stub shim.ChaincodeStubInterface, args []string) (pa
 	if err != nil {
 		return nil, fmt.Errorf("invoke method error: %w", err)
 	}
-	return
+	return payload, nil
 }
 
 func (m *queryMethod) Call(stub shim.ChaincodeStubInterface, args []string) (payload []byte, err error) {
@@ -54,5 +54,5 @@ func (m *queryMethod) Call(stub shim.ChaincodeStubInterface, args []string) (pay
 	if err != nil {
 		return nil, fmt.Errorf("invoke method error: %w", err)
 	}
-	return
+	return payload, nil
 }

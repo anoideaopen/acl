@@ -74,7 +74,7 @@ func (qs *queryStub) GetFunctionAndParameters() (function string, params []strin
 		function = allargs[0]
 		params = allargs[1:]
 	}
-	return
+	return function, params
 }
 
 func (qs *queryStub) GetArgsSlice() ([]byte, error) {
