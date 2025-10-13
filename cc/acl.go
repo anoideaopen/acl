@@ -412,162 +412,27 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) ([]b
 // - 7: Nonce
 // - 8 and onwards: List of validators' public keys and their corresponding signatures
 func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) error {
-	const argsCount = 10
-
-	argsNum := len(args)
-	if argsNum < argsCount {
-		return fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
-	}
+	const fn = "changePublicKeyWithBase58Signature"
 
 	if err := c.verifyAccess(stub); err != nil {
 		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
-	// args[0] is request id
-	// requestId := args[0]
-
-	chaincodeNameFromArgs := args[1]
-	if chaincodeNameFromArgs != ACLChaincodeName {
-		return errors.New("incorrect chaincode name")
-	}
-
-	channelID := args[2]
-	if channelID != stub.GetChannelID() {
-		return errors.New("incorrect channel")
-	}
-
-	forAddrOrig := args[3]
-	if err := helpers.CheckAddress(forAddrOrig); err != nil {
-		return fmt.Errorf("the user's address is not valid: %w", err)
-	}
-
-	reason := args[4]
-	if len(reason) == 0 {
-		return errors.New("reason not provided")
-	}
-
-	if len(args[5]) == 0 {
-		return errors.New("reason ID not provided")
-	}
-
-	reasonID, err := strconv.ParseInt(args[5], base10, bitSize32)
+	request, err := changePublicKeyRequestFromArguments(args, fn)
 	if err != nil {
-		return fmt.Errorf("failed parsing reason ID: %w", err)
+		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
-	if len(args[6]) == 0 {
-		return errors.New("empty new key")
-	}
-
-	strKeys := strings.Split(args[6], "/")
-	if err = helpers.CheckKeysArr(strKeys); err != nil {
-		return fmt.Errorf("failed checking keys '%s': %w", args[3], err)
-	}
-
-	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
-	if err != nil {
-		return fmt.Errorf("failed converting new key to sorted hashed hex: %w", err)
-	}
-
-	nonce := args[7]
-	if len(nonce) == 0 {
-		return errors.New("empty nonce")
-	}
-
-	pksAndSignatures := args[8:]
-	lenPksAndSignatures := len(pksAndSignatures)
-	if lenPksAndSignatures == 0 {
-		return errors.New("no public keys and signatures provided")
-	}
-	if lenPksAndSignatures%2 != 0 {
-		return errors.New("uneven number of public keys and signatures provided")
-	}
-	var (
-		validatorsCount = lenPksAndSignatures / 2
-		pks             = pksAndSignatures[:validatorsCount]
-		signatures      = pksAndSignatures[validatorsCount:]
-	)
-
-	const fn = "changePublicKeyWithBase58Signature"
-	message := []byte(fn + strings.Join(args[:8+validatorsCount], ""))
-
-	if err = checkNonce(stub, forAddrOrig, nonce); err != nil {
+	if err = checkNonce(stub, request.Address, request.Nonce); err != nil {
 		return fmt.Errorf("failed checking nonce: %w", err)
 	}
 
-	if err = c.checkValidatorsSignedWithBase58Signature(message, pks, signatures); err != nil {
+	if err = c.checkValidatorsSignedWithBase58Signature(request.GetMessageForSign(), request.ValidatorsKeys, request.ValidatorsSignatures); err != nil {
 		return fmt.Errorf("failed checking signatures: %w", err)
 	}
 
-	addrToPkCompositeKey, err := compositekey.PublicKey(stub, forAddrOrig)
-	if err != nil {
-		return fmt.Errorf("failed making new public key composite key: %w", err)
-	}
-
-	// check that we have pub key for such address
-	keys, err := stub.GetState(addrToPkCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed getting keys from state: %w", err)
-	}
-	if len(keys) == 0 {
-		return fmt.Errorf("failed getting keys from state: no public keys for address %s", forAddrOrig)
-	}
-	if bytes.Equal(keys, []byte(newKey)) {
-		return errors.New("the new key is equivalent to an existing one")
-	}
-
-	// del old pub key -> pb.Address mapping
-	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(keys))
-	if err != nil {
-		return fmt.Errorf("failed making new address composite key: %w", err)
-	}
-	// firstly get pb.SignedAddress to re-create it later in new mapping
-	signedAddrBytes, err := stub.GetState(pkToAddrCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed getting signed address from state: %w", err)
-	}
-	if len(signedAddrBytes) == 0 {
-		return fmt.Errorf("no SignedAddress msg for address %s", forAddrOrig)
-	}
-
-	signedAddr := &pb.SignedAddress{}
-	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
-		return fmt.Errorf("failed unmarshalling signed address: %w", err)
-	}
-
-	// and delete
-	err = stub.DelState(pkToAddrCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed deleting signed address from state: %w", err)
-	}
-
-	// del old addr -> pub key mapping
-	err = stub.DelState(addrToPkCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed deleting public key from state: %w", err)
-	}
-
-	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
-	if err != nil {
-		return fmt.Errorf("failed making new public key composite key: %w", err)
-	}
-
-	signedAddr.SignedTx = append(append(append([]string{fn}, args[0:5]...), pks...), signatures...)
-	signedAddr.Reason = reason
-	signedAddr.ReasonId = int32(reasonID)
-	addrChangeMsg, err := proto.Marshal(signedAddr)
-	if err != nil {
-		return fmt.Errorf("failed marshalling signed address: %w", err)
-	}
-
-	if err = stub.PutState(newPkToAddrCompositeKey, addrChangeMsg); err != nil {
-		return fmt.Errorf("failed putting new signed address to state: %w", err)
-	}
-
-	// set new address -> key mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
-		return fmt.Errorf("failed putting new public key to state: %w", err)
+	if err = changePublicKey(stub, request); err != nil {
+		return fmt.Errorf("failed changing public key: %w", err)
 	}
 
 	return nil
@@ -581,146 +446,27 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 // arg[4] - nonce
 // arg[5:] - public keys and signatures of validators
 func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) error {
-	const argsCount = 7
-
-	argsNum := len(args)
-	if argsNum < argsCount {
-		return fmt.Errorf("incorrect number of arguments: expected %d, got %d", argsCount, argsNum)
-	}
+	const fn = "changePublicKey"
 
 	if err := c.verifyAccess(stub); err != nil {
 		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
-	forAddrOrig := args[0]
-
-	if len(forAddrOrig) == 0 {
-		return errors.New(errs.ErrEmptyAddress)
-	}
-
-	reason := args[1]
-	if len(reason) == 0 {
-		return errors.New("reason not provided")
-	}
-
-	if len(args[2]) == 0 {
-		return errors.New("reason ID not provided")
-	}
-	reasonID, err := strconv.ParseInt(args[2], base10, bitSize32)
+	request, err := changePublicKeyRequestFromArguments(args, fn)
 	if err != nil {
-		return fmt.Errorf("failed parsing reason ID: %w", err)
+		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
-	if len(args[3]) == 0 {
-		return errors.New("empty new key")
-	}
-
-	nonce := args[4]
-	if len(nonce) == 0 {
-		return errors.New("empty nonce")
-	}
-
-	pksAndSignatures := args[5:]
-	lenPksAndSignatures := len(pksAndSignatures)
-	if lenPksAndSignatures == 0 {
-		return errors.New("no public keys and signatures provided")
-	}
-
-	strKeys := strings.Split(args[3], "/")
-	if err = helpers.CheckKeysArr(strKeys); err != nil {
-		return fmt.Errorf("failed checking public keys: %w", err)
-	}
-	newKey, err := helpers.KeyStringToSortedHashedHex(strKeys)
-	if err != nil {
-		return fmt.Errorf("failed converting public key into sorted hashed hex: %w", err)
-	}
-
-	if lenPksAndSignatures%2 != 0 {
-		return errors.New("uneven number of public keys and signatures provided")
-	}
-
-	var (
-		validatorsCount = lenPksAndSignatures / 2
-		pks             = pksAndSignatures[:validatorsCount]
-		signatures      = pksAndSignatures[validatorsCount:]
-	)
-
-	const fn = "changePublicKey"
-	message := []byte(strings.Join(append([]string{fn, forAddrOrig, reason, args[2], args[3], nonce}, pks...), ""))
-
-	if err = checkNonce(stub, forAddrOrig, nonce); err != nil {
+	if err = checkNonce(stub, request.Address, request.Nonce); err != nil {
 		return fmt.Errorf("failed checking nonce: %w", err)
 	}
 
-	if err = c.verifyValidatorSignatures(message, pks, signatures); err != nil {
+	if err = c.verifyValidatorSignatures(request.GetMessageForSign(), request.ValidatorsKeys, request.ValidatorsSignatures); err != nil {
 		return fmt.Errorf("failed checking signatures: %w", err)
 	}
 
-	addrToPkCompositeKey, err := compositekey.PublicKey(stub, forAddrOrig)
-	if err != nil {
-		return fmt.Errorf("failed making a public key composite key: %w", err)
-	}
-
-	// check that we have pub key for such address
-	keys, err := stub.GetState(addrToPkCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed getting keys from state: %w", err)
-	}
-	if len(keys) == 0 {
-		return fmt.Errorf("failed getting keys from state: no public keys for address %s", forAddrOrig)
-	}
-
-	// del old pub key -> pb.Address mapping
-	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(keys))
-	if err != nil {
-		return fmt.Errorf("failed making signed address composite key: %w", err)
-	}
-	// firstly get pb.SignedAddress to re-create it later in new mapping
-	signedAddrBytes, err := stub.GetState(pkToAddrCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed getting signed address from state: %w", err)
-	}
-	if len(signedAddrBytes) == 0 {
-		return errors.New("empty signed address bytes in state")
-	}
-	signedAddr := &pb.SignedAddress{}
-	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
-		return fmt.Errorf("failed unmarshalling signed address: %w", err)
-	}
-
-	// and delete
-	err = stub.DelState(pkToAddrCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed deleting signed address from state: %w", err)
-	}
-
-	// del old addr -> pub key mapping
-	err = stub.DelState(addrToPkCompositeKey)
-	if err != nil {
-		return fmt.Errorf("failed deleting public key from state: %w", err)
-	}
-
-	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, newKey)
-	if err != nil {
-		return fmt.Errorf("failed making new signed address composite key: %w", err)
-	}
-
-	signedAddr.SignedTx = append(append(append([]string{fn}, args[0:5]...), pks...), signatures...)
-	signedAddr.Reason = reason
-	signedAddr.ReasonId = int32(reasonID)
-	addrChangeMsg, err := proto.Marshal(signedAddr)
-	if err != nil {
-		return fmt.Errorf("failed marshalling signed address: %w", err)
-	}
-
-	if err = stub.PutState(newPkToAddrCompositeKey, addrChangeMsg); err != nil {
-		return fmt.Errorf("failed putting new signed address to state: %w", err)
-	}
-
-	// set new address -> key mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(newKey)); err != nil {
-		return fmt.Errorf("failed putting new public key to state: %w", err)
+	if err = changePublicKey(stub, request); err != nil {
+		return fmt.Errorf("failed changing public key: %w", err)
 	}
 
 	return nil

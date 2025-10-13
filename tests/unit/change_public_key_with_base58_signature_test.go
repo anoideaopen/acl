@@ -151,6 +151,9 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 				"acl",
 				common.TestAddr,
 				common.DefaultReason,
+				reasonID,
+				testCase.newPubKey,
+				nonce,
 			}
 			ssTx = append(ssTx, ss.pKeys()...)
 			ssTx = append(ssTx, ss.getSigns()...)
