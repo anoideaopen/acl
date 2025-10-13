@@ -49,8 +49,6 @@ const (
 
 var argumentIndexes = argumentIndexesForFunction{
 	"changePublicKey": {
-		argumentChaincode:                  -1,
-		argumentChannel:                    -1,
 		argumentAddress:                    0,
 		argumentReason:                     1,
 		argumentReasonID:                   2,
