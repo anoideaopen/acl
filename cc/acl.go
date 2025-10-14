@@ -1,4 +1,4 @@
-//nolint:funlen,gocyclo
+//nolint:funlen
 package cc
 
 import (

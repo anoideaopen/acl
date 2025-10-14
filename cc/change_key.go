@@ -2,6 +2,7 @@ package cc
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -121,20 +122,20 @@ func changePublicKeyRequestFromArguments(args []string, fn string) (ChangePublic
 	if arguments.Has(argumentAddress) {
 		address = args[arguments[argumentAddress]]
 		if len(address) == 0 {
-			return ChangePublicKeyRequest{}, fmt.Errorf(errs.ErrEmptyAddress)
+			return ChangePublicKeyRequest{}, errors.New(errs.ErrEmptyAddress)
 		}
 	}
 
 	if arguments.Has(argumentReason) {
 		reason = args[arguments[argumentReason]]
 		if len(reason) == 0 {
-			return ChangePublicKeyRequest{}, fmt.Errorf("reason not provided")
+			return ChangePublicKeyRequest{}, errors.New("reason not provided")
 		}
 	}
 
 	if arguments.Has(argumentReasonID) {
 		if len(args[arguments[argumentReasonID]]) == 0 {
-			return ChangePublicKeyRequest{}, fmt.Errorf("reason ID not provided")
+			return ChangePublicKeyRequest{}, errors.New("reason ID not provided")
 		}
 		reasonID, err = strconv.ParseInt(args[arguments[argumentReasonID]], base10, bitSize32)
 		if err != nil {
@@ -144,7 +145,7 @@ func changePublicKeyRequestFromArguments(args []string, fn string) (ChangePublic
 
 	if arguments.Has(argumentNewKey) {
 		if len(args[arguments[argumentNewKey]]) == 0 {
-			return ChangePublicKeyRequest{}, fmt.Errorf("empty new key")
+			return ChangePublicKeyRequest{}, errors.New("empty new key")
 		}
 		strKeys := strings.Split(args[arguments[argumentNewKey]], publicKeyDelimiter)
 		if err = helpers.CheckKeysArr(strKeys); err != nil {
@@ -159,18 +160,18 @@ func changePublicKeyRequestFromArguments(args []string, fn string) (ChangePublic
 	if arguments.Has(argumentNonce) {
 		nonce = args[arguments[argumentNonce]]
 		if len(nonce) == 0 {
-			return ChangePublicKeyRequest{}, fmt.Errorf("empty nonce")
+			return ChangePublicKeyRequest{}, errors.New("empty nonce")
 		}
 	}
 
 	pksAndSignatures := args[arguments[argumentValidatorKeysAndSignatures]:]
 	lenPksAndSignatures := len(pksAndSignatures)
 	if lenPksAndSignatures == 0 {
-		return ChangePublicKeyRequest{}, fmt.Errorf("no public keys and signatures provided")
+		return ChangePublicKeyRequest{}, errors.New("no public keys and signatures provided")
 	}
 
 	if lenPksAndSignatures%2 != 0 {
-		return ChangePublicKeyRequest{}, fmt.Errorf("uneven number of public keys and signatures provided")
+		return ChangePublicKeyRequest{}, errors.New("uneven number of public keys and signatures provided")
 	}
 
 	return ChangePublicKeyRequest{
@@ -203,7 +204,7 @@ func changePublicKey(stub shim.ChaincodeStubInterface, request ChangePublicKeyRe
 		return fmt.Errorf("failed getting keys from state: no public keys for address %s", request.Address)
 	}
 	if bytes.Equal(keys, []byte(request.NewPublicKey)) {
-		return fmt.Errorf("the new key is equivalent to an existing one")
+		return errors.New("the new key is equivalent to an existing one")
 	}
 
 	// del old pub key -> pb.Address mapping
@@ -217,7 +218,7 @@ func changePublicKey(stub shim.ChaincodeStubInterface, request ChangePublicKeyRe
 		return fmt.Errorf("failed getting signed address from state: %w", err)
 	}
 	if len(signedAddrBytes) == 0 {
-		return fmt.Errorf("empty signed address bytes in state")
+		return errors.New("empty signed address bytes in state")
 	}
 	signedAddr := &pb.SignedAddress{}
 	if err = proto.Unmarshal(signedAddrBytes, signedAddr); err != nil {
