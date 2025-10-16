@@ -1,10 +1,7 @@
 package unit
 
 import (
-	"crypto/ed25519"
-	"crypto/rand"
 	"crypto/sha3"
-	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
@@ -23,33 +20,49 @@ import (
 	pbBuf "google.golang.org/protobuf/proto"
 )
 
-func TestChangePublicKeyWithBase58Signature(t *testing.T) {
+func TestChangePublicKeyWithTypeBase58Signature(t *testing.T) {
 	t.Parallel()
+
+	newPubKey, err := cc.PublicKeyFromBase58String("PmNVcznMPM7xg5eSGWA7LLrW2kqfNMbnpEBVWhKg3yGShfEj6Eec5KrahQFTWBuQQ8ZHecPtXVCUm88ensE6ztKG")
+	require.NoError(t, err)
+	newPubKey.Type = pb.KeyType_secp256k1.String()
 
 	for _, testCase := range []struct {
 		description    string
 		respStatus     int32
 		errorMsg       string
 		newPubKey      string
+		newPubKeyType  string
 		validatorCount int
 	}{
 		{
 			description:    "change public key: two validator",
 			respStatus:     int32(shim.OK),
-			newPubKey:      "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
+			newPubKey:      newPubKey.InBase58,
+			newPubKeyType:  newPubKey.Type,
 			validatorCount: 2,
 		},
 		{
 			description:    "change public key: two validator",
 			respStatus:     int32(shim.OK),
-			newPubKey:      "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
+			newPubKey:      newPubKey.InBase58,
+			newPubKeyType:  newPubKey.Type,
 			validatorCount: 5,
+		},
+		{
+			description:    "change public key: invalid length",
+			respStatus:     int32(shim.ERROR),
+			errorMsg:       "unexpected key length",
+			newPubKey:      common.PubKey,
+			newPubKeyType:  newPubKey.Type,
+			validatorCount: 3,
 		},
 		{
 			description:    "change public key: two validator",
 			respStatus:     int32(shim.ERROR),
 			errorMsg:       "the new key is equivalent to an existing one",
 			newPubKey:      common.PubKey,
+			newPubKeyType:  pb.KeyType_ed25519.String(),
 			validatorCount: 3,
 		},
 	} {
@@ -73,7 +86,18 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 
 			nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 			reasonID := "1"
-			mArgs := []string{common.FnChangePublicKeyWithBase58Signature, "", "acl", "acl", common.TestAddr, common.DefaultReason, reasonID, testCase.newPubKey, nonce}
+			mArgs := []string{
+				common.FnChangePublicKeyWithTypeAndBase58Signature,
+				"",
+				"acl",
+				"acl",
+				common.TestAddr,
+				common.DefaultReason,
+				reasonID,
+				testCase.newPubKey,
+				testCase.newPubKeyType,
+				nonce,
+			}
 			mArgs = append(mArgs, ss.pKeys()...)
 			message := sha3.Sum256([]byte(strings.Join(mArgs, "")))
 			err = ss.signs(message[:])
@@ -87,6 +111,8 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 			keyNonce, err := shim.CreateCompositeKey(compositekey.NoncePrefix, []string{common.TestAddr})
 			require.NoError(t, err)
 			oldKeyPkType, err := shim.CreateCompositeKey(compositekey.PublicKeyTypePrefix, []string{common.TestAddrHashInHex})
+			require.NoError(t, err)
+			newKeyPkType, err := shim.CreateCompositeKey(compositekey.PublicKeyTypePrefix, []string{newPubKey.HashInHex})
 			require.NoError(t, err)
 
 			hashed := sha3.Sum256(base58.Decode(common.PubKey))
@@ -114,7 +140,7 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 			})
 
 			ccAcl := cc.New()
-			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKeyWithBase58Signature, mArgs[1:])
+			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKeyWithTypeAndBase58Signature, mArgs[1:])
 			resp := ccAcl.Invoke(mockStub)
 
 			require.Equal(t, testCase.respStatus, resp.Status)
@@ -143,13 +169,17 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 			keyAddress, err = shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{string(val)})
 			require.NoError(t, err)
 
+			key, val = mockStub.PutStateArgsForCall(3)
+			require.Equal(t, newKeyPkType, key)
+			require.Equal(t, string(val), newPubKey.Type)
+
 			key, val = mockStub.PutStateArgsForCall(1)
 			require.Equal(t, keyAddress, key)
 			signAddrGet := &pb.SignedAddress{}
 			err = pbBuf.Unmarshal(val, signAddrGet)
 			require.NoError(t, err)
 			ssTx := []string{
-				common.FnChangePublicKeyWithBase58Signature,
+				common.FnChangePublicKeyWithTypeAndBase58Signature,
 				"",
 				"acl",
 				"acl",
@@ -157,6 +187,7 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 				common.DefaultReason,
 				reasonID,
 				testCase.newPubKey,
+				testCase.newPubKeyType,
 				nonce,
 			}
 			ssTx = append(ssTx, ss.pKeys()...)
@@ -173,63 +204,4 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 			}, signAddrGet))
 		})
 	}
-}
-
-type artifact struct {
-	private string
-	public  string
-	sign    string
-}
-
-type secrets struct {
-	data []artifact
-}
-
-func (ss *secrets) pKeys() []string {
-	pubKeys := make([]string, len(ss.data))
-
-	for i := range ss.data {
-		pubKeys[i] = ss.data[i].public
-	}
-
-	return pubKeys
-}
-
-func (ss *secrets) getSigns() []string {
-	signs := make([]string, len(ss.data))
-
-	for i := range ss.data {
-		signs[i] = ss.data[i].sign
-	}
-
-	return signs
-}
-
-func newSecrets(validators int) (ss *secrets, err error) {
-	ss = &secrets{}
-
-	for i := 0; i < validators; i++ {
-		public, secret, err := ed25519.GenerateKey(rand.Reader)
-		if err != nil {
-			return nil, err
-		}
-
-		ss.data = append(ss.data, artifact{
-			private: base58.Encode(secret),
-			public:  base58.Encode(public),
-		})
-	}
-
-	return ss, nil
-}
-
-func (ss *secrets) signs(message []byte) error {
-	for i := range ss.data {
-		sign := ed25519.Sign(base58.Decode(ss.data[i].private), message)
-		ss.data[i].sign = base58.Encode(sign)
-		if !ed25519.Verify(base58.Decode(ss.data[i].public), message, sign) {
-			return fmt.Errorf("invalid signature")
-		}
-	}
-	return nil
 }

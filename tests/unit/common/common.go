@@ -23,21 +23,23 @@ import (
 
 // ACL API Functions
 const (
-	FnAddUser                            = "addUser"
-	FnAddUserWithPublicKeyType           = "addUserWithPublicKeyType"
-	FnAddMultisig                        = "addMultisig"
-	FnAddMultisigWithBase58Signature     = "addMultisigWithBase58Signature"
-	FnAddToList                          = "addToList"
-	FnDelFromList                        = "delFromList"
-	FnCheckKeys                          = "checkKeys"
-	FnGetAccInfoFn                       = "getAccountInfo"
-	FnChangePublicKey                    = "changePublicKey"
-	FnChangePublicKeyWithBase58Signature = "changePublicKeyWithBase58Signature"
-	FnChangeMultisigPublicKey            = "changeMultisigPublicKey"
-	FnSetKYC                             = "setkyc"
-	FnAddAdditionalKey                   = "addAdditionalKey"
-	FnRemoveAdditionalKey                = "removeAdditionalKey"
-	FnGetAccountsInfo                    = "getAccountsInfo"
+	FnAddUser                                   = "addUser"
+	FnAddUserWithPublicKeyType                  = "addUserWithPublicKeyType"
+	FnAddMultisig                               = "addMultisig"
+	FnAddMultisigWithBase58Signature            = "addMultisigWithBase58Signature"
+	FnAddToList                                 = "addToList"
+	FnDelFromList                               = "delFromList"
+	FnCheckKeys                                 = "checkKeys"
+	FnGetAccInfoFn                              = "getAccountInfo"
+	FnChangePublicKey                           = "changePublicKey"
+	FnChangePublicKeyWithType                   = "changePublicKeyWithType"
+	FnChangePublicKeyWithBase58Signature        = "changePublicKeyWithBase58Signature"
+	FnChangePublicKeyWithTypeAndBase58Signature = "changePublicKeyWithTypeAndBase58Signature"
+	FnChangeMultisigPublicKey                   = "changeMultisigPublicKey"
+	FnSetKYC                                    = "setkyc"
+	FnAddAdditionalKey                          = "addAdditionalKey"
+	FnRemoveAdditionalKey                       = "removeAdditionalKey"
+	FnGetAccountsInfo                           = "getAccountsInfo"
 )
 
 // Access Matrix ACL API Functions

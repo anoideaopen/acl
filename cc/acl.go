@@ -412,23 +412,13 @@ func (c *ACL) GetAddresses(stub shim.ChaincodeStubInterface, args []string) ([]b
 // - 7: Nonce
 // - 8 and onwards: List of validators' public keys and their corresponding signatures
 func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterface, args []string) error {
-	const fn = "changePublicKeyWithBase58Signature"
-
 	if err := c.verifyAccess(stub); err != nil {
 		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
-	request, err := changePublicKeyRequestFromArguments(args, fn)
+	request, err := changePublicKeyRequestWithBase58SignatureFromArguments(stub, args)
 	if err != nil {
 		return fmt.Errorf("failed parsing arguments: %w", err)
-	}
-
-	if err = checkNonce(stub, request.Address, request.Nonce); err != nil {
-		return fmt.Errorf("failed checking nonce: %w", err)
-	}
-
-	if err = c.checkValidatorsSignedWithBase58Signature(request.GetMessageForSign(), request.ValidatorsKeys, request.ValidatorsSignatures); err != nil {
-		return fmt.Errorf("failed checking signatures: %w", err)
 	}
 
 	if err = changePublicKey(stub, request); err != nil {
@@ -446,23 +436,66 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 // arg[4] - nonce
 // arg[5:] - public keys and signatures of validators
 func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) error {
-	const fn = "changePublicKey"
-
 	if err := c.verifyAccess(stub); err != nil {
 		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
 	}
 
-	request, err := changePublicKeyRequestFromArguments(args, fn)
+	request, err := changePublicKeyRequestFromArguments(stub, args)
 	if err != nil {
 		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
-	if err = checkNonce(stub, request.Address, request.Nonce); err != nil {
-		return fmt.Errorf("failed checking nonce: %w", err)
+	if err = changePublicKey(stub, request); err != nil {
+		return fmt.Errorf("failed changing public key: %w", err)
 	}
 
-	if err = c.verifyValidatorSignatures(request.GetMessageForSign(), request.ValidatorsKeys, request.ValidatorsSignatures); err != nil {
-		return fmt.Errorf("failed checking signatures: %w", err)
+	return nil
+}
+
+// ChangePublicKeyWithTypeAndBase58Signature changes public key and its type
+// - 0: Request ID
+// - 1: Chaincode name
+// - 2: Channel ID
+// - 3: User's address (base58check)
+// - 4: Reason (string)
+// - 5: Reason ID (string)
+// - 6: New key (base58)
+// - 7: New key type
+// - 8: Nonce
+// - 9 and onwards: List of validators' public keys and their corresponding base58-encoded signatures
+func (c *ACL) ChangePublicKeyWithTypeAndBase58Signature(stub shim.ChaincodeStubInterface, args []string) error {
+	if err := c.verifyAccess(stub); err != nil {
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+	}
+
+	request, err := changePublicKeyRequestWithTypeAndBase58SignatureFromArguments(stub, args)
+	if err != nil {
+		return fmt.Errorf("failed parsing arguments: %w", err)
+	}
+
+	if err = changePublicKey(stub, request); err != nil {
+		return fmt.Errorf("failed changing public key: %w", err)
+	}
+
+	return nil
+}
+
+// ChangePublicKeyWithType changes public key and its type
+// args[0] - user's address (base58check)
+// args[1] - reason (string)
+// args[2] - reason ID (string)
+// args[3] - new key (base58)
+// args[4] - type of the new key
+// args[5] - nonce
+// args[6:] - public keys and signatures of validators
+func (c *ACL) ChangePublicKeyWithType(stub shim.ChaincodeStubInterface, args []string) error {
+	if err := c.verifyAccess(stub); err != nil {
+		return fmt.Errorf(errs.ErrUnauthorizedMsg, err.Error())
+	}
+
+	request, err := changePublicKeyRequestWithTypeFromArguments(stub, args)
+	if err != nil {
+		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
 	if err = changePublicKey(stub, request); err != nil {

@@ -59,7 +59,7 @@ func (r *AddMultisigRequest) parseArguments(
 	const minSignaturesRequired = 1
 
 	var (
-		minArgsCount = len(argOrder) + 1 // +1 because each public keys should have a relative signature
+		minArgsCount = len(argOrder) + 1 // +1 because each public key should have a relative signature
 		argsNum      = len(args)
 		err          error
 	)
@@ -142,7 +142,7 @@ func (r *AddMultisigRequest) parseKeysAndSignatures(
 	r.PublicKeys = make([]PublicKey, numberOfKeys)
 	r.Signatures = make([][]byte, numberOfKeys)
 	for i := range numberOfKeys {
-		if r.PublicKeys[i], err = publicKeyFromBase58String(keysAndSignatures[i]); err != nil {
+		if r.PublicKeys[i], err = PublicKeyFromBase58String(keysAndSignatures[i]); err != nil {
 			return fmt.Errorf("failed decoding public key: %w", err)
 		}
 

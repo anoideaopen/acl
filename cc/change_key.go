@@ -4,12 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
-	"github.com/anoideaopen/acl/cc/errs"
-	"github.com/anoideaopen/acl/helpers"
 	pb "github.com/anoideaopen/foundation/proto"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"google.golang.org/protobuf/proto"
@@ -28,36 +24,79 @@ func (matrix argumentIndexMatrix) IndexOf(argument string) int {
 	return -1
 }
 
-type argumentIndexesForFunction map[string]argumentIndexMatrix
-
-func (indexes argumentIndexesForFunction) IndexesFor(function string) argumentIndexMatrix {
-	if matrix, ok := indexes[function]; ok {
-		return matrix
-	}
-	return map[string]int{}
-}
-
 const (
 	argumentChaincode                  = "chaincode"
 	argumentChannel                    = "channel"
 	argumentAddress                    = "address"
 	argumentNewKey                     = "newKey"
+	argumentNewKeyType                 = "newKeyType"
 	argumentReason                     = "reason"
 	argumentReasonID                   = "reasonID"
 	argumentNonce                      = "nonce"
 	argumentValidatorKeysAndSignatures = "validatorKeysAndSignatures"
 )
 
-var argumentIndexes = argumentIndexesForFunction{
-	"changePublicKey": {
+const (
+	signatureInHex    = false
+	signatureInBase58 = true
+)
+
+func changePublicKeyRequestFromArguments(
+	stub shim.ChaincodeStubInterface,
+	args []string,
+) (ChangePublicKeyRequest, error) {
+	const operation = "changePublicKey"
+
+	argsOrder := argumentIndexMatrix{
 		argumentAddress:                    0,
 		argumentReason:                     1,
 		argumentReasonID:                   2,
 		argumentNewKey:                     3,
 		argumentNonce:                      4,
 		argumentValidatorKeysAndSignatures: 5,
-	},
-	"changePublicKeyWithBase58Signature": {
+	}
+
+	request := ChangePublicKeyRequest{}
+
+	if err := request.parseArguments(stub, args, argsOrder, operation, signatureInHex); err != nil {
+		return ChangePublicKeyRequest{}, fmt.Errorf("failed parsing arguments: %w", err)
+	}
+
+	return request, nil
+}
+
+func changePublicKeyRequestWithTypeFromArguments(
+	stub shim.ChaincodeStubInterface,
+	args []string,
+) (ChangePublicKeyRequest, error) {
+	const operation = "changePublicKeyWithType"
+
+	argsOrder := argumentIndexMatrix{
+		argumentAddress:                    0,
+		argumentReason:                     1,
+		argumentReasonID:                   2,
+		argumentNewKey:                     3,
+		argumentNewKeyType:                 4,
+		argumentNonce:                      5,
+		argumentValidatorKeysAndSignatures: 6,
+	}
+
+	request := ChangePublicKeyRequest{}
+
+	if err := request.parseArguments(stub, args, argsOrder, operation, signatureInHex); err != nil {
+		return ChangePublicKeyRequest{}, fmt.Errorf("failed parsing arguments: %w", err)
+	}
+
+	return request, nil
+}
+
+func changePublicKeyRequestWithBase58SignatureFromArguments(
+	stub shim.ChaincodeStubInterface,
+	args []string,
+) (ChangePublicKeyRequest, error) {
+	const operation = "changePublicKeyWithBase58Signature"
+
+	argsOrder := argumentIndexMatrix{
 		argumentChaincode:                  1,
 		argumentChannel:                    2,
 		argumentAddress:                    3,
@@ -66,127 +105,42 @@ var argumentIndexes = argumentIndexesForFunction{
 		argumentNewKey:                     6,
 		argumentNonce:                      7,
 		argumentValidatorKeysAndSignatures: 8,
-	},
+	}
+
+	request := ChangePublicKeyRequest{}
+
+	if err := request.parseArguments(stub, args, argsOrder, operation, signatureInBase58); err != nil {
+		return ChangePublicKeyRequest{}, fmt.Errorf("failed parsing arguments: %w", err)
+	}
+
+	return request, nil
 }
 
-type ChangePublicKeyRequest struct {
-	ChaincodeName        string
-	ChannelName          string
-	Address              string
-	Reason               string
-	ReasonID             int
-	NewPublicKey         string
-	Nonce                string
-	ValidatorsKeys       []string
-	ValidatorsSignatures []string
-	originalArguments    []string
-	function             string
-}
+func changePublicKeyRequestWithTypeAndBase58SignatureFromArguments(
+	stub shim.ChaincodeStubInterface,
+	args []string,
+) (ChangePublicKeyRequest, error) {
+	const operation = "changePublicKeyWithTypeAndBase58Signature"
 
-func (request ChangePublicKeyRequest) GetMessageForSign() []byte {
-	const argumentsDelimiter = ""
-	return []byte(request.function + strings.Join(request.originalArguments[:len(request.originalArguments)-len(request.ValidatorsKeys)], argumentsDelimiter))
-}
-
-func (request ChangePublicKeyRequest) GetOriginalArguments() []string {
-	return request.originalArguments
-}
-
-func changePublicKeyRequestFromArguments(args []string, fn string) (ChangePublicKeyRequest, error) {
-	const (
-		minPublicKeysAndSignatures = 2
-		publicKeyDelimiter         = "/"
-	)
-
-	arguments := argumentIndexes.IndexesFor(fn)
-	minArgumentsCount := arguments.IndexOf(argumentValidatorKeysAndSignatures) + minPublicKeysAndSignatures
-
-	if len(args) < minArgumentsCount {
-		return ChangePublicKeyRequest{}, fmt.Errorf("incorrect number of arguments: expected %d, got %d", minArgumentsCount, len(args))
+	argsOrder := argumentIndexMatrix{
+		argumentChaincode:                  1,
+		argumentChannel:                    2,
+		argumentAddress:                    3,
+		argumentReason:                     4,
+		argumentReasonID:                   5,
+		argumentNewKey:                     6,
+		argumentNewKeyType:                 7,
+		argumentNonce:                      8,
+		argumentValidatorKeysAndSignatures: 9,
 	}
 
-	var (
-		chaincodeName, channelName, address, reason, newKey, nonce string
-		reasonID                                                   int64
-		err                                                        error
-	)
+	request := ChangePublicKeyRequest{}
 
-	if arguments.Has(argumentChaincode) {
-		chaincodeName = args[arguments[argumentChaincode]]
+	if err := request.parseArguments(stub, args, argsOrder, operation, signatureInBase58); err != nil {
+		return ChangePublicKeyRequest{}, fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
-	if arguments.Has(argumentChannel) {
-		channelName = args[arguments[argumentChannel]]
-	}
-
-	if arguments.Has(argumentAddress) {
-		address = args[arguments[argumentAddress]]
-		if len(address) == 0 {
-			return ChangePublicKeyRequest{}, errors.New(errs.ErrEmptyAddress)
-		}
-	}
-
-	if arguments.Has(argumentReason) {
-		reason = args[arguments[argumentReason]]
-		if len(reason) == 0 {
-			return ChangePublicKeyRequest{}, errors.New("reason not provided")
-		}
-	}
-
-	if arguments.Has(argumentReasonID) {
-		if len(args[arguments[argumentReasonID]]) == 0 {
-			return ChangePublicKeyRequest{}, errors.New("reason ID not provided")
-		}
-		reasonID, err = strconv.ParseInt(args[arguments[argumentReasonID]], base10, bitSize32)
-		if err != nil {
-			return ChangePublicKeyRequest{}, fmt.Errorf("failed parsing reason ID: %w", err)
-		}
-	}
-
-	if arguments.Has(argumentNewKey) {
-		if len(args[arguments[argumentNewKey]]) == 0 {
-			return ChangePublicKeyRequest{}, errors.New("empty new key")
-		}
-		strKeys := strings.Split(args[arguments[argumentNewKey]], publicKeyDelimiter)
-		if err = helpers.CheckKeysArr(strKeys); err != nil {
-			return ChangePublicKeyRequest{}, fmt.Errorf("failed checking public keys: %w", err)
-		}
-		newKey, err = helpers.KeyStringToSortedHashedHex(strKeys)
-		if err != nil {
-			return ChangePublicKeyRequest{}, fmt.Errorf("failed converting public key into sorted hashed hex: %w", err)
-		}
-	}
-
-	if arguments.Has(argumentNonce) {
-		nonce = args[arguments[argumentNonce]]
-		if len(nonce) == 0 {
-			return ChangePublicKeyRequest{}, errors.New("empty nonce")
-		}
-	}
-
-	pksAndSignatures := args[arguments[argumentValidatorKeysAndSignatures]:]
-	lenPksAndSignatures := len(pksAndSignatures)
-	if lenPksAndSignatures == 0 {
-		return ChangePublicKeyRequest{}, errors.New("no public keys and signatures provided")
-	}
-
-	if lenPksAndSignatures%2 != 0 {
-		return ChangePublicKeyRequest{}, errors.New("uneven number of public keys and signatures provided")
-	}
-
-	return ChangePublicKeyRequest{
-		ChaincodeName:        chaincodeName,
-		ChannelName:          channelName,
-		Address:              address,
-		Reason:               reason,
-		ReasonID:             int(reasonID),
-		NewPublicKey:         newKey,
-		Nonce:                nonce,
-		ValidatorsKeys:       pksAndSignatures[:lenPksAndSignatures/2],
-		ValidatorsSignatures: pksAndSignatures[lenPksAndSignatures/2:],
-		function:             fn,
-		originalArguments:    args,
-	}, nil
+	return request, nil
 }
 
 func changePublicKey(stub shim.ChaincodeStubInterface, request ChangePublicKeyRequest) error {
@@ -196,19 +150,27 @@ func changePublicKey(stub shim.ChaincodeStubInterface, request ChangePublicKeyRe
 	}
 
 	// check that we have public key for such an address
-	keys, err := stub.GetState(addrToPkCompositeKey)
+	currentKey, err := stub.GetState(addrToPkCompositeKey)
 	if err != nil {
 		return fmt.Errorf("failed getting keys from state: %w", err)
 	}
-	if len(keys) == 0 {
+	if len(currentKey) == 0 {
 		return fmt.Errorf("failed getting keys from state: no public keys for address %s", request.Address)
 	}
-	if bytes.Equal(keys, []byte(request.NewPublicKey)) {
+	if bytes.Equal(currentKey, []byte(request.NewPublicKey.HashInHex)) {
 		return errors.New("the new key is equivalent to an existing one")
 	}
 
+	pkTypeCompositeKey, err := compositekey.PublicKeyType(stub, string(currentKey))
+	if err != nil {
+		return fmt.Errorf("failed creating public key type composite key: %w", err)
+	}
+	if err = stub.DelState(pkTypeCompositeKey); err != nil {
+		return fmt.Errorf("failed deleting old public key type from state: %w", err)
+	}
+
 	// del old pub key -> pb.Address mapping
-	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(keys))
+	pkToAddrCompositeKey, err := compositekey.SignedAddress(stub, string(currentKey))
 	if err != nil {
 		return fmt.Errorf("failed making signed address composite key: %w", err)
 	}
@@ -237,27 +199,24 @@ func changePublicKey(stub shim.ChaincodeStubInterface, request ChangePublicKeyRe
 		return fmt.Errorf("failed deleting public key from state: %w", err)
 	}
 
-	// set new key -> pb.SignedAddress mapping
-	newPkToAddrCompositeKey, err := compositekey.SignedAddress(stub, request.NewPublicKey)
-	if err != nil {
-		return fmt.Errorf("failed making new signed address composite key: %w", err)
+	if err = checkNonce(stub, request.Address, request.Nonce); err != nil {
+		return fmt.Errorf("failed checking nonce: %w", err)
 	}
 
-	signedAddr.SignedTx = append([]string{request.function}, request.GetOriginalArguments()...)
+	if err = checkSignatures(request.ValidatorsKeys, request.Message, request.ValidatorsSignatures); err != nil {
+		return fmt.Errorf("failed checking signatures: %w", err)
+	}
+
+	signedAddr.SignedTx = request.SignedTx
 	signedAddr.Reason = request.Reason
 	signedAddr.ReasonId = int32(request.ReasonID)
-	addrChangeMsg, err := proto.Marshal(signedAddr)
-	if err != nil {
-		return fmt.Errorf("failed marshalling signed address: %w", err)
+
+	if err = saveSignedAddress(stub, signedAddr, request.NewPublicKey.HashInHex, rewriteInExists); err != nil {
+		return fmt.Errorf("failed saving signed address: %w", err)
 	}
 
-	if err = stub.PutState(newPkToAddrCompositeKey, addrChangeMsg); err != nil {
-		return fmt.Errorf("failed putting new signed address to state: %w", err)
-	}
-
-	// set new address -> key mapping
-	if err = stub.PutState(addrToPkCompositeKey, []byte(request.NewPublicKey)); err != nil {
-		return fmt.Errorf("failed putting new public key to state: %w", err)
+	if err = savePublicKey(stub, request.NewPublicKey, request.Address); err != nil {
+		return fmt.Errorf("failed saving new public key: %w", err)
 	}
 
 	return nil
