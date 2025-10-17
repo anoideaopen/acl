@@ -21,33 +21,38 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestChangePublicKey(t *testing.T) {
+func TestChangePublicKeyWithType(t *testing.T) {
 	t.Parallel()
 
 	reasonID := "1"
-	newPubKey, err := cc.PublicKeyFromBase58String("94EdE9iZRzU9mUiVDNxYKKWymHeBxHR8mA8AetFrg8m4")
+
+	newPubKey, err := cc.PublicKeyFromBase58String("PmNVcznMPM7xg5eSGWA7LLrW2kqfNMbnpEBVWhKg3yGShfEj6Eec5KrahQFTWBuQQ8ZHecPtXVCUm88ensE6ztKG")
 	require.NoError(t, err)
+	newPubKey.Type = pb.KeyType_secp256k1.String()
 
 	for _, testCase := range []struct {
-		description string
-		respStatus  int32
-		errorMsg    string
-		newPubKey   string
-		prepare     func([]string) []string
+		description   string
+		respStatus    int32
+		errorMsg      string
+		newPubKey     string
+		newPubKeyType string
+		prepare       func([]string) []string
 	}{
 		{
-			description: "fraud: duplicate signature (wrong case)",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "duplicated public keys",
-			newPubKey:   newPubKey.InBase58,
+			description:   "fraud: duplicate signature (wrong case)",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "duplicated public keys",
+			newPubKey:     newPubKey.InBase58,
+			newPubKeyType: newPubKey.Type,
 			prepare: func(pubkeys []string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				args := []string{
-					common.FnChangePublicKey,
+					common.FnChangePublicKeyWithType,
 					common.TestAddr,
 					common.DefaultReason,
 					reasonID,
 					newPubKey.InBase58,
+					newPubKey.Type,
 					nonce,
 				}
 				pubkeys[2] = pubkeys[1]
@@ -67,18 +72,20 @@ func TestChangePublicKey(t *testing.T) {
 			},
 		},
 		{
-			description: "not all members signed (wrong case)",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "uneven number of public keys and signatures provided",
-			newPubKey:   newPubKey.InBase58,
+			description:   "not all members signed (wrong case)",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "uneven number of public keys and signatures provided",
+			newPubKey:     newPubKey.InBase58,
+			newPubKeyType: newPubKey.Type,
 			prepare: func(pubkeys []string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				args := []string{
-					common.FnChangePublicKey,
+					common.FnChangePublicKeyWithType,
 					common.TestAddr,
 					common.DefaultReason,
 					reasonID,
 					newPubKey.InBase58,
+					newPubKey.Type,
 					nonce,
 				}
 				pubkeys[2] = pubkeys[1]
@@ -98,52 +105,53 @@ func TestChangePublicKey(t *testing.T) {
 			},
 		},
 		{
-			description: "incorrect new key input (wrong case)",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key blabla",
-			newPubKey:   "blabla",
+			description:   "incorrect new key input (wrong case)",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "failed base58 decoding of key blabla",
+			newPubKey:     "blabla",
+			newPubKeyType: newPubKey.Type,
 		},
 		{
-			description: "pub key equal 43 symbols",
-			respStatus:  int32(shim.OK),
-			errorMsg:    "",
-			newPubKey:   "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2",
+			description:   "pub key equal 65 symbols",
+			respStatus:    int32(shim.OK),
+			errorMsg:      "",
+			newPubKey:     newPubKey.InBase58,
+			newPubKeyType: newPubKey.Type,
 		},
 		{
-			description: "pub key equal 44 symbols",
-			respStatus:  int32(shim.OK),
-			errorMsg:    "",
-			newPubKey:   newPubKey.InBase58,
+			description:   "bad public key type",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "invalid public key type",
+			newPubKey:     newPubKey.InBase58,
+			newPubKeyType: "XXTEA",
 		},
 		{
-			description: "pub key empty",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    errs.ErrEmptyNewKey,
-			newPubKey:   "",
+			description:   "pub key not equal 65 symbols",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "unexpected key length",
+			newPubKey:     "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z",
+			newPubKeyType: newPubKey.Type,
 		},
 		{
-			description: "pub key more than 44 symbols",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "incorrect len of decoded from base58 public key 'Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV': '33'",
-			newPubKey:   "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2zV",
+			description:   "pub key empty",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      errs.ErrEmptyNewKey,
+			newPubKey:     "",
+			newPubKeyType: newPubKey.Type,
 		},
 		{
-			description: "pub key less than 43 symbols",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "incorrect len of decoded from base58 public key 'Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR': '31'",
-			newPubKey:   "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR",
+			description:   "pub key wrong numeric zero",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "failed base58 decoding of key 00000000000000000000000000000000",
+			newPubKey:     "00000000000000000000000000000000",
+			newPubKeyType: newPubKey.Type,
 		},
 		{
-			description: "pub key wrong numeric zero",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key 00000000000000000000000000000000",
-			newPubKey:   "00000000000000000000000000000000",
-		},
-		{
-			description: "pub key with special symbols",
-			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
-			newPubKey:   "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			description:   "pub key with special symbols",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			newPubKey:     "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			newPubKeyType: newPubKey.Type,
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
@@ -166,11 +174,12 @@ func TestChangePublicKey(t *testing.T) {
 			}
 			nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 			args := []string{
-				common.FnChangePublicKey,
+				common.FnChangePublicKeyWithType,
 				common.TestAddr,
 				common.DefaultReason,
 				reasonID,
 				testCase.newPubKey,
+				testCase.newPubKeyType,
 				nonce,
 			}
 
@@ -197,6 +206,8 @@ func TestChangePublicKey(t *testing.T) {
 			require.NoError(t, err)
 			oldKeyPkType, err := shim.CreateCompositeKey(compositekey.PublicKeyTypePrefix, []string{common.TestAddrHashInHex})
 			require.NoError(t, err)
+			newKeyPkType, err := shim.CreateCompositeKey(compositekey.PublicKeyTypePrefix, []string{newPubKey.HashInHex})
+			require.NoError(t, err)
 
 			hashed := sha3.Sum256(base58.Decode(common.PubKey))
 			signAddr, err := proto.Marshal(&pb.SignedAddress{
@@ -221,7 +232,7 @@ func TestChangePublicKey(t *testing.T) {
 			})
 
 			ccAcl := cc.New()
-			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKey, args[1:])
+			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKeyWithType, args[1:])
 			resp := ccAcl.Invoke(mockStub)
 
 			require.Equal(t, testCase.respStatus, resp.Status)
@@ -250,6 +261,10 @@ func TestChangePublicKey(t *testing.T) {
 			keyAddress, err = shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{string(val)})
 			require.NoError(t, err)
 
+			key, val = mockStub.PutStateArgsForCall(3)
+			require.Equal(t, newKeyPkType, key)
+			require.Equal(t, string(val), newPubKey.Type)
+
 			key, val = mockStub.PutStateArgsForCall(1)
 			require.Equal(t, keyAddress, key)
 			signAddrGet := &pb.SignedAddress{}
@@ -262,11 +277,12 @@ func TestChangePublicKey(t *testing.T) {
 					IsIndustrial: true,
 				},
 				SignedTx: []string{
-					common.FnChangePublicKey,
+					common.FnChangePublicKeyWithType,
 					common.TestAddr,
 					common.DefaultReason,
 					reasonID,
 					testCase.newPubKey,
+					testCase.newPubKeyType,
 					nonce,
 					pKeys[0], pKeys[1], pKeys[2],
 					signatures[0], signatures[1], signatures[2],

@@ -42,7 +42,7 @@ func checkKeysRequestFromArguments(args []string) (CheckKeysRequest, error) {
 
 	publicKeys := make([]PublicKey, len(keysInBase58))
 	for i, key := range keysInBase58 {
-		publicKeys[i], err = publicKeyFromBase58String(key)
+		publicKeys[i], err = PublicKeyFromBase58String(key)
 		if err != nil {
 			return CheckKeysRequest{}, fmt.Errorf("%w, input: '%s'", err, keysInArgs)
 		}

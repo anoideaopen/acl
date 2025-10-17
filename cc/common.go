@@ -1,6 +1,8 @@
 package cc
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/anoideaopen/acl/cc/compositekey"
@@ -10,7 +12,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const failIfExists = false
+const (
+	failIfExists    = false
+	rewriteInExists = true
+)
+
+const newAddress = ""
 
 const ACLChaincodeName = "acl"
 
@@ -75,8 +82,12 @@ func saveMultisigPublicKey(
 func savePublicKey(
 	stub shim.ChaincodeStubInterface,
 	key PublicKey,
+	address string,
 ) error {
-	addrToPkCompositeKey, err := compositekey.PublicKey(stub, key.HashInBase58Check)
+	if address == "" {
+		address = key.HashInBase58Check
+	}
+	addrToPkCompositeKey, err := compositekey.PublicKey(stub, address)
 	if err != nil {
 		return fmt.Errorf("failed creating public key composite key: %w", err)
 	}
@@ -137,5 +148,26 @@ func saveAccountInfo(
 		return fmt.Errorf("failed putting account info into the state: %w", err)
 	}
 
+	return nil
+}
+
+func checkSignatures(keys []PublicKey, message string, signatures [][]byte) error {
+	if len(keys) != len(signatures) {
+		return errors.New("numbers of keys and signatures are not equal")
+	}
+
+	for i, key := range keys {
+		ok, err := key.verifySignature([]byte(message), signatures[i])
+		if err != nil {
+			return fmt.Errorf("failed verifying signature: %w", err)
+		}
+		if !ok {
+			return fmt.Errorf(
+				"the signature %s does not match the public key %s",
+				hex.EncodeToString(signatures[i]),
+				key.InBase58,
+			)
+		}
+	}
 	return nil
 }

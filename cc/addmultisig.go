@@ -125,24 +125,3 @@ func addMultisig(stub shim.ChaincodeStubInterface, request AddMultisigRequest) e
 
 	return nil
 }
-
-func checkSignatures(keys []PublicKey, message string, signatures [][]byte) error {
-	if len(keys) != len(signatures) {
-		return errors.New("numbers of keys and signatures are not equal")
-	}
-
-	for i, key := range keys {
-		ok, err := key.verifySignature([]byte(message), signatures[i])
-		if err != nil {
-			return fmt.Errorf("failed verifying signature: %w", err)
-		}
-		if !ok {
-			return fmt.Errorf(
-				"the signature %s does not match the public key %s",
-				hex.EncodeToString(signatures[i]),
-				key.InBase58,
-			)
-		}
-	}
-	return nil
-}

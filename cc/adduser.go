@@ -33,7 +33,7 @@ func addUser(stub shim.ChaincodeStubInterface, request AddUserRequest) error {
 		return fmt.Errorf("failed saving signed address: %w", err)
 	}
 
-	if err := savePublicKey(stub, request.PublicKey); err != nil {
+	if err := savePublicKey(stub, request.PublicKey, newAddress); err != nil {
 		return fmt.Errorf("failed saving public key: %w", err)
 	}
 
@@ -79,7 +79,7 @@ func addUserRequestFromArguments(args []string, withPublicKeyType bool) (AddUser
 		)
 	}
 
-	publicKey, err := publicKeyFromBase58String(args[indexPublicKey])
+	publicKey, err := PublicKeyFromBase58String(args[indexPublicKey])
 	if err != nil {
 		return AddUserRequest{}, fmt.Errorf("failed decoding public key: %w", err)
 	}

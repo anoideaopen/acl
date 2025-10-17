@@ -19,7 +19,7 @@ type PublicKey struct {
 	Type              string
 }
 
-func publicKeyFromBase58String(base58Encoded string) (PublicKey, error) {
+func PublicKeyFromBase58String(base58Encoded string) (PublicKey, error) {
 	bytes, err := helpers.DecodeBase58PublicKey(base58Encoded)
 	if err != nil {
 		return PublicKey{}, fmt.Errorf("failed decoding public key: %w", err)
