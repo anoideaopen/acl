@@ -39,6 +39,42 @@ func TestChangePublicKeyWithType(t *testing.T) {
 		prepare       func([]string) []string
 	}{
 		{
+			description:   "signed by non-validator (wrong case)",
+			respStatus:    int32(shim.ERROR),
+			errorMsg:      "not all validator keys provided",
+			newPubKey:     newPubKey.InBase58,
+			newPubKeyType: newPubKey.Type,
+			prepare: func(pubkeys []string) []string {
+				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
+				args := []string{
+					common.FnChangePublicKeyWithType,
+					common.TestAddr,
+					common.DefaultReason,
+					reasonID,
+					newPubKey.InBase58,
+					newPubKey.Type,
+					nonce,
+				}
+				pubkeys[2] = common.TestUsers[2].PublicKey
+
+				args = append(args, pubkeys...)
+
+				message := sha3.Sum256([]byte(strings.Join(args, "")))
+				_, vSignatures := common.GenerateTestValidatorSignatures(pubkeys, message[:])
+
+				var signatures []string
+				for _, signature := range vSignatures {
+					signatures = append(signatures, string(signature))
+				}
+
+				signatures[2] = string(common.HexEncodedSignature(base58.Decode(common.TestUsers[2].PrivateKey), message[:]))
+
+				args = append(args, signatures...)
+
+				return args
+			},
+		},
+		{
 			description:   "fraud: duplicate signature (wrong case)",
 			respStatus:    int32(shim.ERROR),
 			errorMsg:      "duplicated public keys",

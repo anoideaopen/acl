@@ -421,6 +421,10 @@ func (c *ACL) ChangePublicKeyWithBase58Signature(stub shim.ChaincodeStubInterfac
 		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
+	if err = c.verifyAllValidatorKeysProvided(request.ValidatorsKeys); err != nil {
+		return fmt.Errorf("failed verifying if all validator keys provided: %w", err)
+	}
+
 	if err = changePublicKey(stub, request); err != nil {
 		return fmt.Errorf("failed changing public key: %w", err)
 	}
@@ -443,6 +447,10 @@ func (c *ACL) ChangePublicKey(stub shim.ChaincodeStubInterface, args []string) e
 	request, err := changePublicKeyRequestFromArguments(stub, args)
 	if err != nil {
 		return fmt.Errorf("failed parsing arguments: %w", err)
+	}
+
+	if err = c.verifyAllValidatorKeysProvided(request.ValidatorsKeys); err != nil {
+		return fmt.Errorf("failed verifying if all validator keys provided: %w", err)
 	}
 
 	if err = changePublicKey(stub, request); err != nil {
@@ -473,6 +481,10 @@ func (c *ACL) ChangePublicKeyWithTypeAndBase58Signature(stub shim.ChaincodeStubI
 		return fmt.Errorf("failed parsing arguments: %w", err)
 	}
 
+	if err = c.verifyAllValidatorKeysProvided(request.ValidatorsKeys); err != nil {
+		return fmt.Errorf("failed verifying if all validator keys provided: %w", err)
+	}
+
 	if err = changePublicKey(stub, request); err != nil {
 		return fmt.Errorf("failed changing public key: %w", err)
 	}
@@ -496,6 +508,10 @@ func (c *ACL) ChangePublicKeyWithType(stub shim.ChaincodeStubInterface, args []s
 	request, err := changePublicKeyRequestWithTypeFromArguments(stub, args)
 	if err != nil {
 		return fmt.Errorf("failed parsing arguments: %w", err)
+	}
+
+	if err = c.verifyAllValidatorKeysProvided(request.ValidatorsKeys); err != nil {
+		return fmt.Errorf("failed verifying if all validator keys provided: %w", err)
 	}
 
 	if err = changePublicKey(stub, request); err != nil {
@@ -611,6 +627,31 @@ func (c *ACL) verifyValidatorSignatures(message []byte, validatorKeys, validator
 			)
 		}
 	}
+	return nil
+}
+
+func (c *ACL) verifyAllValidatorKeysProvided(keys []PublicKey) error {
+	var (
+		keysCountActual   = len(keys)
+		keysCountExpected = len(c.config.GetValidators())
+	)
+
+	if keysCountActual != keysCountExpected {
+		return errors.Errorf("provided %d validator keys, expected %d", keysCountActual, keysCountExpected)
+	}
+
+	allKeys := make(map[string]PublicKey)
+	for _, key := range keys {
+		allKeys[key.InBase58] = key
+	}
+
+	for _, validator := range c.config.GetValidators() {
+		_, present := allKeys[validator.GetPublicKey()]
+		if !present {
+			return errors.New("not all validator keys provided")
+		}
+	}
+
 	return nil
 }
 
