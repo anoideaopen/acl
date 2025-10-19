@@ -67,7 +67,7 @@ func TestChangePublicKeyWithType(t *testing.T) {
 					signatures = append(signatures, string(signature))
 				}
 
-				signatures[2] = string(common.HexEncodedSignature(base58.Decode(pubkeys[2]), message[:]))
+				signatures[2] = string(common.HexEncodedSignature(base58.Decode(common.TestUsers[2].PrivateKey), message[:]))
 
 				args = append(args, signatures...)
 
