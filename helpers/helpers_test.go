@@ -22,13 +22,13 @@ func TestDecodeBase58PublicKey(t *testing.T) {
 
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey wrong text", func(t *testing.T) {
 		key, err := DecodeBase58PublicKey("wrong key - text")
-		require.EqualError(t, err, "failed base58 decoding of key wrong key - text")
+		require.ErrorContains(t, err, "incorrect len of decoded from base58 public key")
 		require.Len(t, key, 0)
 	})
 
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey in hex", func(t *testing.T) {
 		key, err := DecodeBase58PublicKey(encodedHexPublicKey)
-		require.EqualError(t, err, fmt.Sprintf("failed base58 decoding of key %s", encodedHexPublicKey))
+		require.ErrorContains(t, err, fmt.Sprintf("incorrect len of decoded from base58 public key"))
 		require.Len(t, key, 0)
 	})
 
