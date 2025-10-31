@@ -10,7 +10,6 @@ import (
 
 	"github.com/anoideaopen/acl/cc"
 	"github.com/anoideaopen/acl/cc/compositekey"
-	"github.com/anoideaopen/acl/cc/errs"
 	"github.com/anoideaopen/acl/helpers"
 	"github.com/anoideaopen/acl/tests/unit/common"
 	pb "github.com/anoideaopen/foundation/proto"
@@ -191,7 +190,7 @@ func TestCheckKeys(t *testing.T) {
 			kycHash:     kycHash,
 			testUserID:  testUserID,
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    errs.ErrEmptyPubKey,
+			errorMsg:    "encoded base 58 public key is empty",
 		},
 		{
 			description: "public key more than 44 symbols",
@@ -413,7 +412,7 @@ func TestCheckKeys(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnCheckKeys, []string{testCase.testPubKey})
 			resp := ccAcl.Invoke(mockStub)
 
-			// check result
+			// check a result
 			require.Equal(t, testCase.respStatus, resp.Status)
 			require.Contains(t, resp.Message, testCase.errorMsg)
 
