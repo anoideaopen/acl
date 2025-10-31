@@ -31,10 +31,6 @@ func (request *ChangePublicKeyRequest) parseArguments(
 	operation string,
 	signaturesInBase58 bool,
 ) error {
-	if !argsOrder.Has(argumentValidatorKeysAndSignatures) {
-		return errors.New("missing argument validator keys and signatures")
-	}
-
 	var err error
 
 	minArgumentsCount := argsOrder.IndexOf(argumentValidatorKeysAndSignatures) + minPublicKeysAndSignatures
