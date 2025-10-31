@@ -64,14 +64,14 @@ func TestChangeMultisigPublicKey(t *testing.T) {
 			description: "public key wrong numeric zero",
 			newPubKey:   "00000000000000000000000000000000",
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key 00000000000000000000000000000000",
+			errorMsg:    "failed decoding public key",
 		},
 
 		{
 			description: "public key with special symbols",
 			newPubKey:   "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			errorMsg:    "failed decoding public key",
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {

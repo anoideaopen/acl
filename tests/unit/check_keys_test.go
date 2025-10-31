@@ -236,7 +236,7 @@ func TestCheckKeys(t *testing.T) {
 			kycHash:     kycHash,
 			testUserID:  testUserID,
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key 00000000000000000000000000000000",
+			errorMsg:    "failed decoding public key",
 		},
 		{
 			description: "public key with special symbols",
@@ -245,7 +245,7 @@ func TestCheckKeys(t *testing.T) {
 			kycHash:     kycHash,
 			testUserID:  testUserID,
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			errorMsg:    "failed decoding public key",
 		},
 		{
 			description: "multi keys",

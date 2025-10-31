@@ -111,22 +111,22 @@ func savePublicKey(
 func readPublicKeyType(
 	stub shim.ChaincodeStubInterface,
 	keyHashInHex string,
-) (string, error) {
+) (string, bool, error) {
 	typeCompositeKey, err := compositekey.PublicKeyType(stub, keyHashInHex)
 	if err != nil {
-		return "", fmt.Errorf("failed creating public key type composite key: %w", err)
+		return "", false, fmt.Errorf("failed creating public key type composite key: %w", err)
 	}
 
 	keyTypeBytes, err := stub.GetState(typeCompositeKey)
 	if err != nil {
-		return "", fmt.Errorf("failed reading public key type from the state: %w", err)
+		return "", false, fmt.Errorf("failed reading public key type from the state: %w", err)
 	}
 
 	if len(keyTypeBytes) == 0 {
-		return helpers.DefaultPublicKeyType(), nil
+		return helpers.DefaultPublicKeyType(), false, nil
 	}
 
-	return string(keyTypeBytes), nil
+	return string(keyTypeBytes), true, nil
 }
 
 func saveAccountInfo(

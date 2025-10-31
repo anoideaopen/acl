@@ -26,14 +26,34 @@ func PublicKeyFromBase58String(base58Encoded string) (PublicKey, error) {
 	}
 	hashed := sha3.Sum256(bytes)
 
-	return PublicKey{
+	key := PublicKey{
 		InBase58:          base58Encoded,
 		Bytes:             bytes,
 		Hash:              hashed[:],
 		HashInHex:         hex.EncodeToString(hashed[:]),
 		HashInBase58Check: base58.CheckEncode(hashed[1:], hashed[0]),
 		Type:              helpers.DefaultPublicKeyType(),
-	}, nil
+	}
+
+	key.setTypeByKeyLength()
+
+	return key, nil
+}
+
+func (key *PublicKey) setTypeByKeyLength() {
+	if key.isEd25519() {
+		key.Type = pb.KeyType_ed25519.String()
+		return
+	}
+	if key.isSecp256k1() {
+		key.Type = pb.KeyType_secp256k1.String()
+		return
+	}
+	if key.isGost() {
+		key.Type = pb.KeyType_gost.String()
+		return
+	}
+	key.Type = helpers.DefaultPublicKeyType()
 }
 
 func (key *PublicKey) isSecp256k1() bool {

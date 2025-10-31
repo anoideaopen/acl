@@ -164,7 +164,7 @@ func TestAddMultisig(t *testing.T) {
 		{
 			description: "pub key wrong numeric zero",
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key 00000000000000000000000000000000",
+			errorMsg:    "failed decoding public key",
 			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "00000000000000000000000000000000"
@@ -174,7 +174,7 @@ func TestAddMultisig(t *testing.T) {
 		{
 			description: "pub key with special symbols",
 			respStatus:  int32(shim.ERROR),
-			errorMsg:    "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			errorMsg:    "failed decoding public key",
 			prepare: func(pubkeys []string, signs []string, _ []string, _ map[string][]byte, _ string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 				pubkeys[1] = "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra"

@@ -1,14 +1,12 @@
 package cc
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/anoideaopen/acl/helpers"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 )
 
@@ -33,10 +31,6 @@ func (request *ChangePublicKeyRequest) parseArguments(
 	operation string,
 	signaturesInBase58 bool,
 ) error {
-	const minPublicKeysAndSignatures = 2
-
-	const messageSeparator = ""
-
 	if !argsOrder.Has(argumentValidatorKeysAndSignatures) {
 		return errors.New("missing argument validator keys and signatures")
 	}
@@ -97,8 +91,12 @@ func (request *ChangePublicKeyRequest) parseArguments(
 		}
 		request.NewPublicKey.Type = args[argsOrder[argumentNewKeyType]]
 	} else {
-		if request.NewPublicKey.Type, err = readPublicKeyType(stub, request.NewPublicKey.HashInHex); err != nil {
-			return fmt.Errorf("failed reading public key type: %w", err)
+		storedType, found, err := readPublicKeyType(stub, request.NewPublicKey.HashInHex)
+		if err != nil {
+			return fmt.Errorf("failed reading type of a public key: %w", err)
+		}
+		if found {
+			request.NewPublicKey.Type = storedType
 		}
 	}
 
@@ -113,54 +111,13 @@ func (request *ChangePublicKeyRequest) parseArguments(
 		}
 	}
 
-	err = request.parseValidatorKeysAndSignatures(stub, args[argsOrder[argumentValidatorKeysAndSignatures]:], signaturesInBase58)
+	request.ValidatorsKeys, request.ValidatorsSignatures, err = parseKeysAndSignatures(stub, args[argsOrder[argumentValidatorKeysAndSignatures]:], signaturesInBase58)
 	if err != nil {
 		return fmt.Errorf("failed parsing validator keys and signatures: %w", err)
 	}
 
 	request.Message = strings.Join(append([]string{operation}, args[:len(args)-len(request.ValidatorsKeys)]...), messageSeparator)
 	request.SignedTx = append([]string{operation}, args...)
-
-	return nil
-}
-
-func (request *ChangePublicKeyRequest) parseValidatorKeysAndSignatures(
-	stub shim.ChaincodeStubInterface,
-	keysAndSignatures []string,
-	signaturesInBase58 bool,
-) error {
-	var err error
-
-	if len(keysAndSignatures)%2 != 0 {
-		return errors.New("uneven number of public keys and signatures provided")
-	}
-
-	numberOfKeys := len(keysAndSignatures) / 2
-
-	if err = helpers.CheckKeysArr(keysAndSignatures[:numberOfKeys]); err != nil {
-		return fmt.Errorf("failed checking public keys: %w", err)
-	}
-
-	request.ValidatorsKeys = make([]PublicKey, numberOfKeys)
-	request.ValidatorsSignatures = make([][]byte, numberOfKeys)
-	for i := range numberOfKeys {
-		if request.ValidatorsKeys[i], err = PublicKeyFromBase58String(keysAndSignatures[i]); err != nil {
-			return fmt.Errorf("failed decoding public key: %w", err)
-		}
-
-		if request.ValidatorsKeys[i].Type, err = readPublicKeyType(stub, request.ValidatorsKeys[i].HashInHex); err != nil {
-			return fmt.Errorf("failed reading public key type: %w", err)
-		}
-
-		if signaturesInBase58 {
-			request.ValidatorsSignatures[i] = base58.Decode(keysAndSignatures[i+numberOfKeys])
-		} else {
-			request.ValidatorsSignatures[i], err = hex.DecodeString(keysAndSignatures[i+numberOfKeys])
-			if err != nil {
-				return fmt.Errorf("failed decoding signature: %w", err)
-			}
-		}
-	}
 
 	return nil
 }

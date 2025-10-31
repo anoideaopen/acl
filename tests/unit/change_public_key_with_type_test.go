@@ -143,7 +143,7 @@ func TestChangePublicKeyWithType(t *testing.T) {
 		{
 			description:   "incorrect new key input (wrong case)",
 			respStatus:    int32(shim.ERROR),
-			errorMsg:      "failed base58 decoding of key blabla",
+			errorMsg:      "failed decoding public key",
 			newPubKey:     "blabla",
 			newPubKeyType: newPubKey.Type,
 		},
@@ -178,14 +178,14 @@ func TestChangePublicKeyWithType(t *testing.T) {
 		{
 			description:   "pub key wrong numeric zero",
 			respStatus:    int32(shim.ERROR),
-			errorMsg:      "failed base58 decoding of key 00000000000000000000000000000000",
+			errorMsg:      "failed decoding public key",
 			newPubKey:     "00000000000000000000000000000000",
 			newPubKeyType: newPubKey.Type,
 		},
 		{
 			description:   "pub key with special symbols",
 			respStatus:    int32(shim.ERROR),
-			errorMsg:      "failed base58 decoding of key Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
+			errorMsg:      "failed decoding public key",
 			newPubKey:     "Abracadabra#$)*&@=+^%~AbracadabraAbracadabra",
 			newPubKeyType: newPubKey.Type,
 		},

@@ -101,6 +101,8 @@ func addUserRequestFromArguments(args []string, withPublicKeyType bool) (AddUser
 		if !helpers.ValidatePublicKeyType(publicKey.Type) {
 			return AddUserRequest{}, fmt.Errorf("unknow public key type %s", args[indexPublicKeyType])
 		}
+	} else {
+		publicKey.Type = helpers.DefaultPublicKeyType()
 	}
 
 	if err = publicKey.validateLength(); err != nil {

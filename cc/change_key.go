@@ -11,36 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type argumentIndexMatrix map[string]int
-
-func (matrix argumentIndexMatrix) Has(argument string) bool {
-	return matrix.IndexOf(argument) > -1
-}
-
-func (matrix argumentIndexMatrix) IndexOf(argument string) int {
-	if index, ok := matrix[argument]; ok {
-		return index
-	}
-	return -1
-}
-
-const (
-	argumentChaincode                  = "chaincode"
-	argumentChannel                    = "channel"
-	argumentAddress                    = "address"
-	argumentNewKey                     = "newKey"
-	argumentNewKeyType                 = "newKeyType"
-	argumentReason                     = "reason"
-	argumentReasonID                   = "reasonID"
-	argumentNonce                      = "nonce"
-	argumentValidatorKeysAndSignatures = "validatorKeysAndSignatures"
-)
-
-const (
-	signatureInHex    = false
-	signatureInBase58 = true
-)
-
 func changePublicKeyRequestFromArguments(
 	stub shim.ChaincodeStubInterface,
 	args []string,
