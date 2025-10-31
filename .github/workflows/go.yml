@@ -103,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        INTEGRATION_TEST_SUITE: [ "config","emission","basic","rights","account","lists","key_types" ]
+        INTEGRATION_TEST_SUITE: [ "config","emission","basic","rights","account","lists","key_types", "change_keys" ]
     runs-on: 'ubuntu-22.04'
     steps:
       - uses: actions/checkout@v5

@@ -16,8 +16,8 @@ tool (
 
 require (
 	github.com/anoideaopen/acl v0.1.1-0.20250505195402-a675a2687c7c
-	github.com/anoideaopen/foundation v0.1.3
-	github.com/anoideaopen/foundation/test/integration v0.0.0-20251013151027-fe1389e5c9ce
+	github.com/anoideaopen/foundation v0.1.4
+	github.com/anoideaopen/foundation/test/integration v0.0.0-20251031065006-f1cda2713792
 	github.com/fsouza/go-dockerclient v1.12.0
 	github.com/hyperledger/fabric v1.4.0-rc1.0.20251012211530-60d501d4140c
 	github.com/onsi/ginkgo/v2 v2.22.2
@@ -50,7 +50,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/cfssl v1.4.1 // indirect
-	github.com/consensys/gnark-crypto v0.19.0 // indirect
+	github.com/consensys/gnark-crypto v0.19.1 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/crate-crypto/go-eth-kzg v1.4.0 // indirect
 	github.com/crate-crypto/go-ipa v0.0.0-20240724233137-53bbb0ceb27a // indirect
