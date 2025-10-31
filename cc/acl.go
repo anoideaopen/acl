@@ -20,7 +20,6 @@ import (
 	"github.com/anoideaopen/acl/helpers"
 	aclproto "github.com/anoideaopen/acl/proto"
 	pb "github.com/anoideaopen/foundation/proto"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/hyperledger/fabric-protos-go-apiv2/msp"
 	"github.com/pkg/errors"
@@ -542,47 +541,6 @@ func checkNonce(stub shim.ChaincodeStubInterface, sender, nonceStr string) error
 		return fmt.Errorf("incorrect nonce. nonce from args %s less than exists %s", nonce, existed)
 	}
 	return stub.PutState(key, nonce.Bytes())
-}
-
-func (c *ACL) checkValidatorsSignedWithBase58Signature(message []byte, pks, signatures []string) error {
-	if len(signatures) < len(c.config.GetValidators()) {
-		return errors.Errorf("%d of %d signed", len(signatures), len(c.config.GetValidators()))
-	}
-
-	if err := helpers.CheckDuplicates(signatures); err != nil {
-		return fmt.Errorf(errs.ErrDuplicateSignatures, err)
-	}
-	if err := helpers.CheckDuplicates(pks); err != nil {
-		return fmt.Errorf(errs.ErrDuplicatePubKeys, err)
-	}
-
-	validators := make(map[string]*aclproto.ACLValidator)
-	for _, validator := range c.config.GetValidators() {
-		validators[validator.GetPublicKey()] = validator
-	}
-
-	for i, encodedBase58PublicKey := range pks {
-		validator, isValidator := validators[encodedBase58PublicKey]
-		if !isValidator {
-			return errors.Errorf("pk %s does not belong to any validator", encodedBase58PublicKey)
-		}
-
-		// check signature
-		decodedSignature := base58.Decode(signatures[i])
-
-		ok, err := verifyValidatorSignature(validator, message, decodedSignature)
-		if err != nil {
-			return fmt.Errorf("failed verifying signature: %w", err)
-		}
-		if !ok {
-			return fmt.Errorf(
-				"the signature %s does not match the public key %s",
-				signatures[i],
-				encodedBase58PublicKey,
-			)
-		}
-	}
-	return nil
 }
 
 func (c *ACL) verifyValidatorSignatures(message []byte, validatorKeys, validatorSignatures []string) error {

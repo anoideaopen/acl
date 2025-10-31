@@ -87,8 +87,14 @@ func checkKeys(stub shim.ChaincodeStubInterface, request CheckKeysRequest) (pb.A
 
 	foundBlocked := false
 	for i, publicKey := range request.PublicKeys {
-		if publicKey.Type, err = readPublicKeyType(stub, publicKey.HashInHex); err != nil {
-			return pb.AclResponse{}, fmt.Errorf("failed reading key type from state: %w", err)
+		storedType, found, err := readPublicKeyType(stub, publicKey.HashInHex)
+		if err != nil {
+			return pb.AclResponse{}, fmt.Errorf("failed reading type of a public key: %w", err)
+		}
+		if found {
+			publicKey.Type = storedType
+		} else {
+			publicKey.setTypeByKeyLength()
 		}
 
 		keyTypes[i] = pb.KeyType(pb.KeyType_value[publicKey.Type])

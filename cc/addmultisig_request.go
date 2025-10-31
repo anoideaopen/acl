@@ -146,8 +146,12 @@ func (r *AddMultisigRequest) parseKeysAndSignatures(
 			return fmt.Errorf("failed decoding public key: %w", err)
 		}
 
-		if r.PublicKeys[i].Type, err = readPublicKeyType(stub, r.PublicKeys[i].HashInHex); err != nil {
+		storedType, found, err := readPublicKeyType(stub, r.PublicKeys[i].HashInHex)
+		if err != nil {
 			return fmt.Errorf("failed reading type of a public key: %w", err)
+		}
+		if found {
+			r.PublicKeys[i].Type = storedType
 		}
 
 		if signaturesInBase58 {

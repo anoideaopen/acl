@@ -32,9 +32,6 @@ func DecodeBase58PublicKey(encodedBase58PublicKey string) ([]byte, error) {
 		return nil, errors.New("encoded base 58 public key is empty")
 	}
 	decode := base58.Decode(encodedBase58PublicKey)
-	if len(decode) == 0 {
-		return nil, fmt.Errorf("failed base58 decoding of key %s", encodedBase58PublicKey)
-	}
 	if !ValidateKeyLength(decode) {
 		return nil, fmt.Errorf(
 			"incorrect len of decoded from base58 public key '%s': '%d'",

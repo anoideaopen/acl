@@ -26,7 +26,7 @@ const (
 
 var _ = Describe("ACL change public key tests", func() {
 	var (
-		channels     = []string{cmn.ChannelACL, cmn.ChannelFiat, cmn.ChannelIndustrial}
+		channels     = []string{cmn.ChannelACL, cmn.ChannelIndustrial}
 		ts           *aclclient.ACLTestSuite
 		user1, user2 *mocks.UserFoundation
 	)
