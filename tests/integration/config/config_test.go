@@ -13,10 +13,10 @@ import (
 	"github.com/anoideaopen/foundation/test/integration/cmn"
 	"github.com/anoideaopen/foundation/test/integration/cmn/fabricnetwork"
 	"github.com/anoideaopen/foundation/test/integration/cmn/runner"
-	docker "github.com/fsouza/go-dockerclient"
 	"github.com/hyperledger/fabric/integration/nwo"
 	"github.com/hyperledger/fabric/integration/nwo/fabricconfig"
 	runnerFbk "github.com/hyperledger/fabric/integration/nwo/runner"
+	dcli "github.com/moby/moby/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -27,7 +27,7 @@ import (
 var _ = Describe("ACL config tests", func() {
 	var (
 		testDir          string
-		cli              *docker.Client
+		cli              dcli.APIClient
 		network          *nwo.Network
 		networkProcess   ifrit.Process
 		ordererProcesses []ifrit.Process
@@ -42,7 +42,7 @@ var _ = Describe("ACL config tests", func() {
 		testDir, err = os.MkdirTemp("", "foundation")
 		Expect(err).NotTo(HaveOccurred())
 
-		cli, err = docker.NewClientFromEnv()
+		cli, err = dcli.New(dcli.FromEnv)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
