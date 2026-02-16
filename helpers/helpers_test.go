@@ -64,7 +64,7 @@ func TestCheckDuplicates(t *testing.T) {
 func BenchmarkCheckDuplicates(b *testing.B) {
 	input := []string{"a", "b", "c", "a", "b", "c", "b", "c", "a", "b", "c", "b", "c", "a", "b", "c"}
 	var r []string
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		r = append(r, input...)
 	}
 	for i := 0; i < b.N; i++ {

@@ -90,12 +90,12 @@ func TestGetAccountsInfo(t *testing.T) {
 			description: "ok",
 			args: func() []string {
 				args := make([]string, 0, 10)
-				for i := 0; i < 5; i++ {
+				for range 5 {
 					bytes, err := json.Marshal([]string{common.FnGetAccInfoFn, "FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N"})
 					require.NoError(t, err)
 					args = append(args, string(bytes))
 				}
-				for i := 0; i < 5; i++ {
+				for range 5 {
 					bytes, err := json.Marshal([]string{common.FnCheckKeys, "Cv8S2Y7pDT74AUma95Fdy6ZUX5NBVTQR7WRbdq46VR2z"})
 					require.NoError(t, err)
 					args = append(args, string(bytes))
