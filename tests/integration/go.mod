@@ -1,6 +1,6 @@
 module github.com/anoideaopen/acl/tests/integration
 
-go 1.25.7
+go 1.26.0
 
 tool (
 	github.com/IBM/idemix/tools/idemixgen

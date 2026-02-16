@@ -208,7 +208,7 @@ func (ss *secrets) getSigns() []string {
 func newSecrets(validators int) (ss *secrets, err error) {
 	ss = &secrets{}
 
-	for i := 0; i < validators; i++ {
+	for range validators {
 		public, secret, err := ed25519.GenerateKey(rand.Reader)
 		if err != nil {
 			return nil, err

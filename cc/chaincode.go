@@ -231,7 +231,7 @@ func (c *ACL) setupMethods() error {
 	var err error
 	c.methodOnce.Do(func() {
 		c.methods = make(map[string]methods.Method)
-		t := reflect.TypeOf(c)
+		t := reflect.TypeOf(c) //nolint:modernize
 		for i := range t.NumMethod() {
 			method := t.Method(i)
 

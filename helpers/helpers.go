@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"unicode"
@@ -180,7 +181,8 @@ func CheckAddress(address string) error {
 		return fmt.Errorf("check decode address : %w", err)
 	}
 
-	hash := []byte{version}
+	hash := make([]byte, 0, len(result)+1)
+	hash = append(hash, version)
 	hash = append(hash, result...)
 
 	if len(hash) != sha256Length {
@@ -220,12 +222,7 @@ func ValidatePublicKeyType(keyType string, notAllowedTypes ...string) bool {
 	if !ok {
 		return false
 	}
-	for _, notAllowed := range notAllowedTypes {
-		if notAllowed == keyType {
-			return false
-		}
-	}
-	return true
+	return !slices.Contains(notAllowedTypes, keyType)
 }
 
 func DefaultPublicKeyType() string {
