@@ -231,10 +231,8 @@ func (c *ACL) setupMethods() error {
 	var err error
 	c.methodOnce.Do(func() {
 		c.methods = make(map[string]methods.Method)
-		t := reflect.TypeOf(c) //nolint:modernize
-		for i := range t.NumMethod() {
-			method := t.Method(i)
-
+		t := reflect.TypeFor[*ACL]()
+		for method := range t.Methods() {
 			if skipMethod(method.Name) {
 				continue
 			}

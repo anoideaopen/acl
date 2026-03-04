@@ -1,6 +1,6 @@
 module github.com/anoideaopen/acl
 
-go 1.25.2
+go 1.26.0
 
 require (
 	github.com/anoideaopen/foundation v0.1.7-0.20260219060046-2c1935dce5a4
