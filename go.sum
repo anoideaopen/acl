@@ -4,8 +4,8 @@ github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20260218040609
 github.com/StackExchange/wmi v1.2.1 h1:VIkavFPXSjcnS+O8yTq7NI32k0R5Aj+v39y29VYDOSA=
 github.com/StackExchange/wmi v1.2.1/go.mod h1:rcmrprowKIVzvc+NUiLncP2uuArMWLCbu9SBzvHz7e8=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
-github.com/anoideaopen/foundation v0.1.7-0.20260219060046-2c1935dce5a4 h1:0AGfYG01/Urk8Vvfi5UkKDOfsjcwWDP7Gm0LQp2x+SQ=
-github.com/anoideaopen/foundation v0.1.7-0.20260219060046-2c1935dce5a4/go.mod h1:QXAVShAeT0LiTbL2jKd9oRHnxqJFTT1MnmiavR1YeQg=
+github.com/anoideaopen/foundation v0.1.7 h1:TiBSG8RdRDfXUXCVAWw14lEPMdCbS13XC9pfVjTsf6o=
+github.com/anoideaopen/foundation v0.1.7/go.mod h1:CM8MUT1WYV+ZpU3nw9Y47udGgqXv/8//4Ycz0Gkcbmw=
 github.com/bits-and-blooms/bitset v1.24.4 h1:95H15Og1clikBrKr/DuzMXkQzECs1M6hhoGXLwLQOZE=
 github.com/bits-and-blooms/bitset v1.24.4/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
