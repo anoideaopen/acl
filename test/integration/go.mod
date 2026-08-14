@@ -20,7 +20,7 @@ require (
 	github.com/anoideaopen/foundation/test/integration v0.0.0-20260713173707-5190533dcc57
 	github.com/hyperledger/fabric v1.4.0-rc1.0.20260618074816-86c1172bec37
 	github.com/moby/moby/client v0.5.1
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/tedsuo/ifrit v0.0.0-20260418191334-846868129986
 	google.golang.org/protobuf v1.36.11
