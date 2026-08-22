@@ -1,8 +1,8 @@
 # ACL chaincode
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/anoideaopen/acl)](https://goreportcard.com/report/github.com/anoideaopen/acl)
 [![Go Reference](https://pkg.go.dev/badge/github.com/anoideaopen/acl.svg)](https://pkg.go.dev/github.com/anoideaopen/acl)
 ![GitHub License](https://img.shields.io/github/license/anoideaopen/acl)
+[![Coverage Status](https://coveralls.io/repos/github/anoideaopen/acl/badge.svg?branch=main)](https://coveralls.io/github/anoideaopen/acl)
 
 [![Go](https://github.com/anoideaopen/acl/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/anoideaopen/acl/actions/workflows/go.yml)
 [![Security vulnerability scan](https://github.com/anoideaopen/acl/actions/workflows/vulnerability-scan.yml/badge.svg?branch=main)](https://github.com/anoideaopen/acl/actions/workflows/vulnerability-scan.yml)

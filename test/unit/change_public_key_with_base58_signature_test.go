@@ -4,7 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha3"
-	"fmt"
+	"errors"
 	"math/big"
 	"strconv"
 	"strings"
@@ -54,13 +54,14 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, _ := common.NewMockStub(t)
 
 			ss, err := newSecrets(testCase.validatorCount)
 			require.NoError(t, err)
 
 			cfg := &proto.ACLConfig{
-				AdminSKIEncoded: common.TestInitConfig.AdminSKIEncoded,
+				AdminSKIEncoded: common.TestInitConfig.GetAdminSKIEncoded(),
 			}
 			for _, s := range ss.pKeys() {
 				cfg.Validators = append(cfg.Validators, &proto.ACLValidator{
@@ -73,7 +74,8 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 
 			nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 			reasonID := "1"
-			mArgs := []string{common.FnChangePublicKeyWithBase58Signature, "", "acl", "acl", common.TestAddr, common.DefaultReason, reasonID, testCase.newPubKey, nonce}
+			mArgs := make([]string, 0, 9+len(ss.pKeys())*2)
+			mArgs = append(mArgs, common.FnChangePublicKeyWithBase58Signature, "", "acl", "acl", common.TestAddr, common.DefaultReason, reasonID, testCase.newPubKey, nonce)
 			mArgs = append(mArgs, ss.pKeys()...)
 			message := sha3.Sum256([]byte(strings.Join(mArgs, "")))
 			err = ss.signs(message[:])
@@ -117,10 +119,10 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKeyWithBase58Signature, mArgs[1:])
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				require.LessOrEqual(t, mockStub.PutStateCallCount(), 1)
 				return
 			}
@@ -148,7 +150,8 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 			signAddrGet := &pb.SignedAddress{}
 			err = pbBuf.Unmarshal(val, signAddrGet)
 			require.NoError(t, err)
-			ssTx := []string{
+			ssTx := make([]string, 0, 9+len(ss.pKeys())*2)
+			ssTx = append(ssTx,
 				common.FnChangePublicKeyWithBase58Signature,
 				"",
 				"acl",
@@ -158,7 +161,7 @@ func TestChangePublicKeyWithBase58Signature(t *testing.T) {
 				reasonID,
 				testCase.newPubKey,
 				nonce,
-			}
+			)
 			ssTx = append(ssTx, ss.pKeys()...)
 			ssTx = append(ssTx, ss.getSigns()...)
 			require.True(t, pbBuf.Equal(&pb.SignedAddress{
@@ -228,7 +231,7 @@ func (ss *secrets) signs(message []byte) error {
 		sign := ed25519.Sign(base58.Decode(ss.data[i].private), message)
 		ss.data[i].sign = base58.Encode(sign)
 		if !ed25519.Verify(base58.Decode(ss.data[i].public), message, sign) {
-			return fmt.Errorf("invalid signature")
+			return errors.New("invalid signature")
 		}
 	}
 	return nil

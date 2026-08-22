@@ -79,9 +79,9 @@ func TestGetAccountsInfo(t *testing.T) {
 				require.Contains(t, responses[0].GetMessage(), "failed get accounts info: unknown method tesst")
 
 				require.Equal(t, int32(shim.OK), responses[1].GetStatus())
-				require.Empty(t, responses[1].Message)
+				require.Empty(t, responses[1].GetMessage())
 				addrFromLedger := &pb.AccountInfo{}
-				require.NoError(t, json.Unmarshal(responses[1].Payload, addrFromLedger))
+				require.NoError(t, json.Unmarshal(responses[1].GetPayload(), addrFromLedger))
 				require.True(t, proto.Equal(addrFromLedger, &pb.AccountInfo{KycHash: kycHash}))
 			},
 			errorMsg: "",
@@ -103,29 +103,30 @@ func TestGetAccountsInfo(t *testing.T) {
 				return args
 			},
 			checkResp: func(responses []*peer.Response) {
-				require.Equal(t, 10, len(responses))
+				require.Len(t, responses, 10)
 
 				for _, response := range responses[:5] {
 					require.Equal(t, int32(shim.OK), response.GetStatus())
-					require.Empty(t, response.Message)
+					require.Empty(t, response.GetMessage())
 					addrFromLedger := &pb.AccountInfo{}
-					require.NoError(t, json.Unmarshal(response.Payload, addrFromLedger))
+					require.NoError(t, json.Unmarshal(response.GetPayload(), addrFromLedger))
 					require.True(t, proto.Equal(addrFromLedger, &pb.AccountInfo{KycHash: kycHash}))
 				}
 
 				for _, response := range responses[5:] {
 					require.Equal(t, int32(shim.OK), response.GetStatus())
-					require.Empty(t, response.Message)
+					require.Empty(t, response.GetMessage())
 
 					aclResponse := &pb.AclResponse{}
 					require.NoError(t, proto.Unmarshal(response.GetPayload(), aclResponse))
-					require.Equal(t, "FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N", aclResponse.Address.Address.AddrString())
+					require.Equal(t, "FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N", aclResponse.GetAddress().GetAddress().AddrString())
 				}
 			},
 			errorMsg: "",
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{"FcxURVVuLyR7bMJYYeW34HDKdzEvcMDwfWo1wS9oYmCaeps9N"})
@@ -163,7 +164,8 @@ func TestGetAccountsInfo(t *testing.T) {
 
 			args := testCase.args()
 			mockStub.GetFunctionAndParametersReturns(common.FnGetAccountsInfo, args)
-			bArgs := [][]byte{[]byte(common.FnGetAccountsInfo)}
+			bArgs := make([][]byte, 0, 1+len(args))
+			bArgs = append(bArgs, []byte(common.FnGetAccountsInfo))
 			for _, arg := range args {
 				bArgs = append(bArgs, []byte(arg))
 			}
@@ -171,11 +173,11 @@ func TestGetAccountsInfo(t *testing.T) {
 			resp := ccAcl.Invoke(mockStub)
 
 			// check result
-			require.Equal(t, int32(shim.OK), resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
-			require.NotEmpty(t, resp.Payload)
+			require.Equal(t, int32(shim.OK), resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
+			require.NotEmpty(t, resp.GetPayload())
 			var responses []*peer.Response
-			err = json.Unmarshal(resp.Payload, &responses)
+			err = json.Unmarshal(resp.GetPayload(), &responses)
 			require.NoError(t, err)
 			testCase.checkResp(responses)
 		})

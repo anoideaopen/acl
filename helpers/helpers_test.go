@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcutil/base58"
@@ -17,19 +16,19 @@ func TestDecodeBase58PublicKey(t *testing.T) {
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey is empty", func(t *testing.T) {
 		key, err := DecodeBase58PublicKey("")
 		require.EqualError(t, err, "encoded base 58 public key is empty")
-		require.Len(t, key, 0)
+		require.Empty(t, key)
 	})
 
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey wrong text", func(t *testing.T) {
 		key, err := DecodeBase58PublicKey("wrong key - text")
 		require.ErrorContains(t, err, "incorrect len of decoded from base58 public key")
-		require.Len(t, key, 0)
+		require.Empty(t, key)
 	})
 
 	t.Run("NEGATIVE. SHOULD RETURN error WHEN encodedBase58PublicKey in hex", func(t *testing.T) {
 		key, err := DecodeBase58PublicKey(encodedHexPublicKey)
-		require.ErrorContains(t, err, fmt.Sprintf("incorrect len of decoded from base58 public key"))
-		require.Len(t, key, 0)
+		require.ErrorContains(t, err, "incorrect len of decoded from base58 public key")
+		require.Empty(t, key)
 	})
 
 	t.Run("POSITIVE. SHOULD RETURN endorsement descriptor WHEN encodedBase58PublicKey in base58 format", func(t *testing.T) {
@@ -63,11 +62,11 @@ func TestCheckDuplicates(t *testing.T) {
 
 func BenchmarkCheckDuplicates(b *testing.B) {
 	input := []string{"a", "b", "c", "a", "b", "c", "b", "c", "a", "b", "c", "b", "c", "a", "b", "c"}
-	var r []string
+	r := make([]string, 0, len(input)*1000)
 	for range 1000 {
 		r = append(r, input...)
 	}
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = CheckDuplicates(r)
 	}
 }

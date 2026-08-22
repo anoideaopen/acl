@@ -39,6 +39,7 @@ func TestCert(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			if len(testCase.cert) != 0 {
@@ -48,8 +49,7 @@ func TestCert(t *testing.T) {
 			}
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
-				switch s {
-				case "__config":
+				if s == "__config" {
 					return cfgBytes, nil
 				}
 
@@ -60,11 +60,11 @@ func TestCert(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnAddUser, []string{common.PubKey, kycHash, testUserID, stateTrue})
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
-				require.Equal(t, mockStub.PutStateCallCount(), 0)
+			if resp.GetStatus() != int32(shim.OK) {
+				require.Equal(t, 0, mockStub.PutStateCallCount())
 				return
 			}
 

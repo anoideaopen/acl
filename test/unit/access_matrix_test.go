@@ -219,7 +219,7 @@ func TestAclAccessMatrix(t *testing.T) {
 				accountRightsState := &pb.AccountRights{}
 				require.NoError(t, protojson.Unmarshal(val, accountRightsState))
 				require.True(t, proto.Equal(accountRightsState, &pb.AccountRights{
-					Address: signAddr.Address,
+					Address: signAddr.GetAddress(),
 					Rights:  []*pb.Right{},
 				}))
 			},
@@ -321,7 +321,7 @@ func TestAclAccessMatrix(t *testing.T) {
 					return proto.Marshal(signAddr)
 				case keyAddresMatrix:
 					return protojson.Marshal(&pb.AccountRights{
-						Address: signAddr.Address,
+						Address: signAddr.GetAddress(),
 						Rights:  []*pb.Right{},
 					})
 				}
@@ -331,7 +331,7 @@ func TestAclAccessMatrix(t *testing.T) {
 				ar := &pb.AccountRights{}
 				require.NoError(t, protojson.Unmarshal(payload, ar))
 				require.True(t, proto.Equal(ar, &pb.AccountRights{
-					Address: signAddr.Address,
+					Address: signAddr.GetAddress(),
 					Rights:  []*pb.Right{},
 				}))
 			},
@@ -359,7 +359,7 @@ func TestAclAccessMatrix(t *testing.T) {
 				require.NoError(t, protojson.Unmarshal(payload, or))
 				require.True(t, proto.Equal(or, &pb.OperationRights{
 					OperationName: operationName,
-					Rights:        accountRights.Rights,
+					Rights:        accountRights.GetRights(),
 				}))
 			},
 		},
@@ -541,6 +541,7 @@ func TestAclAccessMatrix(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			if len(testCase.cert) != 0 {
@@ -548,8 +549,7 @@ func TestAclAccessMatrix(t *testing.T) {
 			}
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
-				switch s {
-				case "__config":
+				if s == "__config" {
 					return cfgBytes, nil
 				}
 
@@ -564,10 +564,10 @@ func TestAclAccessMatrix(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(testCase.fn, testCase.args)
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				return
 			}
 

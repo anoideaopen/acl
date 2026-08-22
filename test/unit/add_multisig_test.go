@@ -183,6 +183,7 @@ func TestAddMultisig(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			publicKeys := make([]cc.PublicKey, 0, len(common.MockUsersKeys))
@@ -203,11 +204,6 @@ func TestAddMultisig(t *testing.T) {
 					Type:              helpers.DefaultPublicKeyType(),
 				})
 				privateKeys = append(privateKeys, privateKey)
-			}
-
-			pubKeysBytes := make([][]byte, 0, len(pubKeys))
-			for _, pubKey := range publicKeys {
-				pubKeysBytes = append(pubKeysBytes, []byte(pubKey.InBase58))
 			}
 
 			nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
@@ -245,8 +241,11 @@ func TestAddMultisig(t *testing.T) {
 			addressMulti := base58.CheckEncode(hashedMulti[1:], hashedMulti[0])
 			hashedKeysInHexMulti := hex.EncodeToString(hashedMulti[:])
 			keyNonceMulti, err := shim.CreateCompositeKey(compositekey.NoncePrefix, []string{addressMulti})
+			require.NoError(t, err)
 			keyAddrMulti, err := shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{hashedKeysInHexMulti})
+			require.NoError(t, err)
 			keyPkMulti, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{addressMulti})
+			require.NoError(t, err)
 
 			state := make(map[string][]byte)
 			state["__config"] = cfgBytes
@@ -290,10 +289,10 @@ func TestAddMultisig(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnAddMultisig, args)
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				require.LessOrEqual(t, mockStub.PutStateCallCount(), 1)
 				return
 			}

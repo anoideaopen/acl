@@ -67,13 +67,14 @@ func TestChangePublicKeyWithTypeBase58Signature(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, _ := common.NewMockStub(t)
 
 			ss, err := newSecrets(testCase.validatorCount)
 			require.NoError(t, err)
 
 			cfg := &proto.ACLConfig{
-				AdminSKIEncoded: common.TestInitConfig.AdminSKIEncoded,
+				AdminSKIEncoded: common.TestInitConfig.GetAdminSKIEncoded(),
 			}
 			for _, s := range ss.pKeys() {
 				cfg.Validators = append(cfg.Validators, &proto.ACLValidator{
@@ -86,7 +87,8 @@ func TestChangePublicKeyWithTypeBase58Signature(t *testing.T) {
 
 			nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
 			reasonID := "1"
-			mArgs := []string{
+			mArgs := make([]string, 0, 10+len(ss.pKeys())*2)
+			mArgs = append(mArgs,
 				common.FnChangePublicKeyWithTypeAndBase58Signature,
 				"",
 				"acl",
@@ -97,7 +99,7 @@ func TestChangePublicKeyWithTypeBase58Signature(t *testing.T) {
 				testCase.newPubKey,
 				testCase.newPubKeyType,
 				nonce,
-			}
+			)
 			mArgs = append(mArgs, ss.pKeys()...)
 			message := sha3.Sum256([]byte(strings.Join(mArgs, "")))
 			err = ss.signs(message[:])
@@ -143,10 +145,10 @@ func TestChangePublicKeyWithTypeBase58Signature(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKeyWithTypeAndBase58Signature, mArgs[1:])
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				require.LessOrEqual(t, mockStub.PutStateCallCount(), 1)
 				return
 			}
@@ -178,7 +180,8 @@ func TestChangePublicKeyWithTypeBase58Signature(t *testing.T) {
 			signAddrGet := &pb.SignedAddress{}
 			err = pbBuf.Unmarshal(val, signAddrGet)
 			require.NoError(t, err)
-			ssTx := []string{
+			ssTx := make([]string, 0, 10+len(ss.pKeys())*2)
+			ssTx = append(ssTx,
 				common.FnChangePublicKeyWithTypeAndBase58Signature,
 				"",
 				"acl",
@@ -189,7 +192,7 @@ func TestChangePublicKeyWithTypeBase58Signature(t *testing.T) {
 				testCase.newPubKey,
 				testCase.newPubKeyType,
 				nonce,
-			}
+			)
 			ssTx = append(ssTx, ss.pKeys()...)
 			ssTx = append(ssTx, ss.getSigns()...)
 			require.True(t, pbBuf.Equal(&pb.SignedAddress{

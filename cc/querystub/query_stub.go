@@ -79,7 +79,7 @@ func (qs *queryStub) GetFunctionAndParameters() (function string, params []strin
 
 func (qs *queryStub) GetArgsSlice() ([]byte, error) {
 	args := qs.GetArgs()
-	res := []byte{} //nolint:prealloc
+	res := []byte{}
 	for _, barg := range args {
 		res = append(res, barg...)
 	}

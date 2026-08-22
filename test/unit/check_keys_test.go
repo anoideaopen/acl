@@ -27,10 +27,8 @@ func TestCheckKeys(t *testing.T) {
 
 	keys := strings.Split(multiBubKey, "/")
 
-	var (
-		keysBytesSorted          [][]byte
-		keysBytesInOriginalOrder [][]byte
-	)
+	keysBytesSorted := make([][]byte, 0, len(keys))
+	keysBytesInOriginalOrder := make([][]byte, 0, len(keys))
 	for _, key := range keys {
 		b, err := helpers.DecodeBase58PublicKey(key)
 		require.NoError(t, err)
@@ -393,11 +391,11 @@ func TestCheckKeys(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
-				switch s {
-				case "__config":
+				if s == "__config" {
 					return cfgBytes, nil
 				}
 
@@ -413,10 +411,10 @@ func TestCheckKeys(t *testing.T) {
 			resp := ccAcl.Invoke(mockStub)
 
 			// check a result
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				return
 			}
 
