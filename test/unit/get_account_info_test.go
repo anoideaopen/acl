@@ -70,19 +70,17 @@ func TestGetAccountInfo(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnGetAccInfoFn, args)
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				return
 			}
 
 			addrFromLedger := &pb.AccountInfo{}
 			require.NoError(t, json.Unmarshal(resp.GetPayload(), addrFromLedger))
 
-			require.Equal(t, addrFromLedger, &pb.AccountInfo{
-				KycHash: "kycHash",
-			})
+			require.Equal(t, &pb.AccountInfo{KycHash: "kycHash"}, addrFromLedger)
 		})
 	}
 }

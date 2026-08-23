@@ -18,8 +18,7 @@ func TestGetAddresses(t *testing.T) {
 	mockStub, cfgBytes := common.NewMockStub(t)
 
 	mockStub.GetStateCalls(func(s string) ([]byte, error) {
-		switch s {
-		case "__config":
+		if s == "__config" {
 			return cfgBytes, nil
 		}
 
@@ -30,8 +29,8 @@ func TestGetAddresses(t *testing.T) {
 	mockStub.GetFunctionAndParametersReturns("getAddresses", []string{"1", common.TestAddr})
 	resp := ccAcl.Invoke(mockStub)
 
-	require.Equal(t, int32(shim.ERROR), resp.Status)
-	require.Contains(t, resp.Message, "empty address iterator")
+	require.Equal(t, int32(shim.ERROR), resp.GetStatus())
+	require.Contains(t, resp.GetMessage(), "empty address iterator")
 
 	key, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{common.TestAddr})
 	require.NoError(t, err)
@@ -49,8 +48,8 @@ func TestGetAddresses(t *testing.T) {
 
 	mockStub.GetFunctionAndParametersReturns("getAddresses", []string{"1", ""})
 	resp = ccAcl.Invoke(mockStub)
-	require.Equal(t, int32(shim.OK), resp.Status)
-	require.Empty(t, resp.Message)
+	require.Equal(t, int32(shim.OK), resp.GetStatus())
+	require.Empty(t, resp.GetMessage())
 
 	addr := &cc.AddrsWithPagination{}
 	require.NoError(t, json.Unmarshal(resp.GetPayload(), addr))

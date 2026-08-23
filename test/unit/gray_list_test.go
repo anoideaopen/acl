@@ -103,11 +103,11 @@ func TestGrayList(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(testCase.fname, args)
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
-				require.Equal(t, mockStub.PutStateCallCount(), 0)
+			if resp.GetStatus() != int32(shim.OK) {
+				require.Equal(t, 0, mockStub.PutStateCallCount())
 				return
 			}
 
@@ -118,10 +118,7 @@ func TestGrayList(t *testing.T) {
 			addrFromLedger := &pb.AccountInfo{}
 			require.NoError(t, proto.Unmarshal(valState, addrFromLedger))
 
-			flag := true
-			if testCase.fname == common.FnDelFromList {
-				flag = false
-			}
+			flag := testCase.fname != common.FnDelFromList
 			require.True(t, proto.Equal(addrFromLedger, &pb.AccountInfo{
 				KycHash:    "kycHash",
 				GrayListed: flag,

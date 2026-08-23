@@ -90,11 +90,11 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
-				switch s {
-				case "__config":
+				if s == "__config" {
 					return cfgBytes, nil
 				}
 
@@ -134,11 +134,11 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 			resp := ccAcl.Invoke(mockStub)
 
 			// check result
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
-				require.Equal(t, mockStub.PutStateCallCount(), 0)
+			if resp.GetStatus() != int32(shim.OK) {
+				require.Equal(t, 0, mockStub.PutStateCallCount())
 				return
 			}
 
@@ -146,7 +146,7 @@ func TestAddUserSecp256k1PublicKey(t *testing.T) {
 			_, valState := mockStub.PutStateArgsForCall(0)
 			signAddr := &pb.SignedAddress{}
 			require.NoError(t, proto.Unmarshal(valState, signAddr))
-			require.Equal(t, signAddr.GetAddress().UserID, testCase.testUserID)
+			require.Equal(t, signAddr.GetAddress().GetUserID(), testCase.testUserID)
 
 			_, valState = mockStub.PutStateArgsForCall(3)
 			addrFromLedger := &pb.AccountInfo{}
@@ -205,11 +205,11 @@ func TestAddUserGostPublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
-				switch s {
-				case "__config":
+				if s == "__config" {
 					return cfgBytes, nil
 				}
 
@@ -225,11 +225,11 @@ func TestAddUserGostPublicKey(t *testing.T) {
 			resp := ccAcl.Invoke(mockStub)
 
 			// check result
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
-				require.Equal(t, mockStub.PutStateCallCount(), 0)
+			if resp.GetStatus() != int32(shim.OK) {
+				require.Equal(t, 0, mockStub.PutStateCallCount())
 				return
 			}
 
@@ -237,7 +237,7 @@ func TestAddUserGostPublicKey(t *testing.T) {
 			_, valState := mockStub.PutStateArgsForCall(0)
 			signAddr := &pb.SignedAddress{}
 			require.NoError(t, proto.Unmarshal(valState, signAddr))
-			require.Equal(t, signAddr.GetAddress().UserID, testCase.testUserID)
+			require.Equal(t, signAddr.GetAddress().GetUserID(), testCase.testUserID)
 
 			_, valState = mockStub.PutStateArgsForCall(3)
 			addrFromLedger := &pb.AccountInfo{}

@@ -35,6 +35,7 @@ func TestAdditionalKey(t *testing.T) {
 	keyNonce, err := shim.CreateCompositeKey(compositekey.NoncePrefix, []string{common.TestAddr})
 	require.NoError(t, err)
 	keyAdditionalKeyParent, err := shim.CreateCompositeKey(compositekey.AdditionalKeyParentPrefix, []string{additionalPublicKey})
+	require.NoError(t, err)
 
 	info, err := proto.Marshal(&pb.AccountInfo{
 		KycHash: kycHash,
@@ -94,13 +95,14 @@ func TestAdditionalKey(t *testing.T) {
 				for publicKey := range common.MockValidatorsKeys {
 					validatorPublicKeys = append(validatorPublicKeys, publicKey)
 				}
-				messageElements := []string{
+				messageElements := make([]string, 0, 5+len(common.MockValidatorsKeys)*2)
+				messageElements = append(messageElements,
 					common.FnAddAdditionalKey,
 					common.TestAddr,
 					additionalPublicKey,
 					tags,
 					nonce,
-				}
+				)
 				messageElements = append(messageElements, validatorPublicKeys...)
 				// Creating a hash of the message.
 				messageDigest := sha3.Sum256([]byte(strings.Join(messageElements, "")))
@@ -148,12 +150,13 @@ func TestAdditionalKey(t *testing.T) {
 				for publicKey := range common.MockValidatorsKeys {
 					validatorPublicKeys = append(validatorPublicKeys, publicKey)
 				}
-				messageElements := []string{
+				messageElements := make([]string, 0, 5+len(common.MockValidatorsKeys)*2)
+				messageElements = append(messageElements,
 					common.FnRemoveAdditionalKey,
 					common.TestAddr,
 					additionalPublicKey,
 					nonce,
-				}
+				)
 				messageElements = append(messageElements, validatorPublicKeys...)
 				// Creating a hash of the message.
 				messageDigest := sha3.Sum256([]byte(strings.Join(messageElements, "")))
@@ -196,6 +199,7 @@ func TestAdditionalKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			state := make(map[string][]byte)
@@ -218,10 +222,10 @@ func TestAdditionalKey(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(testCase.fn, testCase.args())
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				require.LessOrEqual(t, mockStub.PutStateCallCount(), 1)
 				return
 			}

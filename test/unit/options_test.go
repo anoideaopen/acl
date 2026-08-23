@@ -63,10 +63,10 @@ func TestACLOptions(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 			mockStub.GetStateCalls(func(s string) ([]byte, error) {
-				switch s {
-				case "__config":
+				if s == "__config" {
 					return cfgBytes, nil
 				}
 
@@ -76,10 +76,10 @@ func TestACLOptions(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(testCase.fn, testCase.args)
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				return
 			}
 		})

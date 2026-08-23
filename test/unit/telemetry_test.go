@@ -20,8 +20,7 @@ import (
 func TestTelemetry(t *testing.T) {
 	mockStub, cfgBytes := common.NewMockStub(t)
 	mockStub.GetStateCalls(func(s string) ([]byte, error) {
-		switch s {
-		case "__config":
+		if s == "__config" {
 			return cfgBytes, nil
 		}
 
@@ -67,8 +66,7 @@ func addTelemetryToMockStub(t *testing.T, mockStub *mock.ChaincodeStub) *mock.Ch
 	require.NoError(t, err)
 
 	mockStub.GetStateCalls(func(s string) ([]byte, error) {
-		switch s {
-		case "__config":
+		if s == "__config" {
 			return cfgBytes, nil
 		}
 
@@ -77,7 +75,7 @@ func addTelemetryToMockStub(t *testing.T, mockStub *mock.ChaincodeStub) *mock.Ch
 
 	tracerProvider := sdktrace.NewTracerProvider()
 	tr := tracerProvider.Tracer("test")
-	ctx, _ := tr.Start(context.Background(), "top-test")
+	ctx, _ := tr.Start(context.Background(), "top-test") //nolint:spancheck
 
 	carrier := propagation.MapCarrier{}
 

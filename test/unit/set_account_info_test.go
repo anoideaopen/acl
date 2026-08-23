@@ -92,6 +92,7 @@ func TestSetAccountInfo(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			key, err := shim.CreateCompositeKey(compositekey.AccountInfoPrefix, []string{common.TestAddr})
@@ -118,11 +119,11 @@ func TestSetAccountInfo(t *testing.T) {
 			resp := ccAcl.Invoke(mockStub)
 
 			// check result
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
-				require.Equal(t, mockStub.PutStateCallCount(), 0)
+			if resp.GetStatus() != int32(shim.OK) {
+				require.Equal(t, 0, mockStub.PutStateCallCount())
 				return
 			}
 

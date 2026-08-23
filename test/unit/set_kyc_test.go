@@ -53,6 +53,7 @@ func TestSetKyc(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			info := &pb.AccountInfo{
@@ -73,10 +74,10 @@ func TestSetKyc(t *testing.T) {
 
 			ccAcl := cc.New()
 			resp := setKyc(ccAcl, mockStub, testCase.testAddress, testCase.newKYC)
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				require.Less(t, mockStub.PutStateCallCount(), 2)
 				return
 			}
@@ -111,7 +112,8 @@ func setKyc(cc *cc.ACL, mockStub *mock.ChaincodeStub, addr string, kyc string) *
 		vSignatures = append(vSignatures, string(common.HexEncodedSignature(base58.Decode(sKey), message[:])))
 	}
 
-	args := []string{addr, kyc, nonce}
+	args := make([]string, 0, 3+len(pKeys)*2)
+	args = append(args, addr, kyc, nonce)
 	args = append(args, pKeys...)
 	args = append(args, vSignatures...)
 	mockStub.GetFunctionAndParametersReturns(common.FnSetKYC, args)

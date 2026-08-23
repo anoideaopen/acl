@@ -75,6 +75,7 @@ func TestChangeMultisigPublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			publicKeys := make([]cc.PublicKey, 0, len(common.MockUsersKeys))
@@ -95,11 +96,6 @@ func TestChangeMultisigPublicKey(t *testing.T) {
 					Type:              helpers.DefaultPublicKeyType(),
 				})
 				privateKeys = append(privateKeys, privateKey)
-			}
-
-			pubKeysBytes := make([][]byte, 0, len(pubKeys))
-			for _, pubKey := range publicKeys {
-				pubKeysBytes = append(pubKeysBytes, []byte(pubKey.InBase58))
 			}
 
 			nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
@@ -140,8 +136,11 @@ func TestChangeMultisigPublicKey(t *testing.T) {
 			args := append(append([]string{addrEncoded, oldKey, testCase.newPubKey, reason, reasonID, newNonce}, validatorPublicKeys...), signatures...)
 
 			keyNonceMulti, err := shim.CreateCompositeKey(compositekey.NoncePrefix, []string{addrEncoded})
+			require.NoError(t, err)
 			keyAddrMulti, err := shim.CreateCompositeKey(compositekey.SignedAddressPrefix, []string{hashedKeysInHex})
+			require.NoError(t, err)
 			keyPkMulti, err := shim.CreateCompositeKey(compositekey.PublicKeyPrefix, []string{addrEncoded})
+			require.NoError(t, err)
 
 			signAddr := &pb.SignedAddress{
 				Address: &pb.Address{
@@ -181,10 +180,10 @@ func TestChangeMultisigPublicKey(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnChangeMultisigPublicKey, args)
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				require.LessOrEqual(t, mockStub.PutStateCallCount(), 1)
 				return
 			}

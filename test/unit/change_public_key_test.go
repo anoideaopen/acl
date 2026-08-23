@@ -42,21 +42,22 @@ func TestChangePublicKey(t *testing.T) {
 			newPubKey:   newPubKey.InBase58,
 			prepare: func(pubkeys []string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
-				args := []string{
+				args := make([]string, 0, 6+len(pubkeys)*2)
+				args = append(args,
 					common.FnChangePublicKey,
 					common.TestAddr,
 					common.DefaultReason,
 					reasonID,
 					newPubKey.InBase58,
 					nonce,
-				}
+				)
 				pubkeys[2] = pubkeys[1]
 
 				args = append(args, pubkeys...)
 				message := sha3.Sum256([]byte(strings.Join(args, "")))
 				_, vSignatures := common.GenerateTestValidatorSignatures(pubkeys, message[:])
 
-				var signatures []string
+				signatures := make([]string, 0, len(vSignatures))
 				for _, signature := range vSignatures {
 					signatures = append(signatures, string(signature))
 				}
@@ -73,21 +74,22 @@ func TestChangePublicKey(t *testing.T) {
 			newPubKey:   newPubKey.InBase58,
 			prepare: func(pubkeys []string) []string {
 				nonce := strconv.Itoa(int(time.Now().Unix() * 1000))
-				args := []string{
+				args := make([]string, 0, 6+len(pubkeys)*2)
+				args = append(args,
 					common.FnChangePublicKey,
 					common.TestAddr,
 					common.DefaultReason,
 					reasonID,
 					newPubKey.InBase58,
 					nonce,
-				}
+				)
 				pubkeys[2] = pubkeys[1]
 
 				args = append(args, pubkeys...)
 				message := sha3.Sum256([]byte(strings.Join(args, "")))
 				_, vSignatures := common.GenerateTestValidatorSignatures(pubkeys, message[:])
 
-				var signatures []string
+				signatures := make([]string, 0, len(vSignatures))
 				for _, signature := range vSignatures {
 					signatures = append(signatures, string(signature))
 				}
@@ -147,6 +149,7 @@ func TestChangePublicKey(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			mockStub, cfgBytes := common.NewMockStub(t)
 
 			state := make(map[string][]byte)
@@ -178,7 +181,7 @@ func TestChangePublicKey(t *testing.T) {
 			message := sha3.Sum256([]byte(strings.Join(args, "")))
 			_, vSignatures := common.GenerateTestValidatorSignatures(pKeys, message[:])
 
-			var signatures []string
+			signatures := make([]string, 0, len(vSignatures))
 			for _, signature := range vSignatures {
 				signatures = append(signatures, string(signature))
 			}
@@ -224,10 +227,10 @@ func TestChangePublicKey(t *testing.T) {
 			mockStub.GetFunctionAndParametersReturns(common.FnChangePublicKey, args[1:])
 			resp := ccAcl.Invoke(mockStub)
 
-			require.Equal(t, testCase.respStatus, resp.Status)
-			require.Contains(t, resp.Message, testCase.errorMsg)
+			require.Equal(t, testCase.respStatus, resp.GetStatus())
+			require.Contains(t, resp.GetMessage(), testCase.errorMsg)
 
-			if resp.Status != int32(shim.OK) {
+			if resp.GetStatus() != int32(shim.OK) {
 				require.LessOrEqual(t, mockStub.PutStateCallCount(), 1)
 				return
 			}
