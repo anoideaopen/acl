@@ -19,7 +19,7 @@ require (
 	github.com/anoideaopen/foundation v0.1.8
 	github.com/anoideaopen/foundation/test/integration v0.0.0-20260822094544-c9e5a92062a3
 	github.com/hyperledger/fabric v1.4.0-rc1.0.20260618074816-86c1172bec37
-	github.com/moby/moby/client v0.5.1
+	github.com/moby/moby/client v0.6.0
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/tedsuo/ifrit v0.0.0-20260813155221-94822c932811
@@ -106,7 +106,7 @@ require (
 	github.com/miekg/pkcs11 v1.1.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/moby/api v1.55.0 // indirect
+	github.com/moby/moby/api v1.56.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
